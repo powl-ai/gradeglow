@@ -1,0 +1,189 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
+import { db, isFirebaseConfigured } from "../lib/firebase";
+import type { AppUser, GradeGlowProfile } from "../types";
+
+export type ProfileSyncStatus =
+  | "local"
+  | "cloud-loading"
+  | "cloud-ready"
+  | "cloud-saving"
+  | "cloud-saved"
+  | "cloud-error";
+
+const PROFILE_STORAGE_KEY = "gradeglow-profile-v1";
+export const DEFAULT_TARGET_ECTS = 180;
+
+const parseTargetEcts = (value: unknown) => {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(",", "."));
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+
+  return DEFAULT_TARGET_ECTS;
+};
+
+const getStringValue = (value: unknown) => {
+  return typeof value === "string" ? value.trim() : "";
+};
+
+const migrateProfile = (
+  rawProfile: unknown,
+  fallbackDisplayName: string
+): GradeGlowProfile => {
+  const profileObject =
+    typeof rawProfile === "object" && rawProfile !== null
+      ? (rawProfile as Record<string, unknown>)
+      : {};
+
+  return {
+    displayName: getStringValue(profileObject.displayName) || fallbackDisplayName,
+    degreeProgram: getStringValue(profileObject.degreeProgram),
+    targetEcts: parseTargetEcts(profileObject.targetEcts),
+  };
+};
+
+export function useGradeGlowProfile(user: AppUser) {
+  const fallbackDisplayName = user.displayName?.trim() ?? "";
+  const storageKey = `${PROFILE_STORAGE_KEY}-${user.uid}`;
+  const shouldUseCloudSync = user.provider === "firebase" && isFirebaseConfigured && Boolean(db);
+
+  const defaultProfile = useMemo<GradeGlowProfile>(
+    () => ({
+      displayName: fallbackDisplayName,
+      degreeProgram: "",
+      targetEcts: DEFAULT_TARGET_ECTS,
+    }),
+    [fallbackDisplayName]
+  );
+
+  const [profile, setProfile] = useState<GradeGlowProfile>(defaultProfile);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<ProfileSyncStatus>("local");
+  const [syncMessage, setSyncMessage] = useState("Profil lokal gespeichert");
+
+  const readLocalProfile = useCallback(() => {
+    try {
+      const savedProfile = localStorage.getItem(storageKey);
+      if (!savedProfile) return defaultProfile;
+
+      return migrateProfile(JSON.parse(savedProfile), fallbackDisplayName);
+    } catch {
+      localStorage.removeItem(storageKey);
+      return defaultProfile;
+    }
+  }, [defaultProfile, fallbackDisplayName, storageKey]);
+
+  const writeLocalProfile = useCallback(
+    (nextProfile: GradeGlowProfile) => {
+      localStorage.setItem(storageKey, JSON.stringify(nextProfile));
+    },
+    [storageKey]
+  );
+
+  useEffect(() => {
+    setIsLoaded(false);
+
+    if (!shouldUseCloudSync || !db) {
+      setProfile(readLocalProfile());
+      setSyncStatus("local");
+      setSyncMessage("Profil lokal gespeichert");
+      setIsLoaded(true);
+      return;
+    }
+
+    setSyncStatus("cloud-loading");
+    setSyncMessage("Profil wird geladen…");
+
+    const settingsRef = doc(db, "users", user.uid, "gradeglow", "settings");
+
+    const unsubscribe = onSnapshot(
+      settingsRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const cloudProfile = migrateProfile(snapshot.data(), fallbackDisplayName);
+          setProfile(cloudProfile);
+          writeLocalProfile(cloudProfile);
+          setSyncStatus("cloud-saved");
+          setSyncMessage("Profil gespeichert");
+          setIsLoaded(true);
+          return;
+        }
+
+        const localProfile = readLocalProfile();
+        setProfile(localProfile);
+        setSyncStatus("cloud-ready");
+        setSyncMessage("Profil bereit");
+        setIsLoaded(true);
+      },
+      () => {
+        setProfile(readLocalProfile());
+        setSyncStatus("cloud-error");
+        setSyncMessage("Profil-Cloud nicht erreichbar · lokales Backup aktiv");
+        setIsLoaded(true);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [
+    fallbackDisplayName,
+    readLocalProfile,
+    shouldUseCloudSync,
+    user.uid,
+    writeLocalProfile,
+  ]);
+
+  const saveProfile = useCallback(
+    async (nextProfile: GradeGlowProfile) => {
+      const normalizedProfile = migrateProfile(nextProfile, fallbackDisplayName);
+
+      setProfile(normalizedProfile);
+      writeLocalProfile(normalizedProfile);
+
+      if (!shouldUseCloudSync || !db) {
+        setSyncStatus("local");
+        setSyncMessage("Profil lokal gespeichert");
+        return;
+      }
+
+      setSyncStatus("cloud-saving");
+      setSyncMessage("Profil wird gespeichert…");
+
+      try {
+        const settingsRef = doc(db, "users", user.uid, "gradeglow", "settings");
+
+        await setDoc(
+          settingsRef,
+          {
+            ...normalizedProfile,
+            ownerUid: user.uid,
+            updatedAt: serverTimestamp(),
+            version: 1,
+          },
+          { merge: true }
+        );
+
+        setSyncStatus("cloud-saved");
+        setSyncMessage("Profil gespeichert");
+      } catch {
+        setSyncStatus("cloud-error");
+        setSyncMessage("Profil-Speichern fehlgeschlagen · lokales Backup aktiv");
+      }
+    },
+    [fallbackDisplayName, shouldUseCloudSync, user.uid, writeLocalProfile]
+  );
+
+  return {
+    profile,
+    isProfileLoaded: isLoaded,
+    profileSyncStatus: syncStatus,
+    profileSyncMessage: syncMessage,
+    saveProfile,
+  };
+}

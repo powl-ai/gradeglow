@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fbf7ff;
+  --foreground: #0f172a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--background);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+::selection {
+  background: #ddd6fe;
+  color: #111827;
+}
+
+.field-input {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: rgba(248, 250, 252, 0.9);
+  padding: 0.875rem 1rem;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.field-input::placeholder {
+  color: #94a3b8;
+}
+
+.field-input:focus {
+  border-color: #8b5cf6;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.14);
+}
+
+.soft-button {
+  border-radius: 1rem;
+  background: #ffffff;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 900;
+  color: #334155;
+  box-shadow: 0 0 0 1px #e2e8f0 inset;
+  transition: transform 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.soft-button:hover {
+  transform: translateY(-2px);
+  background: #f8fafc;
+  box-shadow: 0 0 0 1px #cbd5e1 inset;
+}
+
+.filter-pill {
+  border-radius: 999px;
+  background: #f8fafc;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #64748b;
+  box-shadow: 0 0 0 1px #e2e8f0 inset;
+  transition: transform 150ms ease, background-color 150ms ease, color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.filter-pill:hover {
+  transform: translateY(-1px);
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.filter-pill-active {
+  background: #ede9fe;
+  color: #6d28d9;
+  box-shadow: 0 0 0 1px #ddd6fe inset;
+}

@@ -6,13 +6,18 @@ import {
   GoogleAuthProvider,
   OAuthProvider,
   createUserWithEmailAndPassword,
+  getRedirectResult,
   onAuthStateChanged,
+  sendEmailVerification,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
   updateProfile,
+  type AuthProvider,
   type User,
 } from "firebase/auth";
+import GradeGlowLogo from "./GradeGlowLogo";
 import { auth, isFirebaseConfigured } from "../lib/firebase";
 import type { AppUser } from "../types";
 
@@ -35,6 +40,18 @@ type LocalStoredUser = {
 
 const LOCAL_USERS_KEY = "gradeglow-local-users-v1";
 const LOCAL_SESSION_KEY = "gradeglow-local-session-v1";
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+
+const socialLoginOptions: {
+  provider: SocialProvider;
+  label: string;
+  icon: string;
+}[] = [
+  { provider: "google", label: "Google", icon: "G" },
+  { provider: "apple", label: "Apple", icon: "" },
+  { provider: "github", label: "GitHub", icon: "⌘" },
+];
 
 const mapFirebaseUser = (firebaseUser: User): AppUser => ({
   uid: firebaseUser.uid,
@@ -92,11 +109,13 @@ const readLocalSession = (): AppUser | null => {
   }
 };
 
+const getAuthErrorCode = (error: unknown) =>
+  typeof error === "object" && error !== null && "code" in error
+    ? String((error as { code?: unknown }).code)
+    : "";
+
 const getAuthErrorMessage = (error: unknown) => {
-  const code =
-    typeof error === "object" && error !== null && "code" in error
-      ? String((error as { code?: unknown }).code)
-      : "";
+  const code = getAuthErrorCode(error);
 
   switch (code) {
     case "auth/email-already-in-use":
@@ -109,15 +128,76 @@ const getAuthErrorMessage = (error: unknown) => {
       return "E-Mail oder Passwort ist falsch.";
     case "auth/weak-password":
       return "Das Passwort muss mindestens 6 Zeichen haben.";
+    case "auth/popup-blocked":
+      return "Der Browser hat das Anmeldefenster blockiert. Versuche es nochmal oder nutze einen anderen Browser.";
     case "auth/popup-closed-by-user":
       return "Das Anmeldefenster wurde geschlossen.";
+    case "auth/cancelled-popup-request":
+      return "Es läuft schon ein anderes Anmeldefenster. Warte kurz und versuche es erneut.";
     case "auth/account-exists-with-different-credential":
       return "Für diese E-Mail gibt es schon einen Account mit einer anderen Anmeldemethode.";
     case "auth/operation-not-allowed":
       return "Diese Anmeldemethode ist in Firebase noch nicht aktiviert.";
+    case "auth/unauthorized-domain":
+      return "Diese Domain ist für Firebase Auth noch nicht freigegeben. Prüfe Firebase Authorized Domains und den OAuth Client in Google Cloud.";
+    case "auth/redirect-cancelled-by-user":
+      return "Die Weiterleitung zur Anmeldung wurde abgebrochen.";
+    case "auth/redirect-operation-pending":
+      return "Eine Anmeldung per Weiterleitung läuft bereits. Warte kurz und versuche es erneut.";
     default:
       return "Anmeldung fehlgeschlagen. Prüfe deine Eingaben und deine Firebase-Konfiguration.";
   }
+};
+
+const isValidEmail = (value: string) => EMAIL_PATTERN.test(value.trim());
+
+const requiresEmailVerification = (firebaseUser: User) => {
+  const hasPasswordProvider = firebaseUser.providerData.some(
+    (provider) => provider.providerId === "password"
+  );
+
+  return hasPasswordProvider && !firebaseUser.emailVerified;
+};
+
+const isRedirectFriendlyDevice = () => {
+  if (typeof window === "undefined") return false;
+
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isMobile = /iphone|ipad|ipod|android/.test(userAgent);
+  const navigatorWithStandalone = navigator as Navigator & { standalone?: boolean };
+  const isInstalledPwa =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.matchMedia("(display-mode: fullscreen)").matches ||
+    navigatorWithStandalone.standalone === true;
+
+  return isMobile || isInstalledPwa;
+};
+
+const shouldFallbackToRedirect = (error: unknown) => {
+  const code = getAuthErrorCode(error);
+
+  return code === "auth/popup-blocked" || code === "auth/cancelled-popup-request";
+};
+
+const buildSocialProvider = (providerName: SocialProvider): AuthProvider => {
+  if (providerName === "google") {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    return provider;
+  }
+
+  if (providerName === "github") {
+    const provider = new GithubAuthProvider();
+    provider.addScope("read:user");
+    provider.addScope("user:email");
+    return provider;
+  }
+
+  const provider = new OAuthProvider("apple.com");
+  provider.addScope("email");
+  provider.addScope("name");
+  provider.setCustomParameters({ locale: "de" });
+  return provider;
 };
 
 export default function AuthGate({ children }: AuthGateProps) {
@@ -130,6 +210,7 @@ export default function AuthGate({ children }: AuthGateProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
 
   const title = useMemo(() => {
     return mode === "login" ? "Willkommen zurück" : "Account erstellen";
@@ -142,13 +223,31 @@ export default function AuthGate({ children }: AuthGateProps) {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const currentAuth = auth;
+
+    void getRedirectResult(currentAuth).catch((error) => {
+      setErrorMessage(getAuthErrorMessage(error));
+    });
+
+    const unsubscribe = onAuthStateChanged(currentAuth, (currentUser) => {
+      if (currentUser && requiresEmailVerification(currentUser)) {
+        setUser(null);
+        setIsAuthLoading(false);
+        void signOut(currentAuth);
+        return;
+      }
+
       setUser(currentUser ? mapFirebaseUser(currentUser) : null);
       setIsAuthLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
+
+  const clearMessages = () => {
+    setErrorMessage("");
+    setInfoMessage("");
+  };
 
   const handleLocalAuth = () => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -161,8 +260,8 @@ export default function AuthGate({ children }: AuthGateProps) {
         return;
       }
 
-      if (!normalizedEmail || !normalizedEmail.includes("@")) {
-        setErrorMessage("Bitte gib eine gültige E-Mail-Adresse ein.");
+      if (!isValidEmail(normalizedEmail)) {
+        setErrorMessage("Bitte gib eine echte E-Mail-Adresse ein, z. B. name@mail.de.");
         return;
       }
 
@@ -229,12 +328,24 @@ export default function AuthGate({ children }: AuthGateProps) {
 
   const handleEmailAuth = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setErrorMessage("");
+    clearMessages();
     setIsSubmitting(true);
 
     try {
       if (!auth || !isFirebaseConfigured) {
         handleLocalAuth();
+        return;
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+
+      if (!isValidEmail(normalizedEmail)) {
+        setErrorMessage("Bitte gib eine echte E-Mail-Adresse ein, z. B. name@mail.de.");
+        return;
+      }
+
+      if (!password) {
+        setErrorMessage("Bitte gib dein Passwort ein.");
         return;
       }
 
@@ -244,9 +355,14 @@ export default function AuthGate({ children }: AuthGateProps) {
           return;
         }
 
+        if (password.length < 6) {
+          setErrorMessage("Das Passwort muss mindestens 6 Zeichen haben.");
+          return;
+        }
+
         const credential = await createUserWithEmailAndPassword(
           auth,
-          email.trim(),
+          normalizedEmail,
           password
         );
 
@@ -254,17 +370,30 @@ export default function AuthGate({ children }: AuthGateProps) {
           displayName: username.trim(),
         });
 
-        setUser({
-          uid: credential.user.uid,
-          email: credential.user.email,
-          displayName: username.trim(),
-          photoURL: credential.user.photoURL,
-          provider: "firebase",
-        });
+        await sendEmailVerification(credential.user);
+        await signOut(auth);
+
+        setMode("login");
+        setPassword("");
+        setInfoMessage(
+          `Wir haben eine Bestätigungs-Mail an ${normalizedEmail} geschickt. Öffne den Link und logge dich danach ein.`
+        );
         return;
       }
 
-      await signInWithEmailAndPassword(auth, email.trim(), password);
+      const credential = await signInWithEmailAndPassword(
+        auth,
+        normalizedEmail,
+        password
+      );
+
+      if (!credential.user.emailVerified) {
+        await sendEmailVerification(credential.user).catch(() => undefined);
+        await signOut(auth);
+        setInfoMessage(
+          `Bitte bestätige zuerst deine E-Mail-Adresse. Ich habe den Link gerade nochmal an ${normalizedEmail} geschickt.`
+        );
+      }
     } catch (error) {
       setErrorMessage(getAuthErrorMessage(error));
     } finally {
@@ -273,7 +402,7 @@ export default function AuthGate({ children }: AuthGateProps) {
   };
 
   const handleSocialLogin = async (providerName: SocialProvider) => {
-    setErrorMessage("");
+    clearMessages();
 
     if (!auth || !isFirebaseConfigured) {
       setErrorMessage(
@@ -285,21 +414,28 @@ export default function AuthGate({ children }: AuthGateProps) {
     setIsSubmitting(true);
 
     try {
-      if (providerName === "google") {
-        await signInWithPopup(auth, new GoogleAuthProvider());
+      const provider = buildSocialProvider(providerName);
+
+      if (isRedirectFriendlyDevice()) {
+        setInfoMessage("Du wirst zur Anmeldung weitergeleitet…");
+        await signInWithRedirect(auth, provider);
         return;
       }
 
-      if (providerName === "github") {
-        await signInWithPopup(auth, new GithubAuthProvider());
-        return;
-      }
-
-      const appleProvider = new OAuthProvider("apple.com");
-      appleProvider.addScope("email");
-      appleProvider.addScope("name");
-      await signInWithPopup(auth, appleProvider);
+      await signInWithPopup(auth, provider);
     } catch (error) {
+      if (shouldFallbackToRedirect(error)) {
+        try {
+          const provider = buildSocialProvider(providerName);
+          setInfoMessage("Popup wurde blockiert. Ich öffne stattdessen die Weiterleitungs-Anmeldung…");
+          await signInWithRedirect(auth, provider);
+          return;
+        } catch (redirectError) {
+          setErrorMessage(getAuthErrorMessage(redirectError));
+          return;
+        }
+      }
+
       setErrorMessage(getAuthErrorMessage(error));
     } finally {
       setIsSubmitting(false);
@@ -340,9 +476,7 @@ export default function AuthGate({ children }: AuthGateProps) {
 
           <div className="relative">
             <div className="mb-8 flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-2xl font-black text-violet-950 shadow-xl">
-                GG
-              </div>
+              <GradeGlowLogo size="lg" tone="light" />
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.3em] text-fuchsia-100">
                   GradeGlow
@@ -355,8 +489,7 @@ export default function AuthGate({ children }: AuthGateProps) {
 
             <p className="max-w-2xl text-lg leading-8 text-fuchsia-50/90">
               Module, Noten, ECTS, Einzelleistungen, Zielnoten und Backups an
-              einem Ort — mit App-Feeling, Login und später leicht erweiterbar
-              auf Cloud-Sync.
+              einem Ort — mit App-Feeling, Login und Cloud-Sync.
             </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -389,8 +522,9 @@ export default function AuthGate({ children }: AuthGateProps) {
             </div>
             <h2 className="text-3xl font-black tracking-tight">{title}</h2>
             <p className="mt-2 text-sm text-slate-500">
-              Melde dich an, damit deine Noten lokal sauber deinem Account
-              zugeordnet werden.
+              {mode === "login"
+                ? "E-Mail-Accounts müssen bestätigt sein. Social Login läuft über Firebase Auth."
+                : "Nach der Registrierung bekommst du eine Bestätigungs-Mail, bevor der Account genutzt wird."}
             </p>
           </div>
 
@@ -404,7 +538,7 @@ export default function AuthGate({ children }: AuthGateProps) {
               }`}
               onClick={() => {
                 setMode("login");
-                setErrorMessage("");
+                clearMessages();
               }}
             >
               Einloggen
@@ -418,7 +552,7 @@ export default function AuthGate({ children }: AuthGateProps) {
               }`}
               onClick={() => {
                 setMode("register");
-                setErrorMessage("");
+                clearMessages();
               }}
             >
               Registrieren
@@ -432,8 +566,9 @@ export default function AuthGate({ children }: AuthGateProps) {
                   Benutzername
                 </span>
                 <input
+                  autoComplete="name"
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
-                  placeholder="z. B. Annik"
+                  placeholder="z. B. Paul"
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}
                 />
@@ -447,11 +582,13 @@ export default function AuthGate({ children }: AuthGateProps) {
                   : "E-Mail"}
               </span>
               <input
+                autoComplete="email"
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
+                inputMode={mode === "login" && !isFirebaseConfigured ? "text" : "email"}
                 placeholder={
                   mode === "login" && !isFirebaseConfigured
                     ? "deine E-Mail oder dein Benutzername"
-                    : "deine@email.de"
+                    : "name@mail.de"
                 }
                 type={mode === "login" && !isFirebaseConfigured ? "text" : "email"}
                 value={email}
@@ -464,6 +601,7 @@ export default function AuthGate({ children }: AuthGateProps) {
                 Passwort
               </span>
               <input
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
                 placeholder="mindestens 6 Zeichen"
                 type="password"
@@ -471,6 +609,12 @@ export default function AuthGate({ children }: AuthGateProps) {
                 onChange={(event) => setPassword(event.target.value)}
               />
             </label>
+
+            {infoMessage && (
+              <div className="rounded-2xl bg-emerald-50 p-3 text-sm font-medium text-emerald-700 ring-1 ring-emerald-100">
+                {infoMessage}
+              </div>
+            )}
 
             {errorMessage && (
               <div className="rounded-2xl bg-rose-50 p-3 text-sm font-medium text-rose-700 ring-1 ring-rose-100">
@@ -498,36 +642,26 @@ export default function AuthGate({ children }: AuthGateProps) {
           </div>
 
           <div className="grid gap-2 sm:grid-cols-3">
-            <button
-              type="button"
-              className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:bg-slate-300"
-              onClick={() => handleSocialLogin("google")}
-              disabled={isSubmitting}
-            >
-              Google
-            </button>
-            <button
-              type="button"
-              className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:bg-slate-300"
-              onClick={() => handleSocialLogin("apple")}
-              disabled={isSubmitting}
-            >
-              Apple
-            </button>
-            <button
-              type="button"
-              className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:bg-slate-300"
-              onClick={() => handleSocialLogin("github")}
-              disabled={isSubmitting}
-            >
-              GitHub
-            </button>
+            {socialLoginOptions.map((option) => (
+              <button
+                key={option.provider}
+                type="button"
+                className="flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:bg-slate-300"
+                onClick={() => handleSocialLogin(option.provider)}
+                disabled={isSubmitting}
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs font-black">
+                  {option.icon}
+                </span>
+                {option.label}
+              </button>
+            ))}
           </div>
 
           <p className="mt-4 text-xs leading-5 text-slate-400">
-            Lokaler Demo-Login speichert Accounts nur in deinem Browser und ist
-            nicht für echte Produktivdaten gedacht. Für echten Login verbindest
-            du Firebase über die Datei <code>.env.local</code>.
+            Apple und GitHub funktionieren erst, wenn die Anbieter in Firebase Authentication aktiviert
+            und die passenden OAuth-Daten hinterlegt sind. Auf Mobile/PWA nutzt GradeGlow automatisch
+            Redirect statt Popup.
           </p>
         </section>
       </div>

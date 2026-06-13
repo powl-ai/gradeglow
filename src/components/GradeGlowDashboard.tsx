@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import GradeGlowInsights from "./GradeGlowInsights";
+import GradeGlowLogo from "./GradeGlowLogo";
 import GradeGlowPlanner from "./GradeGlowPlanner";
 import PwaInstallCard from "./PwaInstallCard";
 import { useGradeGlowModules } from "../hooks/useGradeGlowModules";
@@ -599,9 +600,7 @@ export default function GradeGlowDashboard({
             <div className="relative flex flex-col gap-7 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
                 <div className="mb-5 flex flex-wrap items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-base font-black text-violet-950 shadow-lg shadow-fuchsia-950/20">
-                    GG
-                  </div>
+                  <GradeGlowLogo size="md" tone="light" />
 
                   <div className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${getSyncStyle()}`}>
                     {syncMessage}

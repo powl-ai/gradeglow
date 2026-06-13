@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import GradeGlowLogo from "./GradeGlowLogo";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -79,9 +80,7 @@ export default function PwaInstallCard() {
         <div className="absolute -bottom-24 left-16 h-56 w-56 rounded-full bg-violet-500/25 blur-3xl" />
 
         <div className="relative flex gap-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[1.35rem] bg-gradient-to-br from-violet-500 via-fuchsia-500 to-pink-500 text-xl font-black shadow-xl shadow-fuchsia-950/30 ring-1 ring-white/15">
-            GG
-          </div>
+          <GradeGlowLogo size="lg" tone="glass" />
           <div>
             <div className="mb-2 flex flex-wrap gap-2">
               <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-violet-50 ring-1 ring-white/10">

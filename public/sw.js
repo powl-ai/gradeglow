@@ -1,6 +1,7 @@
-const CACHE_VERSION = "gradeglow-v3";
+const CACHE_VERSION = "gradeglow-v5";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
+
 const APP_SHELL = [
   "/",
   "/settings",
@@ -19,6 +20,7 @@ self.addEventListener("install", (event) => {
       .then((cache) => cache.addAll(APP_SHELL))
       .catch(() => undefined)
   );
+
   self.skipWaiting();
 });
 
@@ -49,16 +51,22 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
+
   if (url.origin !== self.location.origin) return;
+
+  // Firebase Auth helper must never be cached/intercepted by the PWA.
+  if (url.pathname.startsWith("/__/auth/")) return;
 
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
         .then((response) => {
           const responseClone = response.clone();
+
           caches.open(RUNTIME_CACHE).then((cache) => {
             cache.put(request, responseClone).catch(() => undefined);
           });
+
           return response;
         })
         .catch(() =>
@@ -67,6 +75,7 @@ self.addEventListener("fetch", (event) => {
             .then((cached) => cached || caches.match("/offline.html"))
         )
     );
+
     return;
   }
 
@@ -81,10 +90,12 @@ self.addEventListener("fetch", (event) => {
           .then((response) => {
             if (response.ok) {
               const responseClone = response.clone();
+
               caches.open(RUNTIME_CACHE).then((cache) => {
                 cache.put(request, responseClone).catch(() => undefined);
               });
             }
+
             return response;
           })
           .catch(() => cached);

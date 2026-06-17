@@ -197,6 +197,23 @@ const extractPlannedSemester = (line: string) => {
   return parsed > 0 && parsed <= 20 ? parsed : undefined;
 };
 
+const isSemesterPart = (part: string) => {
+  const normalized = normalizeText(part);
+  return /^(s|semester)\s*\d{1,2}$/.test(normalized) || /^s\d{1,2}$/.test(normalized);
+};
+
+const isEctsPart = (part: string) =>
+  /^\d+(?:[,.]\d+)?\s*(ects|lp|cp|credits?)?$/i.test(part.trim());
+
+const isMetaPart = (part: string) => {
+  const normalized = normalizeText(part);
+  if (!normalized) return true;
+  if (isSemesterPart(part) || isEctsPart(part)) return true;
+  if (detectCategory(part) !== "unknown" && normalized.split(" ").length <= 3) return true;
+  if (["ja", "nein", "s", "m", "p", "s m p", "benotung", "prufungsform"].includes(normalized)) return true;
+  return false;
+};
+
 const extractNameFromLine = (line: string) => {
   if (!line.includes("|")) return cleanDetectedName(line);
 
@@ -205,16 +222,27 @@ const extractNameFromLine = (line: string) => {
     .map((part) => part.trim())
     .filter(Boolean);
 
-  const nameCandidates = parts.filter((part) => {
+  const categoryIndex = parts.findIndex((part) => {
     const normalized = normalizeText(part);
-    if (!normalized) return false;
-    if (/^(s|semester)\s*\d{1,2}$/.test(normalized)) return false;
-    if (/^\d+(?:[,.]\d+)?\s*(ects|lp|cp|credits?)?$/.test(part.toLowerCase())) return false;
-    if (detectCategory(part) !== "unknown" && normalized.split(" ").length <= 2) return false;
-    if (["ja", "nein", "s", "m", "p", "s m p"].includes(normalized)) return false;
-    return true;
+    return detectCategory(part) !== "unknown" && normalized.split(" ").length <= 3;
   });
 
+  // GradeGlow/ChatGPT-Zielformat:
+  // S1 | Pflichtmodul | Modulname | 6 ECTS | Bereich
+  if (categoryIndex >= 0 && parts[categoryIndex + 1] && !isMetaPart(parts[categoryIndex + 1])) {
+    return cleanDetectedName(parts[categoryIndex + 1]);
+  }
+
+  const ectsIndex = parts.findIndex((part) => isEctsPart(part));
+  if (ectsIndex > 0) {
+    const beforeEcts = [...parts.slice(0, ectsIndex)]
+      .reverse()
+      .find((part) => !isMetaPart(part));
+
+    if (beforeEcts) return cleanDetectedName(beforeEcts);
+  }
+
+  const nameCandidates = parts.filter((part) => !isMetaPart(part));
   const longestCandidate = nameCandidates.sort((a, b) => b.length - a.length)[0] ?? line;
   return cleanDetectedName(longestCandidate);
 };
@@ -382,6 +410,31 @@ const createTemplateText = (modulesToImport: DetectedStudyModule[]) =>
     )
     .join("\n");
 
+const createExternalAiPrompt = (trackLabel: string) => `Du bist ein präziser Parser für Studien- und Prüfungsordnungen.
+
+Aufgabe:
+Analysiere die hochgeladene Studien- und Prüfungsordnung / StuPo als PDF und extrahiere den Modulplan für Bachelor Wirtschaftsingenieurwesen, technische Studienrichtung: ${trackLabel}.
+
+Gib ausschließlich kopierbare Zeilen zurück. Keine Erklärung, keine Tabelle in Markdown, keine Bulletpoints außerhalb der Zeilen.
+
+Zielformat je Zeile:
+S<Semester> | <Pflichtmodul/Wahlpflicht/Wahlmodul> | <Modulname> | <ECTS> ECTS | <Bereich>
+
+Regeln:
+- Nutze den exemplarischen Studienverlaufsplan, wenn daraus ein Semester erkennbar ist.
+- Nutze die Modulliste, wenn daraus ECTS, Pflicht/Wahlpflicht/Wahlbereich oder Bereich erkennbar sind.
+- Wenn ein Wahlpflichtbereich keine einzelnen Module nennt, erstelle eine Sammelzeile, z. B. "S5 | Wahlpflicht | Wahlpflichtmodule Maschinenbau | 12 ECTS | Maschinenbau".
+- Nimm nur echte Module oder echte Wahlpflicht-/Wahlbereiche auf.
+- Entferne Seitenzahlen, Paragraphen, Überschriften, Prüfungsform-Kürzel und Hinweise.
+- Wenn ein Modul über mehrere Semester verteilt ist, nutze das Semester, in dem der größere ECTS-Anteil liegt.
+- Bei Unsicherheit lieber eine saubere Sammelzeile als erfundene Einzelmodule.
+
+Beispielausgabe:
+S1 | Pflichtmodul | Analysis I und Lineare Algebra für Ingenieurwissenschaften | 12 ECTS | Integrationsbereich
+S2 | Pflichtmodul | Bilanzierung und Kostenrechnung | 6 ECTS | Wirtschaftswissenschaften
+S5 | Wahlpflicht | Wahlpflichtmodule Maschinenbau | 12 ECTS | Maschinenbau`;
+
+
 const looksLikeWiIngStupo = (fileName: string) => {
   const normalized = normalizeText(fileName);
   return (
@@ -401,6 +454,7 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
   const [selectedModuleId, setSelectedModuleId] = useState("");
   const [selectedMoveSemester, setSelectedMoveSemester] = useState("2");
   const [technicalTrack, setTechnicalTrack] = useState<TechnicalTrack>("maschinenbau");
+  const [copiedAiPrompt, setCopiedAiPrompt] = useState(false);
 
   const openOrFailedModules = useMemo(
     () =>
@@ -429,6 +483,11 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
     .map(Number)
     .sort((a, b) => a - b);
 
+  const selectedTrackLabel =
+    technicalTrackOptions.find((option) => option.value === technicalTrack)?.label ?? "deine technische Studienrichtung";
+
+  const aiPrompt = useMemo(() => createExternalAiPrompt(selectedTrackLabel), [selectedTrackLabel]);
+
   const detectedModules = useMemo(() => parseStudyPlanText(stupoText), [stupoText]);
 
   const attemptModules = useMemo(
@@ -438,6 +497,16 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
         .sort((a, b) => getAttemptCount(b) - getAttemptCount(a) || a.name.localeCompare(b.name)),
     [modules]
   );
+
+  const copyAiPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(aiPrompt);
+      setCopiedAiPrompt(true);
+      window.setTimeout(() => setCopiedAiPrompt(false), 1800);
+    } catch {
+      setStupoMessage("Prompt konnte nicht automatisch kopiert werden. Du kannst ihn im Textfeld darunter manuell markieren und kopieren.");
+    }
+  };
 
   const loadWiIngTemplate = (sourceLabel = "TU Berlin WiIng 2015/2019 StuPo-Vorlage") => {
     const templateModules = getWiIngTemplateModules(technicalTrack);
@@ -673,6 +742,32 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
             </button>
           </div>
 
+          <div className="mb-4 rounded-2xl bg-slate-950 p-4 text-white shadow-sm">
+            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
+              <div>
+                <p className="text-sm font-black text-violet-200">KI-Aufbereitung ohne API-Key</p>
+                <p className="mt-1 text-sm leading-6 text-slate-300">
+                  Für PDFs ist der stabilste v1-Workflow: Prompt kopieren, deine StuPo bei ChatGPT hochladen, Ergebnis hier einfügen und übernehmen.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="rounded-2xl bg-white px-4 py-2.5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-violet-50"
+                onClick={copyAiPrompt}
+              >
+                {copiedAiPrompt ? "kopiert" : "Prompt kopieren"}
+              </button>
+            </div>
+            <details className="mt-3">
+              <summary className="cursor-pointer text-sm font-bold text-violet-200">Prompt anzeigen</summary>
+              <textarea
+                className="mt-3 min-h-48 w-full resize-y rounded-2xl border border-white/10 bg-white/10 p-3 text-xs leading-5 text-slate-100 outline-none"
+                value={aiPrompt}
+                readOnly
+              />
+            </details>
+          </div>
+
           <textarea
             className="field-input min-h-44 resize-y"
             placeholder={"Beispiel:\nS1 | Pflichtmodul | Statistik I | 6 ECTS\nS5 | Wahlpflicht | Marketing-Vertiefung | 6 ECTS\nS6 | Wahlmodul | Nachhaltigkeit | 3 ECTS"}
@@ -682,7 +777,7 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
 
           <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
             <label>
-              <span className="mb-1.5 block text-sm font-bold text-slate-700">Fallback: neue erkannte Module planen in Semester</span>
+              <span className="mb-1.5 block text-sm font-bold text-slate-700">Nur falls kein Semester erkannt wurde: planen in Semester</span>
               <input
                 className="field-input bg-white"
                 inputMode="numeric"
@@ -726,7 +821,7 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
               </div>
             ) : (
               <p className="mt-2 text-sm text-slate-500">
-                Noch nichts erkannt. Für PDFs nutze am besten die Vorlage oder kopiere den relevanten Modulplan als Text hinein.
+                Noch nichts erkannt. Nutze die Vorlage oder lass dir den PDF-Modulplan mit dem Prompt oben ins Zielformat bringen und füge ihn hier ein.
               </p>
             )}
           </div>

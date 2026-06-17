@@ -7,6 +7,7 @@ import GradeGlowInsights from "./GradeGlowInsights";
 import GradeGlowLogo from "./GradeGlowLogo";
 import GradeGlowPlanner from "./GradeGlowPlanner";
 import PwaInstallCard from "./PwaInstallCard";
+import StudyPlanningPanel from "./StudyPlanningPanel";
 import { useGradeGlowModules } from "../hooks/useGradeGlowModules";
 import { DEFAULT_TARGET_ECTS, useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
 import { migrateModules } from "../lib/gradeglowModules";
@@ -183,6 +184,13 @@ export default function GradeGlowDashboard({
       semester: parsedSemester,
       status,
       assessments: [],
+      category: "unknown",
+      plannedSemester: parsedSemester,
+      attemptCount: status === "failed" ? 1 : 0,
+      maxAttempts: 3,
+      isLocked: false,
+      stupoMatched: false,
+      stupoSource: "",
     };
 
     setModules((currentModules) => [...currentModules, newModule]);
@@ -377,6 +385,11 @@ export default function GradeGlowDashboard({
         "Gesamtnote",
         "Berechnete Modulnote",
         "Einzelleistungen",
+        "Modulart",
+        "Geplantes Semester",
+        "Fehlversuche",
+        "Max. Versuche",
+        "StuPo-Quelle",
       ],
       ...modules.map((module) => {
         const finalGrade = getFinalGrade(module);
@@ -397,6 +410,11 @@ export default function GradeGlowDashboard({
           module.grade !== null ? formatGrade(module.grade) : "",
           finalGrade !== null ? formatGrade(finalGrade) : "",
           assessmentSummary,
+          module.category,
+          module.plannedSemester,
+          module.attemptCount,
+          module.maxAttempts,
+          module.stupoSource,
         ];
       }),
     ];
@@ -654,18 +672,12 @@ export default function GradeGlowDashboard({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <Link
                     href="/settings"
                     className="rounded-2xl bg-white/10 px-3 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15"
                   >
                     Profil
-                  </Link>
-                  <Link
-                    href="/info"
-                    className="rounded-2xl bg-white/10 px-3 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15"
-                  >
-                    Info
                   </Link>
                   <button
                     type="button"
@@ -748,6 +760,8 @@ export default function GradeGlowDashboard({
         <GradeGlowInsights modules={modules} totalTargetEcts={totalTargetEcts} />
 
         <GradeGlowPlanner user={user} modules={modules} />
+
+        <StudyPlanningPanel modules={modules} setModules={setModules} />
 
         <section className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
           <div className="overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">

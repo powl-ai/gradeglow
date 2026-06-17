@@ -1,4 +1,4 @@
-import type { Assessment, ModuleStatus, UniModule } from "../types";
+import type { Assessment, ModuleCategory, ModuleStatus, UniModule } from "../types";
 
 export const MODULES_STORAGE_KEY = "gradeglow-modules";
 export const LEGACY_MODULES_STORAGE_KEY = "bachelor-track-modules";
@@ -9,6 +9,19 @@ export const normalizeModuleStatus = (value: unknown): ModuleStatus => {
   }
 
   return "passed";
+};
+
+export const normalizeModuleCategory = (value: unknown): ModuleCategory => {
+  if (
+    value === "mandatory" ||
+    value === "electiveMandatory" ||
+    value === "elective" ||
+    value === "unknown"
+  ) {
+    return value;
+  }
+
+  return "unknown";
 };
 
 const toNumber = (value: unknown, fallback: number) => {
@@ -39,25 +52,39 @@ const createId = () => {
 export const migrateModules = (rawModules: unknown): UniModule[] => {
   if (!Array.isArray(rawModules)) return [];
 
-  return rawModules.map((module: Partial<UniModule>) => ({
-    id: typeof module.id === "string" && module.id.trim() ? module.id : createId(),
-    name: typeof module.name === "string" ? module.name : "",
-    ects: toNumber(module.ects, 0),
-    grade: toNullableGrade(module.grade),
-    semester: toNumber(module.semester, 1),
-    status: normalizeModuleStatus(module.status),
-    assessments: Array.isArray(module.assessments)
-      ? module.assessments.map((assessment: Partial<Assessment>) => ({
-          id:
-            typeof assessment.id === "string" && assessment.id.trim()
-              ? assessment.id
-              : createId(),
-          name: typeof assessment.name === "string" ? assessment.name : "",
-          weight: toNumber(assessment.weight, 0),
-          grade: toNumber(assessment.grade, 0),
-        }))
-      : [],
-  }));
+  return rawModules.map((module: Partial<UniModule>) => {
+    const semester = toNumber(module.semester, 1);
+    const status = normalizeModuleStatus(module.status);
+    const maxAttempts = Math.max(1, Math.round(toNumber(module.maxAttempts, 3)));
+    const attemptCount = Math.max(0, Math.round(toNumber(module.attemptCount, status === "failed" ? 1 : 0)));
+
+    return {
+      id: typeof module.id === "string" && module.id.trim() ? module.id : createId(),
+      name: typeof module.name === "string" ? module.name : "",
+      ects: toNumber(module.ects, 0),
+      grade: toNullableGrade(module.grade),
+      semester,
+      status,
+      assessments: Array.isArray(module.assessments)
+        ? module.assessments.map((assessment: Partial<Assessment>) => ({
+            id:
+              typeof assessment.id === "string" && assessment.id.trim()
+                ? assessment.id
+                : createId(),
+            name: typeof assessment.name === "string" ? assessment.name : "",
+            weight: toNumber(assessment.weight, 0),
+            grade: toNumber(assessment.grade, 0),
+          }))
+        : [],
+      category: normalizeModuleCategory(module.category),
+      plannedSemester: Math.max(1, Math.round(toNumber(module.plannedSemester, semester))),
+      attemptCount,
+      maxAttempts,
+      isLocked: module.isLocked === true || (status === "failed" && attemptCount >= maxAttempts),
+      stupoMatched: module.stupoMatched === true,
+      stupoSource: typeof module.stupoSource === "string" ? module.stupoSource : "",
+    };
+  });
 };
 
 export const getUserModulesStorageKey = (userId: string) => `${MODULES_STORAGE_KEY}-${userId}`;

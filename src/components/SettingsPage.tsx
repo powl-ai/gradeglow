@@ -176,18 +176,12 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <Link
                     href="/"
                     className="rounded-2xl bg-white/10 px-3 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15"
                   >
                     App
-                  </Link>
-                  <Link
-                    href="/info"
-                    className="rounded-2xl bg-white/10 px-3 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15"
-                  >
-                    Info
                   </Link>
                   <button
                     type="button"

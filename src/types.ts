@@ -14,6 +14,8 @@ export type GradeGlowProfile = {
 
 export type ModuleStatus = "passed" | "ungraded" | "open" | "failed";
 
+export type ModuleCategory = "mandatory" | "electiveMandatory" | "elective" | "unknown";
+
 export type StatusFilter = "all" | ModuleStatus;
 
 export type Assessment = {
@@ -31,6 +33,13 @@ export type UniModule = {
   semester: number;
   status: ModuleStatus;
   assessments: Assessment[];
+  category: ModuleCategory;
+  plannedSemester: number;
+  attemptCount: number;
+  maxAttempts: number;
+  isLocked: boolean;
+  stupoMatched: boolean;
+  stupoSource: string;
 };
 
 export type ExamKind = "exam" | "presentation" | "paper" | "project" | "oral" | "other";

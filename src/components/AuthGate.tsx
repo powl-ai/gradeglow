@@ -48,9 +48,11 @@ const socialLoginOptions: {
   provider: SocialProvider;
   label: string;
   icon: string;
+  disabled?: boolean;
+  badge?: string;
 }[] = [
   { provider: "google", label: "Google", icon: "G" },
-  { provider: "apple", label: "Apple", icon: "" },
+  { provider: "apple", label: "Apple", icon: "", disabled: true, badge: "bald" },
   { provider: "github", label: "GitHub", icon: "⌘" },
 ];
 
@@ -649,20 +651,26 @@ export default function AuthGate({ children }: AuthGateProps) {
                 type="button"
                 className="flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:bg-slate-300"
                 onClick={() => handleSocialLogin(option.provider)}
-                disabled={isSubmitting}
+                disabled={isSubmitting || option.disabled}
+                title={option.disabled ? "Apple Login braucht einen Apple Developer Account und wird später aktiviert." : undefined}
               >
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs font-black">
                   {option.icon}
                 </span>
                 {option.label}
+                {option.badge && (
+                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-white/70">
+                    {option.badge}
+                  </span>
+                )}
               </button>
             ))}
           </div>
 
           <p className="mt-4 text-xs leading-5 text-slate-400">
-            Apple und GitHub funktionieren erst, wenn die Anbieter in Firebase Authentication aktiviert
-            und die passenden OAuth-Daten hinterlegt sind. Auf Mobile/PWA nutzt GradeGlow automatisch
-            Redirect statt Popup.
+            GitHub ist aktivierbar über Firebase und GitHub OAuth. Apple bleibt als „bald“-Button sichtbar,
+            weil dafür zusätzlich ein Apple Developer Account mit Service ID, Team ID und Private Key nötig ist.
+            Auf Mobile/PWA nutzt GradeGlow automatisch Redirect statt Popup.
           </p>
 
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3 border-t border-slate-100 pt-4 text-xs font-bold text-slate-400">

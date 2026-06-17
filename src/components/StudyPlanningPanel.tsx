@@ -13,7 +13,18 @@ type DetectedStudyModule = {
   name: string;
   ects: number;
   category: ModuleCategory;
+  plannedSemester?: number;
+  sourceGroup?: string;
 };
+
+type TechnicalTrack =
+  | "bau"
+  | "chemie"
+  | "elektrotechnik"
+  | "iks"
+  | "maschinenbau"
+  | "verkehr"
+  | "energie";
 
 const categoryOptions: { value: ModuleCategory; label: string; pill: string }[] = [
   { value: "mandatory", label: "Pflichtmodul", pill: "bg-violet-50 text-violet-700 ring-violet-100" },
@@ -24,6 +35,16 @@ const categoryOptions: { value: ModuleCategory; label: string; pill: string }[] 
   },
   { value: "elective", label: "Wahlmodul", pill: "bg-sky-50 text-sky-700 ring-sky-100" },
   { value: "unknown", label: "Noch offen", pill: "bg-slate-50 text-slate-600 ring-slate-200" },
+];
+
+const technicalTrackOptions: { value: TechnicalTrack; label: string }[] = [
+  { value: "maschinenbau", label: "Maschinenbau" },
+  { value: "bau", label: "Bauingenieurwesen" },
+  { value: "chemie", label: "Chemie & Verfahrenstechnik" },
+  { value: "elektrotechnik", label: "Elektrotechnik" },
+  { value: "iks", label: "Informations- & Kommunikationssysteme" },
+  { value: "verkehr", label: "Verkehrswesen" },
+  { value: "energie", label: "Energie & Ressourcen" },
 ];
 
 const defaultMaxAttempts = 3;
@@ -70,6 +91,14 @@ const getAttemptCount = (module: UniModule) => module.attemptCount ?? 0;
 const getMaxAttempts = (module: UniModule) => module.maxAttempts ?? defaultMaxAttempts;
 
 const getPlannedSemester = (module: UniModule) => module.plannedSemester ?? module.semester;
+
+const createId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
 
 const getAttemptRisk = (module: UniModule) => {
   const attempts = getAttemptCount(module);
@@ -136,10 +165,14 @@ const detectCategory = (line: string): ModuleCategory => {
 
 const cleanDetectedName = (line: string) => {
   return line
+    .replace(/\b(?:s|semester)\s*\d{1,2}\b/gi, " ")
+    .replace(/\[\s*s\s*\d{1,2}\s*\]/gi, " ")
     .replace(/\b\d+(?:[,.]\d+)?\s*(?:ects|lp|cp|credits?)\b/gi, " ")
     .replace(/\b(?:pflichtmodul|pflicht|wahlpflichtmodul|wahlpflicht|wahlmodul|freie wahl|pm|wp)\b/gi, " ")
-    .replace(/^[\s•\-–—_*]+/, "")
+    .replace(/\b(?:integrationsbereich|wirtschaftswissenschaften|ingenieurwissenschaften|modulgruppe)\b/gi, " ")
+    .replace(/^[\s•\-–—_*|]+/, "")
     .replace(/^\d+(?:\.\d+)*[.)]?\s*/, "")
+    .replace(/[|]+/g, " ")
     .replace(/\s{2,}/g, " ")
     .replace(/[|;:,\-–—]+$/g, "")
     .trim();
@@ -158,6 +191,34 @@ const extractEcts = (line: string) => {
   return 0;
 };
 
+const extractPlannedSemester = (line: string) => {
+  const match = line.match(/(?:^|\b)(?:s|semester)\s*(\d{1,2})\b|\[\s*s\s*(\d{1,2})\s*\]/i);
+  const parsed = toNumber(match?.[1] ?? match?.[2], 0);
+  return parsed > 0 && parsed <= 20 ? parsed : undefined;
+};
+
+const extractNameFromLine = (line: string) => {
+  if (!line.includes("|")) return cleanDetectedName(line);
+
+  const parts = line
+    .split("|")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const nameCandidates = parts.filter((part) => {
+    const normalized = normalizeText(part);
+    if (!normalized) return false;
+    if (/^(s|semester)\s*\d{1,2}$/.test(normalized)) return false;
+    if (/^\d+(?:[,.]\d+)?\s*(ects|lp|cp|credits?)?$/.test(part.toLowerCase())) return false;
+    if (detectCategory(part) !== "unknown" && normalized.split(" ").length <= 2) return false;
+    if (["ja", "nein", "s", "m", "p", "s m p"].includes(normalized)) return false;
+    return true;
+  });
+
+  const longestCandidate = nameCandidates.sort((a, b) => b.length - a.length)[0] ?? line;
+  return cleanDetectedName(longestCandidate);
+};
+
 const parseStudyPlanText = (text: string): DetectedStudyModule[] => {
   const moduleMap = new Map<string, DetectedStudyModule>();
 
@@ -173,13 +234,15 @@ const parseStudyPlanText = (text: string): DetectedStudyModule[] => {
 
     const ects = extractEcts(line);
     const category = detectCategory(line);
-    const name = cleanDetectedName(line);
+    const plannedSemester = extractPlannedSemester(line);
+    const name = extractNameFromLine(line);
     const normalizedName = normalizeText(name);
 
-    if (name.length < 4 || name.length > 90) return;
-    if (normalizedName.split(" ").length > 8) return;
+    if (name.length < 4 || name.length > 100) return;
+    if (normalizedName.split(" ").length > 10) return;
     if (!ects && category === "unknown") return;
     if (/^\d+$/.test(normalizedName)) return;
+    if (normalizedName.includes("entsprechend der semesterweise veroffentlichten")) return;
 
     const existing = moduleMap.get(normalizedName);
     if (existing) {
@@ -187,6 +250,8 @@ const parseStudyPlanText = (text: string): DetectedStudyModule[] => {
         name: existing.name,
         ects: existing.ects || ects,
         category: existing.category !== "unknown" ? existing.category : category,
+        plannedSemester: existing.plannedSemester ?? plannedSemester,
+        sourceGroup: existing.sourceGroup,
       });
       return;
     }
@@ -195,10 +260,11 @@ const parseStudyPlanText = (text: string): DetectedStudyModule[] => {
       name,
       ects,
       category,
+      plannedSemester,
     });
   });
 
-  return [...moduleMap.values()].slice(0, 80);
+  return [...moduleMap.values()].slice(0, 120);
 };
 
 const getLoadLabel = (ects: number) => {
@@ -209,6 +275,123 @@ const getLoadLabel = (ects: number) => {
   return { label: "sehr voll", className: "bg-rose-50 text-rose-700 ring-rose-100" };
 };
 
+const m = (
+  semester: number,
+  category: ModuleCategory,
+  name: string,
+  ects: number,
+  sourceGroup: string
+): DetectedStudyModule => ({
+  plannedSemester: semester,
+  category,
+  name,
+  ects,
+  sourceGroup,
+});
+
+const wiIngBaseModules: DetectedStudyModule[] = [
+  m(1, "mandatory", "Analysis I und Lineare Algebra für Ingenieurwissenschaften", 12, "Integrationsbereich"),
+  m(1, "mandatory", "Einführung in die Informatik", 6, "Integrationsbereich"),
+  m(1, "mandatory", "Mikroökonomik", 4, "Wirtschaftswissenschaften"),
+  m(2, "mandatory", "Analysis II für Ingenieurwissenschaften", 9, "Integrationsbereich"),
+  m(2, "mandatory", "Bilanzierung und Kostenrechnung", 6, "Wirtschaftswissenschaften"),
+  m(2, "mandatory", "Makroökonomik", 4, "Wirtschaftswissenschaften"),
+  m(3, "mandatory", "Statistik I für Wirtschaftswissenschaften", 6, "Integrationsbereich"),
+  m(3, "mandatory", "Marketing und Produktionsmanagement", 6, "Wirtschaftswissenschaften"),
+  m(3, "mandatory", "Wirtschaftspolitik", 4, "Wirtschaftswissenschaften"),
+  m(4, "mandatory", "Operations Research - Grundlagen", 6, "Integrationsbereich"),
+  m(4, "mandatory", "Organisation und Innovationsmanagement", 6, "Wirtschaftswissenschaften"),
+  m(5, "mandatory", "Investition und Finanzierung", 6, "Wirtschaftswissenschaften"),
+  m(5, "electiveMandatory", "Wahlpflicht Wirtschaftswissenschaften", 12, "Wirtschaftswissenschaften"),
+  m(6, "electiveMandatory", "Wahlpflicht Integration", 9, "Integrationsbereich"),
+  m(6, "electiveMandatory", "Informationssysteme und Datenanalyse oder Statistik II", 6, "Integrationsbereich"),
+  m(6, "mandatory", "Wirtschaftsprivatrecht", 6, "Wirtschaftswissenschaften"),
+  m(6, "elective", "Wahlbereich", 6, "Wahlbereich"),
+  m(6, "mandatory", "Bachelorarbeit", 12, "Bachelorarbeit"),
+];
+
+const wiIngTechnicalModules: Record<TechnicalTrack, DetectedStudyModule[]> = {
+  bau: [
+    m(1, "mandatory", "Statik und elementare Festigkeitslehre", 9, "Bauingenieurwesen"),
+    m(2, "mandatory", "Baustoffe und Bauchemie I", 6, "Bauingenieurwesen"),
+    m(3, "mandatory", "Baustatik I", 6, "Bauingenieurwesen"),
+    m(3, "mandatory", "Bauwirtschaft I", 6, "Bauingenieurwesen"),
+    m(4, "mandatory", "Baubetrieb I", 3, "Bauingenieurwesen"),
+    m(4, "mandatory", "Grundlagen der Bauphysik", 6, "Bauingenieurwesen"),
+    m(5, "electiveMandatory", "Wahlpflichtmodule Bauingenieurwesen", 18, "Bauingenieurwesen"),
+  ],
+  chemie: [
+    m(1, "mandatory", "Einführung in die Allgemeine und Anorganische Chemie", 6, "Chemie und Verfahrenstechnik"),
+    m(2, "mandatory", "Grundlagen der Physikalischen Chemie (Wi.-Ing.)", 6, "Chemie und Verfahrenstechnik"),
+    m(4, "mandatory", "Technische Wärmelehre", 9, "Chemie und Verfahrenstechnik"),
+    m(4, "mandatory", "Technische Chemie", 18, "Chemie und Verfahrenstechnik"),
+    m(5, "electiveMandatory", "Wahlpflichtmodule Chemie und Verfahrenstechnik", 15, "Chemie und Verfahrenstechnik"),
+  ],
+  elektrotechnik: [
+    m(1, "mandatory", "Grundlagen der Elektrotechnik", 9, "Elektrotechnik"),
+    m(2, "mandatory", "Einführung in die Informatik - Vertiefung", 6, "Elektrotechnik"),
+    m(2, "mandatory", "Elektrische Netzwerke", 6, "Elektrotechnik"),
+    m(4, "mandatory", "Integraltransformationen und partielle Differentialgleichungen für Ingenieurwissenschaften", 6, "Elektrotechnik"),
+    m(5, "electiveMandatory", "Wahlpflichtmodule Elektrotechnik", 27, "Elektrotechnik"),
+  ],
+  iks: [
+    m(2, "mandatory", "Einführung in die Informatik - Vertiefung", 6, "Informations- und Kommunikationssysteme"),
+    m(3, "mandatory", "Anwendungssysteme", 6, "Informations- und Kommunikationssysteme"),
+    m(3, "mandatory", "Rechnerorganisation", 6, "Informations- und Kommunikationssysteme"),
+    m(4, "mandatory", "Rechnernetze und verteilte Systeme", 6, "Informations- und Kommunikationssysteme"),
+    m(4, "mandatory", "Systemprogrammierung", 6, "Informations- und Kommunikationssysteme"),
+    m(5, "electiveMandatory", "Wahlpflichtmodule Informations- und Kommunikationssysteme", 24, "Informations- und Kommunikationssysteme"),
+  ],
+  maschinenbau: [
+    m(1, "mandatory", "Mechanik E", 9, "Maschinenbau"),
+    m(2, "mandatory", "Grundlagen der Elektrotechnik (Service)", 6, "Maschinenbau"),
+    m(2, "mandatory", "Konstruktion I", 6, "Maschinenbau"),
+    m(2, "mandatory", "Werkstoffkunde", 6, "Maschinenbau"),
+    m(4, "mandatory", "Technische Wärmelehre", 9, "Maschinenbau"),
+    m(4, "mandatory", "Fabrikbetrieb und industrielle Informationstechnik", 6, "Maschinenbau"),
+    m(5, "electiveMandatory", "Wahlpflichtmodule Maschinenbau", 12, "Maschinenbau"),
+  ],
+  verkehr: [
+    m(1, "mandatory", "Mechanik E", 9, "Verkehrswesen"),
+    m(2, "mandatory", "Einführung in das Verkehrswesen", 6, "Verkehrswesen"),
+    m(2, "mandatory", "Konstruktion I", 6, "Verkehrswesen"),
+    m(2, "mandatory", "Werkstoffkunde", 6, "Verkehrswesen"),
+    m(4, "mandatory", "Technische Wärmelehre", 9, "Verkehrswesen"),
+    m(5, "electiveMandatory", "Wahlpflichtmodule Verkehrswesen", 18, "Verkehrswesen"),
+  ],
+  energie: [
+    m(1, "mandatory", "Energie und Ressourcen - Einführung", 6, "Energie und Ressourcen"),
+    m(1, "mandatory", "Mechanik E", 9, "Energie und Ressourcen"),
+    m(2, "mandatory", "Grundlagen der Elektrotechnik (Service)", 6, "Energie und Ressourcen"),
+    m(2, "mandatory", "Konstruktion und Werkstoffe", 6, "Energie und Ressourcen"),
+    m(4, "mandatory", "Technische Wärmelehre", 9, "Energie und Ressourcen"),
+    m(5, "electiveMandatory", "Wahlpflichtmodule Energie und Ressourcen", 18, "Energie und Ressourcen"),
+  ],
+};
+
+const getWiIngTemplateModules = (track: TechnicalTrack) => [
+  ...wiIngBaseModules,
+  ...wiIngTechnicalModules[track],
+];
+
+const createTemplateText = (modulesToImport: DetectedStudyModule[]) =>
+  modulesToImport
+    .map(
+      (module) =>
+        `S${module.plannedSemester ?? 1} | ${getCategoryLabel(module.category)} | ${module.name} | ${module.ects} ECTS | ${module.sourceGroup ?? "StuPo"}`
+    )
+    .join("\n");
+
+const looksLikeWiIngStupo = (fileName: string) => {
+  const normalized = normalizeText(fileName);
+  return (
+    normalized.includes("stupo") ||
+    normalized.includes("stu po") ||
+    normalized.includes("wiing") ||
+    normalized.includes("wirtschaftsingenieur")
+  );
+};
+
 export default function StudyPlanningPanel({ modules, setModules }: StudyPlanningPanelProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [stupoText, setStupoText] = useState("");
@@ -217,6 +400,7 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
   const [targetSemester, setTargetSemester] = useState("1");
   const [selectedModuleId, setSelectedModuleId] = useState("");
   const [selectedMoveSemester, setSelectedMoveSemester] = useState("2");
+  const [technicalTrack, setTechnicalTrack] = useState<TechnicalTrack>("maschinenbau");
 
   const openOrFailedModules = useMemo(
     () =>
@@ -255,6 +439,17 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
     [modules]
   );
 
+  const loadWiIngTemplate = (sourceLabel = "TU Berlin WiIng 2015/2019 StuPo-Vorlage") => {
+    const templateModules = getWiIngTemplateModules(technicalTrack);
+    const trackLabel = technicalTrackOptions.find((option) => option.value === technicalTrack)?.label ?? "Studienrichtung";
+
+    setStupoText(createTemplateText(templateModules));
+    setUploadedFileName(sourceLabel);
+    setStupoMessage(
+      `Saubere Vorlage geladen: ${templateModules.length} Einträge für Wirtschaftsingenieurwesen mit Studienrichtung ${trackLabel}. Bitte kurz prüfen, weil StuPos und Änderungssatzungen je Prüfungsstand abweichen können.`
+    );
+  };
+
   const handleStupoFile = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -262,18 +457,28 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
     setUploadedFileName(file.name);
     setStupoMessage("");
 
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
+    if (isPdf) {
+      if (looksLikeWiIngStupo(file.name)) {
+        loadWiIngTemplate(file.name);
+        setStupoMessage(
+          "PDF erkannt. Ich lese PDFs nicht mehr als Rohtext ein, damit kein Zeichenmüll entsteht. Für diese TU-Berlin-WiIng-StuPo wurde stattdessen eine saubere Vorlage geladen. Bitte Studienrichtung prüfen und dann übernehmen."
+        );
+      } else {
+        setStupoText("");
+        setStupoMessage(
+          "PDF erkannt. Direktes Rohtext-Auslesen wurde deaktiviert, weil dabei Zeichenmüll entsteht. Kopiere den relevanten Modulplan aus der PDF hier hinein oder nutze eine TXT/CSV-Liste."
+        );
+      }
+
+      event.target.value = "";
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
       const content = String(reader.result ?? "");
-
-      if (file.name.toLowerCase().endsWith(".pdf")) {
-        setStupoText(content);
-        setStupoMessage(
-          "PDF wurde geladen. Browser können PDF-Text nicht immer sauber auslesen. Falls kaum Module erkannt werden, kopiere den Text aus der StuPo hier in das Textfeld."
-        );
-        return;
-      }
-
       setStupoText(content);
       setStupoMessage(`Datei geladen: ${file.name}`);
     };
@@ -284,11 +489,11 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
 
   const importDetectedModules = () => {
     if (detectedModules.length === 0) {
-      setStupoMessage("Ich konnte noch keine Modulzeilen erkennen. Am besten StuPo-Text oder eine CSV/TXT-Liste einfügen.");
+      setStupoMessage("Ich konnte noch keine Modulzeilen erkennen. Am besten StuPo-Text, die Vorlage oder eine CSV/TXT-Liste einfügen.");
       return;
     }
 
-    const plannedSemester = Math.max(1, Math.round(toNumber(targetSemester, 1)));
+    const fallbackSemester = Math.max(1, Math.round(toNumber(targetSemester, 1)));
     let addedCount = 0;
     let matchedCount = 0;
 
@@ -306,6 +511,8 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
           );
         });
 
+        const plannedSemester = detectedModule.plannedSemester ?? fallbackSemester;
+
         if (existingIndex >= 0) {
           matchedCount += 1;
           const existingModule = nextModules[existingIndex];
@@ -316,16 +523,16 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
               existingModule.category && existingModule.category !== "unknown"
                 ? existingModule.category
                 : detectedModule.category,
-            plannedSemester: existingModule.plannedSemester ?? existingModule.semester,
+            plannedSemester: existingModule.plannedSemester ?? plannedSemester,
             stupoMatched: true,
-            stupoSource: uploadedFileName || "StuPo-Textimport",
+            stupoSource: uploadedFileName || detectedModule.sourceGroup || "StuPo-Textimport",
           };
           return;
         }
 
         addedCount += 1;
         nextModules.push({
-          id: crypto.randomUUID(),
+          id: createId(),
           name: detectedModule.name,
           ects: detectedModule.ects,
           grade: null,
@@ -338,7 +545,7 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
           maxAttempts: defaultMaxAttempts,
           isLocked: false,
           stupoMatched: true,
-          stupoSource: uploadedFileName || "StuPo-Textimport",
+          stupoSource: uploadedFileName || detectedModule.sourceGroup || "StuPo-Textimport",
         });
       });
 
@@ -420,8 +627,8 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
               <p className="text-sm font-bold text-violet-700">StuPo-Assistent</p>
               <h2 className="mt-1 text-2xl font-black tracking-tight">Pflicht- & Wahlmodule erkennen</h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Lade eine TXT/CSV-Liste hoch oder kopiere Text aus deiner Studien- und Prüfungsordnung hier hinein.
-                GradeGlow erkennt Modulnamen, ECTS und grobe Modularten heuristisch.
+                Lade eine TXT/CSV-Liste hoch, nutze die WiIng-Vorlage oder kopiere Text aus deiner Studien- und Prüfungsordnung hinein.
+                PDFs werden nicht mehr roh eingelesen, damit kein Zeichenmüll entsteht.
               </p>
             </div>
 
@@ -441,16 +648,41 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
             />
           </div>
 
+          <div className="mb-4 grid gap-3 rounded-2xl bg-violet-50 p-4 ring-1 ring-violet-100 md:grid-cols-[1fr_auto] md:items-end">
+            <label>
+              <span className="mb-1.5 block text-sm font-bold text-violet-900">TU-Berlin-WiIng-Vorlage: technische Studienrichtung</span>
+              <select
+                className="field-input bg-white"
+                value={technicalTrack}
+                onChange={(event) => setTechnicalTrack(event.target.value as TechnicalTrack)}
+              >
+                {technicalTrackOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <button
+              type="button"
+              className="rounded-2xl bg-violet-700 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-800"
+              onClick={() => loadWiIngTemplate()}
+            >
+              Vorlage laden
+            </button>
+          </div>
+
           <textarea
             className="field-input min-h-44 resize-y"
-            placeholder={"Beispiel:\nPflichtmodul Statistik 6 ECTS\nWahlpflichtmodul Marketing 5 ECTS\nFreie Wahl: Nachhaltigkeit 3 ECTS"}
+            placeholder={"Beispiel:\nS1 | Pflichtmodul | Statistik I | 6 ECTS\nS5 | Wahlpflicht | Marketing-Vertiefung | 6 ECTS\nS6 | Wahlmodul | Nachhaltigkeit | 3 ECTS"}
             value={stupoText}
             onChange={(event) => setStupoText(event.target.value)}
           />
 
           <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
             <label>
-              <span className="mb-1.5 block text-sm font-bold text-slate-700">Neue erkannte Module planen in Semester</span>
+              <span className="mb-1.5 block text-sm font-bold text-slate-700">Fallback: neue erkannte Module planen in Semester</span>
               <input
                 className="field-input bg-white"
                 inputMode="numeric"
@@ -473,17 +705,17 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
               <p className="text-sm font-black text-slate-700">
                 Erkannte Module: {detectedModules.length}
               </p>
-              {uploadedFileName && <p className="text-xs font-bold text-slate-400">Datei: {uploadedFileName}</p>}
+              {uploadedFileName && <p className="text-xs font-bold text-slate-400">Quelle: {uploadedFileName}</p>}
             </div>
 
             {detectedModules.length > 0 ? (
               <div className="mt-3 flex flex-wrap gap-2">
                 {detectedModules.slice(0, 14).map((module) => (
                   <span
-                    key={`${module.name}-${module.ects}`}
+                    key={`${module.name}-${module.ects}-${module.plannedSemester ?? "x"}`}
                     className={`rounded-full px-3 py-1.5 text-xs font-black ring-1 ${getCategoryPill(module.category)}`}
                   >
-                    {module.name} {module.ects ? `· ${module.ects} ECTS` : ""}
+                    {module.plannedSemester ? `S${module.plannedSemester} · ` : ""}{module.name} {module.ects ? `· ${module.ects} ECTS` : ""}
                   </span>
                 ))}
                 {detectedModules.length > 14 && (
@@ -494,7 +726,7 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
               </div>
             ) : (
               <p className="mt-2 text-sm text-slate-500">
-                Noch nichts erkannt. Für den ersten Test reicht auch eine einfache Liste mit „Modulname 6 ECTS“ pro Zeile.
+                Noch nichts erkannt. Für PDFs nutze am besten die Vorlage oder kopiere den relevanten Modulplan als Text hinein.
               </p>
             )}
           </div>

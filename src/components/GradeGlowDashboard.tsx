@@ -31,7 +31,10 @@ type EditInput = {
   ects: string;
   grade: string;
   semester: string;
+  plannedSemester: string;
   status: ModuleStatus;
+  attemptCount: string;
+  maxAttempts: string;
 };
 
 type GradeGlowDashboardProps = {
@@ -123,6 +126,28 @@ export default function GradeGlowDashboard({
     return module.status;
   };
 
+  const getNextAttemptState = (
+    module: UniModule,
+    nextStatus: ModuleStatus,
+    explicitAttemptCount?: number,
+    explicitMaxAttempts?: number
+  ) => {
+    const maxAttempts = Math.max(1, Math.round(explicitMaxAttempts ?? module.maxAttempts ?? 3));
+    const hasExplicitAttemptCount = explicitAttemptCount !== undefined;
+    const currentAttempts = Math.max(0, Math.round(explicitAttemptCount ?? module.attemptCount ?? 0));
+    const shouldAutoAddAttempt =
+      !hasExplicitAttemptCount && nextStatus === "failed" && module.status !== "failed";
+    const attemptCount = shouldAutoAddAttempt
+      ? Math.min(Math.max(currentAttempts + 1, 1), maxAttempts)
+      : Math.min(currentAttempts, maxAttempts);
+
+    return {
+      attemptCount,
+      maxAttempts,
+      isLocked: attemptCount >= maxAttempts,
+    };
+  };
+
   const getStatusLabel = (moduleStatus: ModuleStatus) => {
     switch (moduleStatus) {
       case "passed":
@@ -176,19 +201,22 @@ export default function GradeGlowDashboard({
     if (!Number.isFinite(parsedEcts) || !Number.isFinite(parsedSemester)) return;
     if (numericGrade !== null && !Number.isFinite(numericGrade)) return;
 
+    const effectiveNewStatus: ModuleStatus = numericGrade !== null && numericGrade > 4 ? "failed" : status;
+    const initialAttemptCount = effectiveNewStatus === "failed" ? 1 : 0;
+
     const newModule: UniModule = {
       id: crypto.randomUUID(),
       name: name.trim(),
       ects: parsedEcts,
       grade: numericGrade,
       semester: parsedSemester,
-      status,
+      status: effectiveNewStatus,
       assessments: [],
       category: "unknown",
       plannedSemester: parsedSemester,
-      attemptCount: status === "failed" ? 1 : 0,
+      attemptCount: initialAttemptCount,
       maxAttempts: 3,
-      isLocked: false,
+      isLocked: initialAttemptCount >= 3,
       stupoMatched: false,
       stupoSource: "",
     };
@@ -224,7 +252,10 @@ export default function GradeGlowDashboard({
         ects: String(module.ects).replace(".", ","),
         grade: module.grade !== null ? String(module.grade).replace(".", ",") : "",
         semester: String(module.semester),
+        plannedSemester: String(module.plannedSemester ?? module.semester),
         status: module.status,
+        attemptCount: String(module.attemptCount ?? 0),
+        maxAttempts: String(module.maxAttempts ?? 3),
       },
     }));
   };
@@ -250,28 +281,55 @@ export default function GradeGlowDashboard({
 
   const saveEditedModule = (moduleId: string) => {
     const input = editInputs[moduleId];
-    if (!input || !input.name.trim() || !input.ects || !input.semester) return;
+    if (!input || !input.name.trim() || !input.ects || !input.semester || !input.plannedSemester) return;
 
     const parsedEcts = parseNumber(input.ects);
     const parsedSemester = parseNumber(input.semester);
+    const parsedPlannedSemester = parseNumber(input.plannedSemester);
     const numericGrade = input.grade ? parseNumber(input.grade) : null;
+    const parsedAttemptCount = input.attemptCount ? parseNumber(input.attemptCount) : 0;
+    const parsedMaxAttempts = input.maxAttempts ? parseNumber(input.maxAttempts) : 3;
 
-    if (!Number.isFinite(parsedEcts) || !Number.isFinite(parsedSemester)) return;
+    if (
+      !Number.isFinite(parsedEcts) ||
+      !Number.isFinite(parsedSemester) ||
+      !Number.isFinite(parsedPlannedSemester) ||
+      !Number.isFinite(parsedAttemptCount) ||
+      !Number.isFinite(parsedMaxAttempts)
+    ) {
+      return;
+    }
     if (numericGrade !== null && !Number.isFinite(numericGrade)) return;
 
     setModules((currentModules) =>
-      currentModules.map((module) =>
-        module.id === moduleId
-          ? {
-              ...module,
-              name: input.name.trim(),
-              ects: parsedEcts,
-              grade: numericGrade,
-              semester: parsedSemester,
-              status: input.status,
-            }
-          : module
-      )
+      currentModules.map((module) => {
+        if (module.id !== moduleId) return module;
+
+        const nextStatus: ModuleStatus = numericGrade !== null && numericGrade > 4 ? "failed" : input.status;
+        const explicitAttemptCount =
+          nextStatus === "failed" &&
+          module.status !== "failed" &&
+          parsedAttemptCount <= (module.attemptCount ?? 0)
+            ? undefined
+            : parsedAttemptCount;
+        const attemptState = getNextAttemptState(
+          module,
+          nextStatus,
+          explicitAttemptCount,
+          parsedMaxAttempts
+        );
+
+        return {
+          ...module,
+          name: input.name.trim(),
+          ects: parsedEcts,
+          grade: numericGrade,
+          semester: parsedSemester,
+          plannedSemester: Math.max(1, Math.round(parsedPlannedSemester)),
+          status: nextStatus,
+          ...attemptState,
+        };
+      })
     );
 
     setEditingModules((currentEditing) => ({ ...currentEditing, [moduleId]: false }));
@@ -308,14 +366,31 @@ export default function GradeGlowDashboard({
     };
 
     setModules((currentModules) =>
-      currentModules.map((module) =>
-        module.id === moduleId
-          ? {
-              ...module,
-              assessments: [...module.assessments, newAssessment],
-            }
-          : module
-      )
+      currentModules.map((module) => {
+        if (module.id !== moduleId) return module;
+
+        const nextAssessments = [...module.assessments, newAssessment];
+        const totalWeight = nextAssessments.reduce((sum, assessment) => sum + assessment.weight, 0);
+        const calculatedGrade =
+          totalWeight > 0
+            ? nextAssessments.reduce(
+                (sum, assessment) => sum + assessment.grade * assessment.weight,
+                0
+              ) / totalWeight
+            : null;
+        const shouldMarkFailed = totalWeight >= 100 && calculatedGrade !== null && calculatedGrade > 4.0;
+
+        return {
+          ...module,
+          assessments: nextAssessments,
+          ...(shouldMarkFailed
+            ? {
+                status: "failed" as ModuleStatus,
+                ...getNextAttemptState(module, "failed"),
+              }
+            : {}),
+        };
+      })
     );
 
     setAssessmentInputs((currentInputs) => ({
@@ -492,6 +567,13 @@ export default function GradeGlowDashboard({
       .filter((module) => getEffectiveStatus(module) === "failed")
       .reduce((sum, module) => sum + module.ects, 0);
 
+    const openGradedEcts = modules
+      .filter((module) => {
+        const effectiveStatus = getEffectiveStatus(module);
+        return effectiveStatus === "open" || effectiveStatus === "failed";
+      })
+      .reduce((sum, module) => sum + module.ects, 0);
+
     const weightedGradeSum = gradedModules.reduce((sum, module) => {
       const finalGrade = getFinalGrade(module) ?? 0;
       return sum + finalGrade * module.ects;
@@ -506,6 +588,7 @@ export default function GradeGlowDashboard({
       passedEcts,
       openEcts,
       failedEcts,
+      openGradedEcts,
       weightedGradeSum,
       average,
       progress,
@@ -517,7 +600,7 @@ export default function GradeGlowDashboard({
   const target = targetAverage ? parseNumber(targetAverage) : 0;
   const remainingGradedEcts = targetRemainingEcts
     ? parseNumber(targetRemainingEcts)
-    : Math.max(totalTargetEcts - analytics.gradedEcts, 0);
+    : analytics.openGradedEcts;
 
   const requiredAverage =
     remainingGradedEcts > 0 && target > 0
@@ -525,11 +608,56 @@ export default function GradeGlowDashboard({
         remainingGradedEcts
       : 0;
 
-  const targetIsPossible =
-    requiredAverage >= 1.0 && requiredAverage <= 4.0 && remainingGradedEcts > 0;
-
   const targetIsAlreadyReached =
     analytics.gradedEcts > 0 && analytics.average <= target && remainingGradedEcts === 0;
+
+  const targetOutlook = (() => {
+    if (remainingGradedEcts <= 0 || target <= 0) {
+      return {
+        label: "Noch keine Prognose",
+        text: "Trage offene benotete ECTS ein oder importiere offene Module, damit GradeGlow deinen benötigten Restschnitt berechnen kann.",
+        className: "bg-slate-400/15 text-slate-100 ring-1 ring-slate-300/20",
+      };
+    }
+
+    if (requiredAverage < 1.0) {
+      return {
+        label: "rechnerisch kaum/nicht erreichbar",
+        text: "Für dieses Ziel bräuchtest du rechnerisch einen Restschnitt besser als 1,0. Das ist mit normalen Noten nicht erreichbar.",
+        className: "bg-rose-400/15 text-rose-100 ring-1 ring-rose-300/20",
+      };
+    }
+
+    if (requiredAverage <= 1.7) {
+      return {
+        label: "ambitioniert",
+        text: "Das Ziel ist rechnerisch erreichbar, aber du brauchst ab jetzt sehr starke Noten.",
+        className: "bg-amber-400/15 text-amber-100 ring-1 ring-amber-300/20",
+      };
+    }
+
+    if (requiredAverage <= 2.7) {
+      return {
+        label: "machbar",
+        text: "Das Ziel ist realistisch, wenn deine nächsten Leistungen ungefähr in diesem Bereich landen.",
+        className: "bg-emerald-400/15 text-emerald-100 ring-1 ring-emerald-300/20",
+      };
+    }
+
+    if (requiredAverage <= 4.0) {
+      return {
+        label: "sehr entspannt",
+        text: "Das Ziel ist rechnerisch erreichbar und du hast noch etwas Puffer.",
+        className: "bg-sky-400/15 text-sky-100 ring-1 ring-sky-300/20",
+      };
+    }
+
+    return {
+      label: "sehr entspannt",
+      text: "Selbst ein Restschnitt von 4,0 wäre rechnerisch noch ausreichend.",
+      className: "bg-sky-400/15 text-sky-100 ring-1 ring-sky-300/20",
+    };
+  })();
 
   const sortedModules = [...modules].sort((a, b) => {
     if (a.semester !== b.semester) return a.semester - b.semester;
@@ -897,24 +1025,29 @@ export default function GradeGlowDashboard({
                 {remainingGradedEcts > 0 && target > 0 ? formatGrade(requiredAverage) : "—"}
               </p>
               <p className="mt-3 text-sm leading-6 text-slate-300">
-                Berechnet mit {analytics.gradedEcts} benoteten ECTS und {remainingGradedEcts} noch benoteten ECTS.
+                Berechnet mit {analytics.gradedEcts} benoteten ECTS und {remainingGradedEcts} offenen benoteten ECTS
+                {targetRemainingEcts ? " (manuell gesetzt)." : " aus deinen offenen/nicht bestandenen Modulen."}
               </p>
 
               {remainingGradedEcts > 0 && target > 0 && (
-                <div
-                  className={`mt-4 rounded-2xl p-3 text-sm font-bold ${
-                    targetIsPossible
-                      ? "bg-emerald-400/15 text-emerald-100 ring-1 ring-emerald-300/20"
-                      : requiredAverage < 1
-                      ? "bg-sky-400/15 text-sky-100 ring-1 ring-sky-300/20"
-                      : "bg-rose-400/15 text-rose-100 ring-1 ring-rose-300/20"
-                  }`}
-                >
-                  {targetIsPossible && "Das Ziel ist rechnerisch erreichbar."}
-                  {requiredAverage < 1 && "Du liegst aktuell so gut, dass du dein Ziel sehr entspannt halten könntest."}
-                  {requiredAverage > 4 && "Das Ziel ist mit den angegebenen restlichen ECTS rechnerisch nicht mehr erreichbar."}
+                <div className={`mt-4 rounded-2xl p-3 text-sm font-bold ${targetOutlook.className}`}>
+                  <span className="block text-xs uppercase tracking-[0.18em] text-white/60">Einschätzung</span>
+                  <span className="mt-1 block text-base">{targetOutlook.label}</span>
+                  <span className="mt-1 block font-semibold opacity-90">{targetOutlook.text}</span>
                 </div>
               )}
+
+              <div className="mt-4 grid gap-2 text-xs font-bold text-slate-300 sm:grid-cols-3">
+                <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
+                  Aktueller Schnitt: {analytics.average > 0 ? formatGrade(analytics.average) : "—"}
+                </div>
+                <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
+                  Benotete ECTS: {analytics.gradedEcts}
+                </div>
+                <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
+                  Offene benotete ECTS: {remainingGradedEcts}
+                </div>
+              </div>
 
               {targetIsAlreadyReached && (
                 <div className="mt-4 rounded-2xl bg-emerald-400/15 p-3 text-sm font-bold text-emerald-100 ring-1 ring-emerald-300/20">
@@ -1036,6 +1169,14 @@ export default function GradeGlowDashboard({
                                         {module.assessments.length > 0 && (
                                           <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700 ring-1 ring-violet-100">
                                             {module.assessments.length} Einzelleistung(en)
+                                          </span>
+                                        )}
+                                        <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-black text-slate-600 ring-1 ring-slate-200">
+                                          geplant S{module.plannedSemester ?? module.semester}
+                                        </span>
+                                        {(module.attemptCount ?? 0) > 0 && (
+                                          <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700 ring-1 ring-amber-100">
+                                            Versuch {module.attemptCount}/{module.maxAttempts ?? 3}
                                           </span>
                                         )}
                                       </div>
@@ -1203,13 +1344,24 @@ export default function GradeGlowDashboard({
                                   </label>
 
                                   <label className="block">
-                                    <span className="mb-1.5 block text-sm font-bold text-slate-700">Semester</span>
+                                    <span className="mb-1.5 block text-sm font-bold text-slate-700">StuPo-Semester</span>
                                     <input
                                       className="field-input bg-white"
                                       placeholder="Semester"
                                       inputMode="decimal"
                                       value={editInputs[module.id]?.semester ?? ""}
                                       onChange={(event) => updateEditInput(module.id, "semester", event.target.value)}
+                                    />
+                                  </label>
+
+                                  <label className="block">
+                                    <span className="mb-1.5 block text-sm font-bold text-slate-700">Geplantes Semester</span>
+                                    <input
+                                      className="field-input bg-white"
+                                      placeholder="Semester"
+                                      inputMode="decimal"
+                                      value={editInputs[module.id]?.plannedSemester ?? ""}
+                                      onChange={(event) => updateEditInput(module.id, "plannedSemester", event.target.value)}
                                     />
                                   </label>
 
@@ -1248,6 +1400,28 @@ export default function GradeGlowDashboard({
                                         </option>
                                       ))}
                                     </select>
+                                  </label>
+
+                                  <label className="block">
+                                    <span className="mb-1.5 block text-sm font-bold text-slate-700">Fehlversuche</span>
+                                    <input
+                                      className="field-input bg-white"
+                                      placeholder="0"
+                                      inputMode="numeric"
+                                      value={editInputs[module.id]?.attemptCount ?? "0"}
+                                      onChange={(event) => updateEditInput(module.id, "attemptCount", event.target.value)}
+                                    />
+                                  </label>
+
+                                  <label className="block">
+                                    <span className="mb-1.5 block text-sm font-bold text-slate-700">Max. Versuche</span>
+                                    <input
+                                      className="field-input bg-white"
+                                      placeholder="3"
+                                      inputMode="numeric"
+                                      value={editInputs[module.id]?.maxAttempts ?? "3"}
+                                      onChange={(event) => updateEditInput(module.id, "maxAttempts", event.target.value)}
+                                    />
                                   </label>
                                 </div>
 

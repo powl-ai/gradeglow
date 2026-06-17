@@ -17,6 +17,11 @@ type DetectedStudyModule = {
   sourceGroup?: string;
 };
 
+type ImportPreviewItem = DetectedStudyModule & {
+  action: "new" | "update";
+  existingModuleId?: string;
+};
+
 type TechnicalTrack =
   | "bau"
   | "chemie"
@@ -106,30 +111,30 @@ const getAttemptRisk = (module: UniModule) => {
 
   if (module.isLocked || attempts >= maxAttempts) {
     return {
-      label: "kritisch",
+      label: `${attempts}/${maxAttempts} · kritisch`,
       className: "bg-rose-50 text-rose-700 ring-rose-100",
-      text: "Maximale Fehlversuche erreicht. Bitte sofort offiziell prüfen.",
+      text: "Kritisch: Bitte Prüfungsamt/Stupo prüfen, bevor du daraus finale Schlüsse ziehst.",
     };
   }
 
   if (attempts === maxAttempts - 1) {
     return {
-      label: "letzter Versuch",
+      label: `${attempts}/${maxAttempts} · Achtung`,
       className: "bg-amber-50 text-amber-700 ring-amber-100",
-      text: "Nächster Fehlversuch wäre kritisch.",
+      text: "Achtung: Der nächste Fehlversuch wäre kritisch.",
     };
   }
 
   if (attempts > 0) {
     return {
-      label: "im Wiederholungsversuch",
+      label: `${attempts}/${maxAttempts} · unkritisch`,
       className: "bg-violet-50 text-violet-700 ring-violet-100",
-      text: "Versuche im Blick behalten.",
+      text: "Unkritisch, aber im Blick behalten.",
     };
   }
 
   return {
-    label: "okay",
+    label: `0/${maxAttempts} · okay`,
     className: "bg-emerald-50 text-emerald-700 ring-emerald-100",
     text: "Noch kein Fehlversuch eingetragen.",
   };
@@ -246,6 +251,32 @@ const extractNameFromLine = (line: string) => {
   const longestCandidate = nameCandidates.sort((a, b) => b.length - a.length)[0] ?? line;
   return cleanDetectedName(longestCandidate);
 };
+
+const namesLookSimilar = (left: string, right: string) => {
+  const normalizedLeft = normalizeText(left);
+  const normalizedRight = normalizeText(right);
+
+  if (!normalizedLeft || !normalizedRight) return false;
+  if (normalizedLeft === normalizedRight) return true;
+
+  const keepSignificantWord = (word: string) =>
+    word.length > 2 || /^[ivx]+$/.test(word) || /^\d+$/.test(word);
+  const leftWords = normalizedLeft.split(" ").filter(keepSignificantWord);
+  const rightWords = normalizedRight.split(" ").filter(keepSignificantWord);
+
+  if (leftWords.length === 0 || rightWords.length === 0) return false;
+
+  const sharedWords = leftWords.filter((word) => rightWords.includes(word)).length;
+  const overlap = sharedWords / Math.max(leftWords.length, rightWords.length);
+
+  return overlap >= 0.72 && Math.abs(normalizedLeft.length - normalizedRight.length) <= 18;
+};
+
+const findMatchingModule = (modules: UniModule[], detectedModule: DetectedStudyModule) =>
+  modules.find((module) => namesLookSimilar(module.name, detectedModule.name));
+
+const getImportSourceLabel = (uploadedFileName: string, detectedModule: DetectedStudyModule) =>
+  uploadedFileName || detectedModule.sourceGroup || "StuPo-Textimport";
 
 const parseStudyPlanText = (text: string): DetectedStudyModule[] => {
   const moduleMap = new Map<string, DetectedStudyModule>();
@@ -453,14 +484,17 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
   const [targetSemester, setTargetSemester] = useState("1");
   const [selectedModuleId, setSelectedModuleId] = useState("");
   const [selectedMoveSemester, setSelectedMoveSemester] = useState("2");
+  const [selectedAttemptModuleId, setSelectedAttemptModuleId] = useState("");
   const [technicalTrack, setTechnicalTrack] = useState<TechnicalTrack>("maschinenbau");
   const [copiedAiPrompt, setCopiedAiPrompt] = useState(false);
 
-  const openOrFailedModules = useMemo(
+  const planEditableModules = useMemo(
     () =>
-      [...modules]
-        .filter((module) => module.status === "open" || module.status === "failed")
-        .sort((a, b) => a.name.localeCompare(b.name)),
+      [...modules].sort((a, b) => {
+        const semesterDiff = getPlannedSemester(a) - getPlannedSemester(b);
+        if (semesterDiff !== 0) return semesterDiff;
+        return a.name.localeCompare(b.name);
+      }),
     [modules]
   );
 
@@ -489,6 +523,27 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
   const aiPrompt = useMemo(() => createExternalAiPrompt(selectedTrackLabel), [selectedTrackLabel]);
 
   const detectedModules = useMemo(() => parseStudyPlanText(stupoText), [stupoText]);
+
+  const importPreview = useMemo<ImportPreviewItem[]>(
+    () =>
+      detectedModules.map((detectedModule) => {
+        const existingModule = findMatchingModule(modules, detectedModule);
+        return {
+          ...detectedModule,
+          action: existingModule ? "update" : "new",
+          existingModuleId: existingModule?.id,
+        };
+      }),
+    [detectedModules, modules]
+  );
+
+  const previewStats = useMemo(
+    () => ({
+      newCount: importPreview.filter((module) => module.action === "new").length,
+      updateCount: importPreview.filter((module) => module.action === "update").length,
+    }),
+    [importPreview]
+  );
 
   const attemptModules = useMemo(
     () =>
@@ -558,7 +613,9 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
 
   const importDetectedModules = () => {
     if (detectedModules.length === 0) {
-      setStupoMessage("Ich konnte noch keine Modulzeilen erkennen. Am besten StuPo-Text, die Vorlage oder eine CSV/TXT-Liste einfügen.");
+      setStupoMessage(
+        "Ich konnte noch keine sauberen Modulzeilen erkennen. Nutze die Vorlage oder lass dir den PDF-Modulplan mit dem Prompt oben ins Zielformat bringen."
+      );
       return;
     }
 
@@ -570,31 +627,30 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
       const nextModules = [...currentModules];
 
       detectedModules.forEach((detectedModule) => {
-        const normalizedDetectedName = normalizeText(detectedModule.name);
-        const existingIndex = nextModules.findIndex((module) => {
-          const normalizedModuleName = normalizeText(module.name);
-          return (
-            normalizedModuleName === normalizedDetectedName ||
-            normalizedModuleName.includes(normalizedDetectedName) ||
-            normalizedDetectedName.includes(normalizedModuleName)
-          );
-        });
-
+        const existingModule = findMatchingModule(nextModules, detectedModule);
+        const existingIndex = existingModule
+          ? nextModules.findIndex((module) => module.id === existingModule.id)
+          : -1;
         const plannedSemester = detectedModule.plannedSemester ?? fallbackSemester;
+        const sourceLabel = getImportSourceLabel(uploadedFileName, detectedModule);
 
         if (existingIndex >= 0) {
           matchedCount += 1;
-          const existingModule = nextModules[existingIndex];
+          const moduleToUpdate = nextModules[existingIndex];
+          const hasCustomPlanning =
+            getPlannedSemester(moduleToUpdate) !== (moduleToUpdate.semester || plannedSemester);
+
           nextModules[existingIndex] = {
-            ...existingModule,
-            ects: existingModule.ects > 0 ? existingModule.ects : detectedModule.ects,
+            ...moduleToUpdate,
+            ects: detectedModule.ects > 0 ? detectedModule.ects : moduleToUpdate.ects,
             category:
-              existingModule.category && existingModule.category !== "unknown"
-                ? existingModule.category
-                : detectedModule.category,
-            plannedSemester: existingModule.plannedSemester ?? plannedSemester,
+              detectedModule.category !== "unknown"
+                ? detectedModule.category
+                : moduleToUpdate.category,
+            semester: detectedModule.plannedSemester ?? moduleToUpdate.semester,
+            plannedSemester: hasCustomPlanning ? getPlannedSemester(moduleToUpdate) : plannedSemester,
             stupoMatched: true,
-            stupoSource: uploadedFileName || detectedModule.sourceGroup || "StuPo-Textimport",
+            stupoSource: sourceLabel,
           };
           return;
         }
@@ -614,7 +670,7 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
           maxAttempts: defaultMaxAttempts,
           isLocked: false,
           stupoMatched: true,
-          stupoSource: uploadedFileName || detectedModule.sourceGroup || "StuPo-Textimport",
+          stupoSource: sourceLabel,
         });
       });
 
@@ -622,7 +678,7 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
     });
 
     setStupoMessage(
-      `StuPo-Abgleich fertig: ${addedCount} Modul(e) neu angelegt, ${matchedCount} vorhandene Modul(e) markiert.`
+      `Module übernommen: ${addedCount} neu angelegt, ${matchedCount} vorhandene aktualisiert. Doppelte Namen wurden vermieden.`
     );
   };
 
@@ -643,6 +699,13 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
     updateModule(moduleId, (module) => ({ ...module, plannedSemester: nextSemester }));
   };
 
+  const shiftModuleSemester = (moduleId: string, delta: number) => {
+    updateModule(moduleId, (module) => ({
+      ...module,
+      plannedSemester: Math.max(1, getPlannedSemester(module) + delta),
+    }));
+  };
+
   const updateModuleCategory = (moduleId: string, value: ModuleCategory) => {
     updateModule(moduleId, (module) => ({ ...module, category: value }));
   };
@@ -659,6 +722,11 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
         isLocked: nextAttemptCount >= maxAttempts,
       };
     });
+  };
+
+  const addSelectedFailedAttempt = () => {
+    if (!selectedAttemptModuleId) return;
+    addFailedAttempt(selectedAttemptModuleId);
   };
 
   const removeFailedAttempt = (moduleId: string) => {
@@ -694,10 +762,9 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
           <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
             <div>
               <p className="text-sm font-bold text-violet-700">StuPo-Assistent</p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight">Pflicht- & Wahlmodule erkennen</h2>
+              <h2 className="mt-1 text-2xl font-black tracking-tight">Pflicht- & Wahlmodule sauber importieren</h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Lade eine TXT/CSV-Liste hoch, nutze die WiIng-Vorlage oder kopiere Text aus deiner Studien- und Prüfungsordnung hinein.
-                PDFs werden nicht mehr roh eingelesen, damit kein Zeichenmüll entsteht.
+                Der PDF-Upload wird nicht als magische Erkennung verkauft: Nutze entweder die TU-Berlin-WiIng-Vorlage oder lass deine PDF extern mit dem Prompt unten in ein sauberes Zeilenformat bringen.
               </p>
             </div>
 
@@ -706,7 +773,7 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
               className="soft-button shrink-0"
               onClick={() => fileInputRef.current?.click()}
             >
-              StuPo hochladen
+              Datei auswählen
             </button>
             <input
               ref={fileInputRef}
@@ -715,6 +782,23 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
               accept=".txt,.csv,.json,.pdf,text/plain,text/csv,application/json,application/pdf"
               onChange={handleStupoFile}
             />
+          </div>
+
+          <div className="mb-4 grid gap-3 md:grid-cols-4">
+            {[
+              "1. Prompt kopieren",
+              "2. PDF extern hochladen",
+              "3. Ergebnis einfügen",
+              "4. Vorschau prüfen & übernehmen",
+            ].map((step) => (
+              <div key={step} className="rounded-2xl bg-slate-50 p-3 text-sm font-black text-slate-700 ring-1 ring-slate-200">
+                {step}
+              </div>
+            ))}
+          </div>
+
+          <div className="mb-4 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-800 ring-1 ring-amber-100">
+            PDFs werden absichtlich nicht roh als Browser-Text ausgewertet, weil dabei schnell Zeichenmüll entsteht. Für deine TU-Berlin-WiIng-StuPo kannst du die Vorlage laden; für andere StuPos nimm den externen ChatGPT-Prompt und füge das Ergebnis hier ein.
           </div>
 
           <div className="mb-4 grid gap-3 rounded-2xl bg-violet-50 p-4 ring-1 ring-violet-100 md:grid-cols-[1fr_auto] md:items-end">
@@ -745,9 +829,9 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
           <div className="mb-4 rounded-2xl bg-slate-950 p-4 text-white shadow-sm">
             <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
               <div>
-                <p className="text-sm font-black text-violet-200">KI-Aufbereitung ohne API-Key</p>
+                <p className="text-sm font-black text-violet-200">Externe KI-Hilfe ohne API-Key</p>
                 <p className="mt-1 text-sm leading-6 text-slate-300">
-                  Für PDFs ist der stabilste v1-Workflow: Prompt kopieren, deine StuPo bei ChatGPT hochladen, Ergebnis hier einfügen und übernehmen.
+                  Kopiere den Prompt, lade deine StuPo in einem neuen Chat hoch und füge die zurückgegebenen Zeilen anschließend hier ein.
                 </p>
               </div>
               <button
@@ -770,14 +854,14 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
 
           <textarea
             className="field-input min-h-44 resize-y"
-            placeholder={"Beispiel:\nS1 | Pflichtmodul | Statistik I | 6 ECTS\nS5 | Wahlpflicht | Marketing-Vertiefung | 6 ECTS\nS6 | Wahlmodul | Nachhaltigkeit | 3 ECTS"}
+            placeholder={"Beispiel:\nS1 | Pflichtmodul | Statistik I | 6 ECTS | Integrationsbereich\nS5 | Wahlpflicht | Marketing-Vertiefung | 6 ECTS | Wirtschaftswissenschaften\nS6 | Wahlmodul | Nachhaltigkeit | 3 ECTS | Wahlbereich"}
             value={stupoText}
             onChange={(event) => setStupoText(event.target.value)}
           />
 
           <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
             <label>
-              <span className="mb-1.5 block text-sm font-bold text-slate-700">Nur falls kein Semester erkannt wurde: planen in Semester</span>
+              <span className="mb-1.5 block text-sm font-bold text-slate-700">Fallback nur falls kein S1/S2/S3 erkannt wurde</span>
               <input
                 className="field-input bg-white"
                 inputMode="numeric"
@@ -788,40 +872,57 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
 
             <button
               type="button"
-              className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
+              className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-slate-800 disabled:opacity-50"
               onClick={importDetectedModules}
+              disabled={detectedModules.length === 0}
             >
-              Erkennung übernehmen
+              Module übernehmen
             </button>
           </div>
 
           <div className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
             <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-              <p className="text-sm font-black text-slate-700">
-                Erkannte Module: {detectedModules.length}
-              </p>
+              <div>
+                <p className="text-sm font-black text-slate-700">Import-Vorschau</p>
+                <p className="mt-1 text-xs font-bold text-slate-400">
+                  {detectedModules.length > 0
+                    ? `${detectedModules.length} erkannt · ${previewStats.newCount} neu · ${previewStats.updateCount} Update(s)`
+                    : "Noch keine sauberen Modulzeilen erkannt"}
+                </p>
+              </div>
               {uploadedFileName && <p className="text-xs font-bold text-slate-400">Quelle: {uploadedFileName}</p>}
             </div>
 
-            {detectedModules.length > 0 ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {detectedModules.slice(0, 14).map((module) => (
-                  <span
+            {importPreview.length > 0 ? (
+              <div className="mt-4 grid max-h-96 gap-3 overflow-y-auto pr-1">
+                {importPreview.map((module) => (
+                  <article
                     key={`${module.name}-${module.ects}-${module.plannedSemester ?? "x"}`}
-                    className={`rounded-full px-3 py-1.5 text-xs font-black ring-1 ${getCategoryPill(module.category)}`}
+                    className="rounded-2xl bg-white p-3 ring-1 ring-slate-200"
                   >
-                    {module.plannedSemester ? `S${module.plannedSemester} · ` : ""}{module.name} {module.ects ? `· ${module.ects} ECTS` : ""}
-                  </span>
+                    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-black ring-1 ${getCategoryPill(module.category)}`}>
+                            {getCategoryLabel(module.category)}
+                          </span>
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-black ring-1 ${module.action === "new" ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-sky-50 text-sky-700 ring-sky-100"}`}>
+                            {module.action === "new" ? "neu" : "aktualisiert vorhandenes Modul"}
+                          </span>
+                        </div>
+                        <h3 className="mt-2 font-black text-slate-950">{module.name}</h3>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {module.ects || "?"} ECTS · {module.plannedSemester ? `Semester ${module.plannedSemester}` : `Fallback-Semester ${targetSemester}`}
+                          {module.sourceGroup ? ` · ${module.sourceGroup}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  </article>
                 ))}
-                {detectedModules.length > 14 && (
-                  <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-black text-slate-500 ring-1 ring-slate-200">
-                    +{detectedModules.length - 14} weitere
-                  </span>
-                )}
               </div>
             ) : (
-              <p className="mt-2 text-sm text-slate-500">
-                Noch nichts erkannt. Nutze die Vorlage oder lass dir den PDF-Modulplan mit dem Prompt oben ins Zielformat bringen und füge ihn hier ein.
+              <p className="mt-3 text-sm leading-6 text-slate-500">
+                Lade die Vorlage oder füge Zeilen im Format <span className="font-bold">S1 | Pflichtmodul | Modulname | 6 ECTS | Bereich</span> ein. Dann erscheint hier vor dem Übernehmen eine echte Vorschau.
               </p>
             )}
           </div>
@@ -844,6 +945,29 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
 
           <div className="rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-800 ring-1 ring-amber-100">
             Wichtig: Regeln zu Drittversuch, endgültigem Nichtbestehen und Studiengangwechsel unterscheiden sich je Hochschule, StuPo und Moduläquivalenz. GradeGlow markiert Risiken, entscheidet aber nichts rechtlich verbindlich.
+          </div>
+
+          <div className="mt-4 grid gap-3 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200 md:grid-cols-[1fr_auto] md:items-center">
+            <select
+              className="field-input bg-white"
+              value={selectedAttemptModuleId}
+              onChange={(event) => setSelectedAttemptModuleId(event.target.value)}
+            >
+              <option value="">Modul für Fehlversuch auswählen</option>
+              {planEditableModules.map((module) => (
+                <option key={module.id} value={module.id}>
+                  {module.name} · {getAttemptCount(module)}/{getMaxAttempts(module)}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-slate-800 disabled:opacity-50"
+              onClick={addSelectedFailedAttempt}
+              disabled={!selectedAttemptModuleId}
+            >
+              Fehlversuch +1
+            </button>
           </div>
 
           {attemptModules.length === 0 ? (
@@ -901,7 +1025,7 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
             <p className="text-sm font-bold text-violet-700">Semesterplanung</p>
             <h2 className="mt-1 text-2xl font-black tracking-tight">Module ins nächste Semester schieben</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Plane unabhängig vom ursprünglichen Fachsemester, wann du ein offenes Modul wirklich belegen willst.
+              Plane unabhängig vom ursprünglichen Fachsemester, wann du ein Modul wirklich belegen willst. Bestehende und importierte Module sind hier gemeinsam sichtbar.
             </p>
           </div>
 
@@ -912,7 +1036,7 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
               onChange={(event) => setSelectedModuleId(event.target.value)}
             >
               <option value="">Modul auswählen</option>
-              {openOrFailedModules.map((module) => (
+              {planEditableModules.map((module) => (
                 <option key={module.id} value={module.id}>
                   {module.name}
                 </option>
@@ -935,9 +1059,9 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
             </button>
           </div>
 
-          <div className="mt-5 grid gap-3">
-            {openOrFailedModules.slice(0, 8).map((module) => (
-              <div key={module.id} className="grid gap-3 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200 md:grid-cols-[1fr_7rem_11rem] md:items-center">
+          <div className="mt-5 grid max-h-[32rem] gap-3 overflow-y-auto pr-1">
+            {planEditableModules.map((module) => (
+              <div key={module.id} className="grid gap-3 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200 md:grid-cols-[1fr_8rem_11rem_auto] md:items-center">
                 <div>
                   <p className="font-black text-slate-950">{module.name}</p>
                   <p className="text-sm text-slate-500">{module.ects} ECTS · geplant in Semester {getPlannedSemester(module)}</p>
@@ -961,12 +1085,21 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
                     </option>
                   ))}
                 </select>
+
+                <div className="flex gap-2 md:justify-end">
+                  <button type="button" className="soft-button px-3 py-2" onClick={() => shiftModuleSemester(module.id, -1)}>
+                    −1
+                  </button>
+                  <button type="button" className="soft-button px-3 py-2" onClick={() => shiftModuleSemester(module.id, 1)}>
+                    +1
+                  </button>
+                </div>
               </div>
             ))}
 
-            {openOrFailedModules.length === 0 && (
+            {planEditableModules.length === 0 && (
               <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-200">
-                Keine offenen Module vorhanden.
+                Noch keine Module vorhanden.
               </p>
             )}
           </div>
@@ -997,11 +1130,22 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
                         {ects} ECTS · {load.label}
                       </span>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <div className="mt-3 grid gap-2">
                       {plannedModules.map((module) => (
-                        <span key={module.id} className={`rounded-full px-3 py-1.5 text-xs font-black ring-1 ${getCategoryPill(module.category)}`}>
-                          {module.name} · {getCategoryLabel(module.category)}
-                        </span>
+                        <div key={module.id} className="flex flex-col justify-between gap-2 rounded-2xl bg-white p-3 ring-1 ring-slate-200 sm:flex-row sm:items-center">
+                          <div>
+                            <p className="text-sm font-black text-slate-950">{module.name}</p>
+                            <p className="mt-0.5 text-xs font-bold text-slate-400">{module.ects} ECTS · {getCategoryLabel(module.category)}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button type="button" className="soft-button px-3 py-2" onClick={() => shiftModuleSemester(module.id, -1)}>
+                              −1
+                            </button>
+                            <button type="button" className="soft-button px-3 py-2" onClick={() => shiftModuleSemester(module.id, 1)}>
+                              nächstes Semester
+                            </button>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </article>

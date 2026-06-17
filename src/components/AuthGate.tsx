@@ -512,7 +512,7 @@ export default function AuthGate({ children }: AuthGateProps) {
 
             <div className="mt-6 rounded-2xl bg-white/10 p-4 text-sm text-fuchsia-50/90 ring-1 ring-white/10">
               {isFirebaseConfigured
-                ? "Firebase ist konfiguriert: E-Mail, Google, Apple und GitHub können genutzt werden, sobald die Anbieter in Firebase aktiviert sind."
+                ? "Firebase ist konfiguriert: E-Mail, Google und GitHub sind nutzbar, sobald die Anbieter in Firebase aktiviert sind. Apple bleibt bis zum Apple-Developer-Setup deaktiviert."
                 : "Aktuell läuft GradeGlow ohne Firebase im lokalen Demo-Login. Du kannst direkt testen; Social Login aktivierst du später über .env.local."}
             </div>
           </div>
@@ -668,8 +668,8 @@ export default function AuthGate({ children }: AuthGateProps) {
           </div>
 
           <p className="mt-4 text-xs leading-5 text-slate-400">
-            GitHub ist aktivierbar über Firebase und GitHub OAuth. Apple bleibt als „bald“-Button sichtbar,
-            weil dafür zusätzlich ein Apple Developer Account mit Service ID, Team ID und Private Key nötig ist.
+            GitHub läuft über Firebase und GitHub OAuth. Apple bleibt als „bald verfügbar“-Button sichtbar,
+            weil dafür zusätzlich Apple Developer Setup mit Service ID, Team ID und Private Key nötig ist.
             Auf Mobile/PWA nutzt GradeGlow automatisch Redirect statt Popup.
           </p>
 

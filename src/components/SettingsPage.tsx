@@ -176,19 +176,25 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <Link
                     href="/"
-                    className="rounded-2xl bg-white/10 px-4 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15"
+                    className="rounded-2xl bg-white/10 px-3 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15"
                   >
-                    Dashboard
+                    App
+                  </Link>
+                  <Link
+                    href="/info"
+                    className="rounded-2xl bg-white/10 px-3 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15"
+                  >
+                    Info
                   </Link>
                   <button
                     type="button"
-                    className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-50"
+                    className="rounded-2xl bg-white px-3 py-3 text-sm font-black text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-50"
                     onClick={onLogout}
                   >
-                    Abmelden
+                    Logout
                   </button>
                 </div>
               </div>
@@ -312,6 +318,18 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
             </div>
           </aside>
         </section>
+
+        <footer className="flex flex-col items-center justify-between gap-3 pb-2 text-xs font-bold text-slate-400 sm:flex-row">
+          <span>GradeGlow Einstellungen</span>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link href="/" className="transition hover:text-violet-700">
+              Dashboard
+            </Link>
+            <Link href="/info" className="transition hover:text-violet-700">
+              Info, Datenschutz & Impressum
+            </Link>
+          </div>
+        </footer>
       </div>
     </main>
   );

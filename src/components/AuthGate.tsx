@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import {
   GithubAuthProvider,
@@ -663,6 +664,14 @@ export default function AuthGate({ children }: AuthGateProps) {
             und die passenden OAuth-Daten hinterlegt sind. Auf Mobile/PWA nutzt GradeGlow automatisch
             Redirect statt Popup.
           </p>
+
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3 border-t border-slate-100 pt-4 text-xs font-bold text-slate-400">
+            <Link className="transition hover:text-violet-700" href="/info">
+              Info, Datenschutz & Impressum
+            </Link>
+            <span aria-hidden="true">·</span>
+            <span>GradeGlow Prototype</span>
+          </div>
         </section>
       </div>
     </main>

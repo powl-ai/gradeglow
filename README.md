@@ -104,3 +104,17 @@ Oder alles zusammen:
 ```bash
 npm run check
 ```
+
+
+## App-Bereiche / Routes
+
+GradeGlow ist jetzt in eigene App-Bereiche aufgeteilt. Der Startbildschirm bleibt der Überblick unter `/`. Die weiteren Bereiche sind:
+
+- `/modules` – Module, Zielnotenrechner und Einzelleistungen
+- `/planning` – StuPo-Assistent, Semesterplanung und Versuchsübersicht
+- `/exams` – Prüfungsplaner und lokaler Lernplan
+- `/insights` – Diagramme und Glow Check
+- `/backup` – JSON-Backup, Import und CSV-Export
+- `/settings` – Profil und Studiengang
+
+Die Navigation ist über das Menü links oben und zusätzlich über die horizontale Bereichsleiste erreichbar.

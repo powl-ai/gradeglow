@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gradeglow-v9";
+const CACHE_VERSION = "gradeglow-v10";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -6,6 +6,11 @@ const APP_SHELL = [
   "/",
   "/settings",
   "/info",
+  "/insights",
+  "/exams",
+  "/planning",
+  "/modules",
+  "/backup",
   "/manifest.webmanifest",
   "/offline.html",
   "/icons/icon-192.png",
@@ -19,7 +24,7 @@ self.addEventListener("install", (event) => {
     caches
       .open(STATIC_CACHE)
       .then((cache) => cache.addAll(APP_SHELL))
-      .catch(() => undefined)
+      .catch(() => undefined),
   );
 
   self.skipWaiting();
@@ -33,10 +38,10 @@ self.addEventListener("activate", (event) => {
         Promise.all(
           keys
             .filter((key) => !key.startsWith(CACHE_VERSION))
-            .map((key) => caches.delete(key))
-        )
+            .map((key) => caches.delete(key)),
+        ),
       )
-      .then(() => self.clients.claim())
+      .then(() => self.clients.claim()),
   );
 });
 
@@ -73,8 +78,8 @@ self.addEventListener("fetch", (event) => {
         .catch(() =>
           caches
             .match(request)
-            .then((cached) => cached || caches.match("/offline.html"))
-        )
+            .then((cached) => cached || caches.match("/offline.html")),
+        ),
     );
 
     return;
@@ -102,7 +107,7 @@ self.addEventListener("fetch", (event) => {
           .catch(() => cached);
 
         return cached || fetchPromise;
-      })
+      }),
     );
   }
 });

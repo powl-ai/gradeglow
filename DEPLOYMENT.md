@@ -155,3 +155,19 @@ https://gradeglow.firebaseapp.com/__/auth/handler
 ## 10. Wichtiger Hinweis
 
 Die Firebase Web Config darf mit `NEXT_PUBLIC_` im Browser landen. Sie ersetzt aber keine Firestore Security Rules. Die Rules sind der eigentliche Schutz für private Nutzerdaten.
+
+
+## Neue App-Routes prüfen
+
+Nach dem Deployment sollten diese URLs erreichbar sein:
+
+- `/`
+- `/modules`
+- `/planning`
+- `/exams`
+- `/insights`
+- `/backup`
+- `/settings`
+- `/info`
+
+Wenn am Handy noch die alte Ein-Seiten-Ansicht erscheint, Safari/Browser-Cache hart neu laden oder die PWA einmal schließen und erneut öffnen. Der Service Worker nutzt jetzt `gradeglow-v10`.

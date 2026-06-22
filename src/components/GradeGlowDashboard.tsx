@@ -9,7 +9,10 @@ import GradeGlowPlanner from "./GradeGlowPlanner";
 import PwaInstallCard from "./PwaInstallCard";
 import StudyPlanningPanel from "./StudyPlanningPanel";
 import { useGradeGlowModules } from "../hooks/useGradeGlowModules";
-import { DEFAULT_TARGET_ECTS, useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
+import {
+  DEFAULT_TARGET_ECTS,
+  useGradeGlowProfile,
+} from "../hooks/useGradeGlowProfile";
 import { migrateModules } from "../lib/gradeglowModules";
 import type {
   AppUser,
@@ -37,28 +40,78 @@ type EditInput = {
   maxAttempts: string;
 };
 
+export type DashboardPage =
+  | "overview"
+  | "insights"
+  | "exams"
+  | "planning"
+  | "modules"
+  | "backup";
+
 type GradeGlowDashboardProps = {
   user: AppUser;
   onLogout: () => Promise<void>;
+  page?: DashboardPage;
 };
 
-
 type DashboardNavItem = {
-  id: string;
+  id: DashboardPage;
+  href: string;
   label: string;
   description: string;
+  emoji: string;
 };
 
 const dashboardNavItems: DashboardNavItem[] = [
-  { id: "overview", label: "Überblick", description: "Schnitt, ECTS und Fortschritt" },
-  { id: "insights", label: "Insights", description: "Diagramme und Glow Check" },
-  { id: "exams", label: "Prüfungen", description: "Prüfungsplaner und Lernplan" },
-  { id: "study-planning", label: "StuPo & Planung", description: "Import, Semesterplanung und Fehlversuche" },
-  { id: "modules", label: "Module", description: "Eintragen, bearbeiten und Leistungen" },
-  { id: "backup", label: "Backup", description: "Export, Import und CSV" },
+  {
+    id: "overview",
+    href: "/",
+    label: "Überblick",
+    description: "Schnitt, ECTS und Fortschritt",
+    emoji: "✨",
+  },
+  {
+    id: "insights",
+    href: "/insights",
+    label: "Insights",
+    description: "Diagramme und Glow Check",
+    emoji: "📊",
+  },
+  {
+    id: "exams",
+    href: "/exams",
+    label: "Prüfungen",
+    description: "Prüfungsplaner und Lernplan",
+    emoji: "🗓️",
+  },
+  {
+    id: "planning",
+    href: "/planning",
+    label: "StuPo & Planung",
+    description: "Import, Semesterplanung und Fehlversuche",
+    emoji: "🧭",
+  },
+  {
+    id: "modules",
+    href: "/modules",
+    label: "Module",
+    description: "Eintragen, bearbeiten und Leistungen",
+    emoji: "📚",
+  },
+  {
+    id: "backup",
+    href: "/backup",
+    label: "Backup",
+    description: "Export, Import und CSV",
+    emoji: "💾",
+  },
 ];
 
-const statusOptions: { value: ModuleStatus; label: string; shortLabel: string }[] = [
+const statusOptions: {
+  value: ModuleStatus;
+  label: string;
+  shortLabel: string;
+}[] = [
   { value: "passed", label: "Bestanden", shortLabel: "Bestanden" },
   { value: "ungraded", label: "Unbenotet bestanden", shortLabel: "Unbenotet" },
   { value: "open", label: "Offen", shortLabel: "Offen" },
@@ -74,6 +127,7 @@ const emptyAssessmentInput: AssessmentInput = {
 export default function GradeGlowDashboard({
   user,
   onLogout,
+  page = "overview",
 }: GradeGlowDashboardProps) {
   const { modules, setModules, isLoaded, syncStatus, syncMessage, dataModel } =
     useGradeGlowModules(user);
@@ -87,9 +141,15 @@ export default function GradeGlowDashboard({
   const [targetAverage, setTargetAverage] = useState("2,0");
   const [targetRemainingEcts, setTargetRemainingEcts] = useState("");
 
-  const [assessmentInputs, setAssessmentInputs] = useState<Record<string, AssessmentInput>>({});
-  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
-  const [editingModules, setEditingModules] = useState<Record<string, boolean>>({});
+  const [assessmentInputs, setAssessmentInputs] = useState<
+    Record<string, AssessmentInput>
+  >({});
+  const [expandedModules, setExpandedModules] = useState<
+    Record<string, boolean>
+  >({});
+  const [editingModules, setEditingModules] = useState<Record<string, boolean>>(
+    {},
+  );
   const [editInputs, setEditInputs] = useState<Record<string, EditInput>>({});
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -103,19 +163,16 @@ export default function GradeGlowDashboard({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const jumpToSection = (sectionId: string) => {
-    document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setIsNavigationOpen(false);
-  };
-
   const { profile } = useGradeGlowProfile(user);
-  const totalTargetEcts = profile.targetEcts > 0 ? profile.targetEcts : DEFAULT_TARGET_ECTS;
+  const totalTargetEcts =
+    profile.targetEcts > 0 ? profile.targetEcts : DEFAULT_TARGET_ECTS;
 
   const parseNumber = (value: string) => Number(value.replace(",", "."));
 
   const formatGrade = (value: number) => value.toFixed(2).replace(".", ",");
 
-  const formatCompactNumber = (value: number) => String(value).replace(".", ",");
+  const formatCompactNumber = (value: number) =>
+    String(value).replace(".", ",");
 
   const getTotalAssessmentWeight = (module: UniModule) =>
     module.assessments.reduce((sum, assessment) => sum + assessment.weight, 0);
@@ -129,7 +186,7 @@ export default function GradeGlowDashboard({
     return (
       module.assessments.reduce(
         (sum, assessment) => sum + assessment.grade * assessment.weight,
-        0
+        0,
       ) / totalWeight
     );
   };
@@ -143,7 +200,11 @@ export default function GradeGlowDashboard({
       if (finalGrade !== null && finalGrade <= 4.0) return "passed";
     }
 
-    if (module.assessments.length === 0 && finalGrade !== null && finalGrade > 4.0) {
+    if (
+      module.assessments.length === 0 &&
+      finalGrade !== null &&
+      finalGrade > 4.0
+    ) {
       return "failed";
     }
 
@@ -154,13 +215,21 @@ export default function GradeGlowDashboard({
     module: UniModule,
     nextStatus: ModuleStatus,
     explicitAttemptCount?: number,
-    explicitMaxAttempts?: number
+    explicitMaxAttempts?: number,
   ) => {
-    const maxAttempts = Math.max(1, Math.round(explicitMaxAttempts ?? module.maxAttempts ?? 3));
+    const maxAttempts = Math.max(
+      1,
+      Math.round(explicitMaxAttempts ?? module.maxAttempts ?? 3),
+    );
     const hasExplicitAttemptCount = explicitAttemptCount !== undefined;
-    const currentAttempts = Math.max(0, Math.round(explicitAttemptCount ?? module.attemptCount ?? 0));
+    const currentAttempts = Math.max(
+      0,
+      Math.round(explicitAttemptCount ?? module.attemptCount ?? 0),
+    );
     const shouldAutoAddAttempt =
-      !hasExplicitAttemptCount && nextStatus === "failed" && module.status !== "failed";
+      !hasExplicitAttemptCount &&
+      nextStatus === "failed" &&
+      module.status !== "failed";
     const attemptCount = shouldAutoAddAttempt
       ? Math.min(Math.max(currentAttempts + 1, 1), maxAttempts)
       : Math.min(currentAttempts, maxAttempts);
@@ -222,10 +291,12 @@ export default function GradeGlowDashboard({
     const parsedSemester = parseNumber(semester);
     const numericGrade = grade ? parseNumber(grade) : null;
 
-    if (!Number.isFinite(parsedEcts) || !Number.isFinite(parsedSemester)) return;
+    if (!Number.isFinite(parsedEcts) || !Number.isFinite(parsedSemester))
+      return;
     if (numericGrade !== null && !Number.isFinite(numericGrade)) return;
 
-    const effectiveNewStatus: ModuleStatus = numericGrade !== null && numericGrade > 4 ? "failed" : status;
+    const effectiveNewStatus: ModuleStatus =
+      numericGrade !== null && numericGrade > 4 ? "failed" : status;
     const initialAttemptCount = effectiveNewStatus === "failed" ? 1 : 0;
 
     const newModule: UniModule = {
@@ -246,7 +317,10 @@ export default function GradeGlowDashboard({
     };
 
     setModules((currentModules) => [...currentModules, newModule]);
-    setExpandedModules((currentExpanded) => ({ ...currentExpanded, [newModule.id]: false }));
+    setExpandedModules((currentExpanded) => ({
+      ...currentExpanded,
+      [newModule.id]: false,
+    }));
 
     setName("");
     setEcts("");
@@ -256,7 +330,9 @@ export default function GradeGlowDashboard({
   };
 
   const deleteModule = (moduleId: string) => {
-    setModules((currentModules) => currentModules.filter((module) => module.id !== moduleId));
+    setModules((currentModules) =>
+      currentModules.filter((module) => module.id !== moduleId),
+    );
   };
 
   const toggleAssessments = (moduleId: string) => {
@@ -267,14 +343,18 @@ export default function GradeGlowDashboard({
   };
 
   const startEditingModule = (module: UniModule) => {
-    setEditingModules((currentEditing) => ({ ...currentEditing, [module.id]: true }));
+    setEditingModules((currentEditing) => ({
+      ...currentEditing,
+      [module.id]: true,
+    }));
 
     setEditInputs((currentInputs) => ({
       ...currentInputs,
       [module.id]: {
         name: module.name,
         ects: String(module.ects).replace(".", ","),
-        grade: module.grade !== null ? String(module.grade).replace(".", ",") : "",
+        grade:
+          module.grade !== null ? String(module.grade).replace(".", ",") : "",
         semester: String(module.semester),
         plannedSemester: String(module.plannedSemester ?? module.semester),
         status: module.status,
@@ -285,10 +365,17 @@ export default function GradeGlowDashboard({
   };
 
   const cancelEditingModule = (moduleId: string) => {
-    setEditingModules((currentEditing) => ({ ...currentEditing, [moduleId]: false }));
+    setEditingModules((currentEditing) => ({
+      ...currentEditing,
+      [moduleId]: false,
+    }));
   };
 
-  const updateEditInput = (moduleId: string, field: keyof EditInput, value: string) => {
+  const updateEditInput = (
+    moduleId: string,
+    field: keyof EditInput,
+    value: string,
+  ) => {
     setEditInputs((currentInputs) => {
       const currentInput = currentInputs[moduleId];
       if (!currentInput) return currentInputs;
@@ -305,14 +392,25 @@ export default function GradeGlowDashboard({
 
   const saveEditedModule = (moduleId: string) => {
     const input = editInputs[moduleId];
-    if (!input || !input.name.trim() || !input.ects || !input.semester || !input.plannedSemester) return;
+    if (
+      !input ||
+      !input.name.trim() ||
+      !input.ects ||
+      !input.semester ||
+      !input.plannedSemester
+    )
+      return;
 
     const parsedEcts = parseNumber(input.ects);
     const parsedSemester = parseNumber(input.semester);
     const parsedPlannedSemester = parseNumber(input.plannedSemester);
     const numericGrade = input.grade ? parseNumber(input.grade) : null;
-    const parsedAttemptCount = input.attemptCount ? parseNumber(input.attemptCount) : 0;
-    const parsedMaxAttempts = input.maxAttempts ? parseNumber(input.maxAttempts) : 3;
+    const parsedAttemptCount = input.attemptCount
+      ? parseNumber(input.attemptCount)
+      : 0;
+    const parsedMaxAttempts = input.maxAttempts
+      ? parseNumber(input.maxAttempts)
+      : 3;
 
     if (
       !Number.isFinite(parsedEcts) ||
@@ -329,7 +427,8 @@ export default function GradeGlowDashboard({
       currentModules.map((module) => {
         if (module.id !== moduleId) return module;
 
-        const nextStatus: ModuleStatus = numericGrade !== null && numericGrade > 4 ? "failed" : input.status;
+        const nextStatus: ModuleStatus =
+          numericGrade !== null && numericGrade > 4 ? "failed" : input.status;
         const explicitAttemptCount =
           nextStatus === "failed" &&
           module.status !== "failed" &&
@@ -340,7 +439,7 @@ export default function GradeGlowDashboard({
           module,
           nextStatus,
           explicitAttemptCount,
-          parsedMaxAttempts
+          parsedMaxAttempts,
         );
 
         return {
@@ -353,16 +452,19 @@ export default function GradeGlowDashboard({
           status: nextStatus,
           ...attemptState,
         };
-      })
+      }),
     );
 
-    setEditingModules((currentEditing) => ({ ...currentEditing, [moduleId]: false }));
+    setEditingModules((currentEditing) => ({
+      ...currentEditing,
+      [moduleId]: false,
+    }));
   };
 
   const updateAssessmentInput = (
     moduleId: string,
     field: keyof AssessmentInput,
-    value: string
+    value: string,
   ) => {
     setAssessmentInputs((currentInputs) => ({
       ...currentInputs,
@@ -394,15 +496,21 @@ export default function GradeGlowDashboard({
         if (module.id !== moduleId) return module;
 
         const nextAssessments = [...module.assessments, newAssessment];
-        const totalWeight = nextAssessments.reduce((sum, assessment) => sum + assessment.weight, 0);
+        const totalWeight = nextAssessments.reduce(
+          (sum, assessment) => sum + assessment.weight,
+          0,
+        );
         const calculatedGrade =
           totalWeight > 0
             ? nextAssessments.reduce(
                 (sum, assessment) => sum + assessment.grade * assessment.weight,
-                0
+                0,
               ) / totalWeight
             : null;
-        const shouldMarkFailed = totalWeight >= 100 && calculatedGrade !== null && calculatedGrade > 4.0;
+        const shouldMarkFailed =
+          totalWeight >= 100 &&
+          calculatedGrade !== null &&
+          calculatedGrade > 4.0;
 
         return {
           ...module,
@@ -414,7 +522,7 @@ export default function GradeGlowDashboard({
               }
             : {}),
         };
-      })
+      }),
     );
 
     setAssessmentInputs((currentInputs) => ({
@@ -430,11 +538,11 @@ export default function GradeGlowDashboard({
           ? {
               ...module,
               assessments: module.assessments.filter(
-                (assessment) => assessment.id !== assessmentId
+                (assessment) => assessment.id !== assessmentId,
               ),
             }
-          : module
-      )
+          : module,
+      ),
     );
   };
 
@@ -463,7 +571,7 @@ export default function GradeGlowDashboard({
     downloadFile(
       JSON.stringify(backup, null, 2),
       `gradeglow-backup-${date}.json`,
-      "application/json"
+      "application/json",
     );
 
     setImportMessage("Backup wurde exportiert.");
@@ -497,7 +605,7 @@ export default function GradeGlowDashboard({
         const assessmentSummary = module.assessments
           .map(
             (assessment) =>
-              `${assessment.name}: ${assessment.weight}% / Note ${formatGrade(assessment.grade)}`
+              `${assessment.name}: ${assessment.weight}% / Note ${formatGrade(assessment.grade)}`,
           )
           .join(" | ");
 
@@ -527,7 +635,7 @@ export default function GradeGlowDashboard({
     downloadFile(
       "\ufeff" + csv,
       `gradeglow-export-${date}.csv`,
-      "text/csv;charset=utf-8"
+      "text/csv;charset=utf-8",
     );
 
     setImportMessage("CSV wurde exportiert.");
@@ -550,15 +658,21 @@ export default function GradeGlowDashboard({
         const rawModules = Array.isArray(parsed) ? parsed : parsed.modules;
 
         if (!Array.isArray(rawModules)) {
-          setImportMessage("Import fehlgeschlagen: Keine gültige Backup-Datei.");
+          setImportMessage(
+            "Import fehlgeschlagen: Keine gültige Backup-Datei.",
+          );
           return;
         }
 
         const importedModules = migrateModules(rawModules);
         setModules(importedModules);
-        setImportMessage(`Import erfolgreich: ${importedModules.length} Modul(e) geladen.`);
+        setImportMessage(
+          `Import erfolgreich: ${importedModules.length} Modul(e) geladen.`,
+        );
       } catch {
-        setImportMessage("Import fehlgeschlagen: Datei konnte nicht gelesen werden.");
+        setImportMessage(
+          "Import fehlgeschlagen: Datei konnte nicht gelesen werden.",
+        );
       } finally {
         event.target.value = "";
       }
@@ -574,7 +688,10 @@ export default function GradeGlowDashboard({
       return effectiveStatus === "passed" && finalGrade !== null;
     });
 
-    const gradedEcts = gradedModules.reduce((sum, module) => sum + module.ects, 0);
+    const gradedEcts = gradedModules.reduce(
+      (sum, module) => sum + module.ects,
+      0,
+    );
 
     const passedEcts = modules
       .filter((module) => {
@@ -628,12 +745,15 @@ export default function GradeGlowDashboard({
 
   const requiredAverage =
     remainingGradedEcts > 0 && target > 0
-      ? (target * (analytics.gradedEcts + remainingGradedEcts) - analytics.weightedGradeSum) /
+      ? (target * (analytics.gradedEcts + remainingGradedEcts) -
+          analytics.weightedGradeSum) /
         remainingGradedEcts
       : 0;
 
   const targetIsAlreadyReached =
-    analytics.gradedEcts > 0 && analytics.average <= target && remainingGradedEcts === 0;
+    analytics.gradedEcts > 0 &&
+    analytics.average <= target &&
+    remainingGradedEcts === 0;
 
   const targetOutlook = (() => {
     if (remainingGradedEcts <= 0 || target <= 0) {
@@ -664,7 +784,8 @@ export default function GradeGlowDashboard({
       return {
         label: "machbar",
         text: "Das Ziel ist realistisch, wenn deine nächsten Leistungen ungefähr in diesem Bereich landen.",
-        className: "bg-emerald-400/15 text-emerald-100 ring-1 ring-emerald-300/20",
+        className:
+          "bg-emerald-400/15 text-emerald-100 ring-1 ring-emerald-300/20",
       };
     }
 
@@ -696,16 +817,20 @@ export default function GradeGlowDashboard({
       String(module.semester).includes(normalizedSearch);
 
     const effectiveStatus = getEffectiveStatus(module);
-    const matchesStatus = statusFilter === "all" || effectiveStatus === statusFilter;
+    const matchesStatus =
+      statusFilter === "all" || effectiveStatus === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
 
-  const semesterGroups = visibleModules.reduce<Record<number, UniModule[]>>((groups, module) => {
-    if (!groups[module.semester]) groups[module.semester] = [];
-    groups[module.semester].push(module);
-    return groups;
-  }, {});
+  const semesterGroups = visibleModules.reduce<Record<number, UniModule[]>>(
+    (groups, module) => {
+      if (!groups[module.semester]) groups[module.semester] = [];
+      groups[module.semester].push(module);
+      return groups;
+    },
+    {},
+  );
 
   const semesterNumbers = Object.keys(semesterGroups)
     .map(Number)
@@ -728,7 +853,7 @@ export default function GradeGlowDashboard({
 
     const semesterGradedEcts = gradedSemesterModules.reduce(
       (sum, module) => sum + module.ects,
-      0
+      0,
     );
 
     return (
@@ -742,16 +867,23 @@ export default function GradeGlowDashboard({
   const statusCounts = statusOptions.reduce<Record<ModuleStatus, number>>(
     (counts, option) => {
       counts[option.value] = modules.filter(
-        (module) => getEffectiveStatus(module) === option.value
+        (module) => getEffectiveStatus(module) === option.value,
       ).length;
       return counts;
     },
-    { passed: 0, ungraded: 0, open: 0, failed: 0 }
+    { passed: 0, ungraded: 0, open: 0, failed: 0 },
   );
 
-  const userLabel = profile.displayName || user.displayName || user.email || "GradeGlow User";
+  const userLabel =
+    profile.displayName || user.displayName || user.email || "GradeGlow User";
   const userInitial = userLabel.trim().charAt(0).toUpperCase() || "G";
-  const degreeProgramLabel = profile.degreeProgram || "Studiengang noch nicht gesetzt";
+  const degreeProgramLabel =
+    profile.degreeProgram || "Studiengang noch nicht gesetzt";
+  const activeNavItem =
+    dashboardNavItems.find((item) => item.id === page) ?? dashboardNavItems[0];
+  const isInsightsVisible = page === "insights" || isInsightsOpen;
+  const isExamPlannerVisible = page === "exams" || isExamPlannerOpen;
+  const isBackupVisible = page === "backup" || isToolsOpen;
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#fbf7ff] text-slate-950">
@@ -762,7 +894,10 @@ export default function GradeGlowDashboard({
       </div>
 
       {isNavigationOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/45 p-4 backdrop-blur-sm" onClick={() => setIsNavigationOpen(false)}>
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/45 p-4 backdrop-blur-sm"
+          onClick={() => setIsNavigationOpen(false)}
+        >
           <nav
             className="max-h-[calc(100vh-2rem)] w-full max-w-sm overflow-y-auto rounded-[2rem] bg-white p-4 shadow-2xl shadow-slate-950/25 ring-1 ring-violet-100"
             onClick={(event) => event.stopPropagation()}
@@ -771,7 +906,9 @@ export default function GradeGlowDashboard({
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-bold text-violet-700">Navigation</p>
-                <h2 className="text-2xl font-black tracking-tight">GradeGlow Bereiche</h2>
+                <h2 className="text-2xl font-black tracking-tight">
+                  GradeGlow Bereiche
+                </h2>
               </div>
               <button
                 type="button"
@@ -784,17 +921,32 @@ export default function GradeGlowDashboard({
             </div>
 
             <div className="grid gap-2">
-              {dashboardNavItems.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="rounded-2xl bg-slate-50 p-4 text-left ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50 hover:ring-violet-100"
-                  onClick={() => jumpToSection(item.id)}
-                >
-                  <span className="block text-sm font-black text-slate-950">{item.label}</span>
-                  <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{item.description}</span>
-                </button>
-              ))}
+              {dashboardNavItems.map((item) => {
+                const isActive = item.id === page;
+
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className={`rounded-2xl p-4 text-left ring-1 transition hover:-translate-y-0.5 ${
+                      isActive
+                        ? "bg-violet-700 text-white ring-violet-600 shadow-lg shadow-violet-200"
+                        : "bg-slate-50 text-slate-950 ring-slate-200 hover:bg-violet-50 hover:ring-violet-100"
+                    }`}
+                    onClick={() => setIsNavigationOpen(false)}
+                  >
+                    <span className="flex items-center gap-2 text-sm font-black">
+                      <span>{item.emoji}</span>
+                      <span>{item.label}</span>
+                    </span>
+                    <span
+                      className={`mt-1 block text-xs font-semibold leading-5 ${isActive ? "text-violet-100" : "text-slate-500"}`}
+                    >
+                      {item.description}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           </nav>
         </div>
@@ -820,12 +972,16 @@ export default function GradeGlowDashboard({
 
                   <GradeGlowLogo size="md" tone="light" />
 
-                  <div className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${getSyncStyle()}`}>
+                  <div
+                    className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${getSyncStyle()}`}
+                  >
                     {syncMessage}
                   </div>
 
                   <div className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-violet-50 ring-1 ring-white/15">
-                    {dataModel === "firestore-module-docs" ? "Modul-Dokumente" : "Lokales Array"}
+                    {dataModel === "firestore-module-docs"
+                      ? "Modul-Dokumente"
+                      : "Lokales Array"}
                   </div>
 
                   {!isLoaded && (
@@ -836,14 +992,14 @@ export default function GradeGlowDashboard({
                 </div>
 
                 <p className="text-sm font-bold uppercase tracking-[0.35em] text-fuchsia-200/80">
-                  GradeGlow Dashboard
+                  GradeGlow · {activeNavItem.label}
                 </p>
                 <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-                  Dein Notenschnitt auf einen Blick.
+                  {activeNavItem.label}
                 </h1>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-                  Module, ECTS, Einzelleistungen, Zielnoten und Backups — angepasst auf dein
-                  Profil und dein persönliches ECTS-Ziel.
+                  {activeNavItem.description}. Wechsel links oben über das Menü
+                  in die anderen Bereiche.
                 </p>
               </div>
 
@@ -854,8 +1010,12 @@ export default function GradeGlowDashboard({
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold">{userLabel}</p>
-                    <p className="truncate text-xs text-slate-300">{degreeProgramLabel}</p>
-                    <p className="truncate text-xs text-slate-400">{user.email ?? "Lokaler Account"}</p>
+                    <p className="truncate text-xs text-slate-300">
+                      {degreeProgramLabel}
+                    </p>
+                    <p className="truncate text-xs text-slate-400">
+                      {user.email ?? "Lokaler Account"}
+                    </p>
                   </div>
                 </div>
 
@@ -863,12 +1023,16 @@ export default function GradeGlowDashboard({
                   <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
                     <p className="text-xs text-slate-300">Schnitt</p>
                     <p className="text-2xl font-black">
-                      {analytics.average > 0 ? formatGrade(analytics.average) : "—"}
+                      {analytics.average > 0
+                        ? formatGrade(analytics.average)
+                        : "—"}
                     </p>
                   </div>
                   <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
                     <p className="text-xs text-slate-300">Fortschritt</p>
-                    <p className="text-2xl font-black">{Math.min(analytics.progress, 100).toFixed(0)}%</p>
+                    <p className="text-2xl font-black">
+                      {Math.min(analytics.progress, 100).toFixed(0)}%
+                    </p>
                   </div>
                 </div>
 
@@ -892,779 +1056,1161 @@ export default function GradeGlowDashboard({
           </div>
         </header>
 
-        <section id="overview" className="scroll-mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-3xl bg-white/80 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-bold text-slate-500">Bestandene ECTS</p>
-                <p className="mt-2 text-4xl font-black tracking-tight">{analytics.passedEcts}</p>
+        <nav
+          className="flex gap-2 overflow-x-auto rounded-3xl bg-white/75 p-2 shadow-sm ring-1 ring-violet-100 backdrop-blur"
+          aria-label="GradeGlow Seiten"
+        >
+          {dashboardNavItems.map((item) => (
+            <Link
+              key={item.id}
+              href={item.href}
+              className={`whitespace-nowrap rounded-2xl px-4 py-3 text-sm font-black transition ${
+                item.id === page
+                  ? "bg-slate-950 text-white shadow-lg shadow-violet-100"
+                  : "text-slate-600 hover:bg-violet-50 hover:text-violet-700"
+              }`}
+            >
+              <span className="mr-2">{item.emoji}</span>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
+        {page === "overview" && (
+          <>
+            <section
+              id="overview"
+              className="scroll-mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+            >
+              <div className="rounded-3xl bg-white/80 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-500">
+                      Bestandene ECTS
+                    </p>
+                    <p className="mt-2 text-4xl font-black tracking-tight">
+                      {analytics.passedEcts}
+                    </p>
+                  </div>
+                  <span className="rounded-2xl bg-emerald-50 px-3 py-2 text-xl ring-1 ring-emerald-100">
+                    ✓
+                  </span>
+                </div>
+                <p className="mt-3 text-sm text-slate-500">
+                  von {totalTargetEcts} ECTS
+                </p>
               </div>
-              <span className="rounded-2xl bg-emerald-50 px-3 py-2 text-xl ring-1 ring-emerald-100">✓</span>
-            </div>
-            <p className="mt-3 text-sm text-slate-500">von {totalTargetEcts} ECTS</p>
-          </div>
 
-          <div className="rounded-3xl bg-white/80 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-bold text-slate-500">Benotete ECTS</p>
-                <p className="mt-2 text-4xl font-black tracking-tight">{analytics.gradedEcts}</p>
+              <div className="rounded-3xl bg-white/80 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-500">
+                      Benotete ECTS
+                    </p>
+                    <p className="mt-2 text-4xl font-black tracking-tight">
+                      {analytics.gradedEcts}
+                    </p>
+                  </div>
+                  <span className="rounded-2xl bg-violet-50 px-3 py-2 text-xl ring-1 ring-violet-100">
+                    ★
+                  </span>
+                </div>
+                <p className="mt-3 text-sm text-slate-500">
+                  zählen in den Schnitt
+                </p>
               </div>
-              <span className="rounded-2xl bg-violet-50 px-3 py-2 text-xl ring-1 ring-violet-100">★</span>
-            </div>
-            <p className="mt-3 text-sm text-slate-500">zählen in den Schnitt</p>
-          </div>
 
-          <div className="rounded-3xl bg-white/80 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-bold text-slate-500">Offene ECTS</p>
-                <p className="mt-2 text-4xl font-black tracking-tight">{analytics.openEcts}</p>
+              <div className="rounded-3xl bg-white/80 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-500">
+                      Offene ECTS
+                    </p>
+                    <p className="mt-2 text-4xl font-black tracking-tight">
+                      {analytics.openEcts}
+                    </p>
+                  </div>
+                  <span className="rounded-2xl bg-amber-50 px-3 py-2 text-xl ring-1 ring-amber-100">
+                    …
+                  </span>
+                </div>
+                <p className="mt-3 text-sm text-slate-500">
+                  noch in Bearbeitung
+                </p>
               </div>
-              <span className="rounded-2xl bg-amber-50 px-3 py-2 text-xl ring-1 ring-amber-100">…</span>
-            </div>
-            <p className="mt-3 text-sm text-slate-500">noch in Bearbeitung</p>
-          </div>
 
-          <div className="rounded-3xl bg-white/80 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-bold text-slate-500">Nicht bestanden</p>
-                <p className="mt-2 text-4xl font-black tracking-tight">{analytics.failedEcts}</p>
+              <div className="rounded-3xl bg-white/80 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-500">
+                      Nicht bestanden
+                    </p>
+                    <p className="mt-2 text-4xl font-black tracking-tight">
+                      {analytics.failedEcts}
+                    </p>
+                  </div>
+                  <span className="rounded-2xl bg-rose-50 px-3 py-2 text-xl ring-1 ring-rose-100">
+                    !
+                  </span>
+                </div>
+                <p className="mt-3 text-sm text-slate-500">ECTS betroffen</p>
               </div>
-              <span className="rounded-2xl bg-rose-50 px-3 py-2 text-xl ring-1 ring-rose-100">!</span>
-            </div>
-            <p className="mt-3 text-sm text-slate-500">ECTS betroffen</p>
-          </div>
-        </section>
+            </section>
 
-        <section className="rounded-3xl bg-white/85 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
-          <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
-            <div>
-              <p className="text-sm font-bold text-violet-700">Studienfortschritt</p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight">{analytics.passedEcts} / {totalTargetEcts} ECTS</h2>
-            </div>
-            <p className="text-sm font-semibold text-slate-500">{analytics.progress.toFixed(1)}% geschafft</p>
-          </div>
+            <section className="rounded-3xl bg-white/85 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+              <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+                <div>
+                  <p className="text-sm font-bold text-violet-700">
+                    Studienfortschritt
+                  </p>
+                  <h2 className="mt-1 text-2xl font-black tracking-tight">
+                    {analytics.passedEcts} / {totalTargetEcts} ECTS
+                  </h2>
+                </div>
+                <p className="text-sm font-semibold text-slate-500">
+                  {analytics.progress.toFixed(1)}% geschafft
+                </p>
+              </div>
 
-          <div className="h-4 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 transition-all duration-500"
-              style={{ width: `${Math.min(analytics.progress, 100)}%` }}
-            />
-          </div>
-        </section>
+              <div className="h-4 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 transition-all duration-500"
+                  style={{ width: `${Math.min(analytics.progress, 100)}%` }}
+                />
+              </div>
+            </section>
 
-        <PwaInstallCard />
+            <PwaInstallCard />
+          </>
+        )}
 
-        <section id="insights" className="scroll-mt-6 overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
-          <button
-            type="button"
-            className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
-            onClick={() => setIsInsightsOpen((open) => !open)}
+        {page === "insights" && (
+          <section
+            id="insights"
+            className="scroll-mt-6 overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur"
           >
-            <div>
-              <p className="text-sm font-bold text-violet-700">Insights</p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight">Diagramme & Glow Check</h2>
-              <p className="mt-1 text-sm text-slate-500">Einklappbar, damit das Dashboard nicht so lang wirkt.</p>
-            </div>
-            <span className="rounded-2xl bg-violet-50 px-4 py-2 text-2xl font-black text-violet-700 ring-1 ring-violet-100">
-              {isInsightsOpen ? "−" : "+"}
-            </span>
-          </button>
-          {isInsightsOpen && (
-            <div className="border-t border-slate-100 p-5 sm:p-6">
-              <GradeGlowInsights modules={modules} totalTargetEcts={totalTargetEcts} />
-            </div>
-          )}
-        </section>
-
-        <section id="exams" className="scroll-mt-6 overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
-          <button
-            type="button"
-            className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
-            onClick={() => setIsExamPlannerOpen((open) => !open)}
-          >
-            <div>
-              <p className="text-sm font-bold text-violet-700">Prüfungsplaner</p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight">Prüfungen & Lernplan</h2>
-              <p className="mt-1 text-sm text-slate-500">Nur öffnen, wenn du wirklich Prüfungen planen willst.</p>
-            </div>
-            <span className="rounded-2xl bg-violet-50 px-4 py-2 text-2xl font-black text-violet-700 ring-1 ring-violet-100">
-              {isExamPlannerOpen ? "−" : "+"}
-            </span>
-          </button>
-          {isExamPlannerOpen && (
-            <div className="border-t border-slate-100 p-5 sm:p-6">
-              <GradeGlowPlanner user={user} modules={modules} />
-            </div>
-          )}
-        </section>
-
-        <div id="study-planning" className="scroll-mt-6">
-          <StudyPlanningPanel modules={modules} setModules={setModules} />
-        </div>
-
-        <section id="modules" className="scroll-mt-6 grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
-          <div className="overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
             <button
               type="button"
               className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
-              onClick={() => setIsAddModuleOpen((open) => !open)}
+              onClick={() => setIsInsightsOpen((open) => !open)}
             >
               <div>
-                <p className="text-sm font-bold text-violet-700">Schnellerfassung</p>
-                <h2 className="mt-1 text-2xl font-black tracking-tight">Modul hinzufügen</h2>
-                <p className="mt-1 text-sm text-slate-500">Pflicht: Name, ECTS und Semester. Note darf leer bleiben.</p>
+                <p className="text-sm font-bold text-violet-700">Insights</p>
+                <h2 className="mt-1 text-2xl font-black tracking-tight">
+                  Diagramme & Glow Check
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Einklappbar, damit das Dashboard nicht so lang wirkt.
+                </p>
               </div>
               <span className="rounded-2xl bg-violet-50 px-4 py-2 text-2xl font-black text-violet-700 ring-1 ring-violet-100">
-                {isAddModuleOpen ? "−" : "+"}
+                {isInsightsVisible ? "−" : "+"}
               </span>
             </button>
-
-            {isAddModuleOpen && (
-              <form className="border-t border-slate-100 p-5 sm:p-6" onSubmit={handleAddModule}>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <label className="block md:col-span-2">
-                    <span className="mb-1.5 block text-sm font-bold text-slate-700">Modulname</span>
-                    <input
-                      className="field-input"
-                      placeholder="z. B. Statistik"
-                      value={name}
-                      onChange={(event) => setName(event.target.value)}
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-1.5 block text-sm font-bold text-slate-700">Semester</span>
-                    <input
-                      className="field-input"
-                      placeholder="z. B. 1"
-                      inputMode="decimal"
-                      value={semester}
-                      onChange={(event) => setSemester(event.target.value)}
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-1.5 block text-sm font-bold text-slate-700">ECTS</span>
-                    <input
-                      className="field-input"
-                      placeholder="z. B. 6"
-                      inputMode="decimal"
-                      value={ects}
-                      onChange={(event) => setEcts(event.target.value)}
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-1.5 block text-sm font-bold text-slate-700">Gesamtnote</span>
-                    <input
-                      className="field-input"
-                      placeholder="optional, z. B. 2,3"
-                      inputMode="decimal"
-                      value={grade}
-                      onChange={(event) => setGrade(event.target.value)}
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-1.5 block text-sm font-bold text-slate-700">Status</span>
-                    <select
-                      className="field-input"
-                      value={status}
-                      onChange={(event) => setStatus(event.target.value as ModuleStatus)}
-                    >
-                      {statusOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-
-                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-slate-500">
-                    Note &gt; 4,0 wird automatisch als „nicht bestanden“ gewertet.
-                  </p>
-                  <button
-                    type="submit"
-                    className="rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 transition hover:-translate-y-0.5 disabled:opacity-50"
-                    disabled={!name.trim() || !ects || !semester}
-                  >
-                    Modul speichern
-                  </button>
-                </div>
-              </form>
+            {isInsightsVisible && (
+              <div className="border-t border-slate-100 p-5 sm:p-6">
+                <GradeGlowInsights
+                  modules={modules}
+                  totalTargetEcts={totalTargetEcts}
+                />
+              </div>
             )}
-          </div>
+          </section>
+        )}
 
-          <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
-            <div className="mb-5 flex items-start justify-between gap-4">
+        {page === "exams" && (
+          <section
+            id="exams"
+            className="scroll-mt-6 overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur"
+          >
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
+              onClick={() => setIsExamPlannerOpen((open) => !open)}
+            >
               <div>
-                <p className="text-sm font-bold text-violet-700">Planung</p>
-                <h2 className="mt-1 text-2xl font-black tracking-tight">Zielnotenrechner</h2>
-                <p className="mt-1 text-sm text-slate-500">Was du ab jetzt im Schnitt brauchst.</p>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-bold text-slate-700">Ziel-Schnitt</span>
-                <input
-                  className="field-input"
-                  placeholder="z. B. 1,8"
-                  inputMode="decimal"
-                  value={targetAverage}
-                  onChange={(event) => setTargetAverage(event.target.value)}
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1.5 block text-sm font-bold text-slate-700">Noch benotete ECTS</span>
-                <input
-                  className="field-input"
-                  placeholder="optional"
-                  inputMode="decimal"
-                  value={targetRemainingEcts}
-                  onChange={(event) => setTargetRemainingEcts(event.target.value)}
-                />
-              </label>
-            </div>
-
-            <div className="mt-5 rounded-3xl bg-slate-950 p-5 text-white">
-              <p className="text-sm text-slate-300">Benötigter Restschnitt</p>
-              <p className="mt-2 text-5xl font-black tracking-tight">
-                {remainingGradedEcts > 0 && target > 0 ? formatGrade(requiredAverage) : "—"}
-              </p>
-              <p className="mt-3 text-sm leading-6 text-slate-300">
-                Berechnet mit {analytics.gradedEcts} benoteten ECTS und {remainingGradedEcts} offenen benoteten ECTS
-                {targetRemainingEcts ? " (manuell gesetzt)." : " aus deinen offenen/nicht bestandenen Modulen."}
-              </p>
-
-              {remainingGradedEcts > 0 && target > 0 && (
-                <div className={`mt-4 rounded-2xl p-3 text-sm font-bold ${targetOutlook.className}`}>
-                  <span className="block text-xs uppercase tracking-[0.18em] text-white/60">Einschätzung</span>
-                  <span className="mt-1 block text-base">{targetOutlook.label}</span>
-                  <span className="mt-1 block font-semibold opacity-90">{targetOutlook.text}</span>
-                </div>
-              )}
-
-              <div className="mt-4 grid gap-2 text-xs font-bold text-slate-300 sm:grid-cols-3">
-                <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
-                  Aktueller Schnitt: {analytics.average > 0 ? formatGrade(analytics.average) : "—"}
-                </div>
-                <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
-                  Benotete ECTS: {analytics.gradedEcts}
-                </div>
-                <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
-                  Offene benotete ECTS: {remainingGradedEcts}
-                </div>
-              </div>
-
-              {targetIsAlreadyReached && (
-                <div className="mt-4 rounded-2xl bg-emerald-400/15 p-3 text-sm font-bold text-emerald-100 ring-1 ring-emerald-300/20">
-                  Ziel bereits erreicht.
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
-          <div className="flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-sm font-bold text-violet-700">Module</p>
-              <h2 className="mt-1 text-3xl font-black tracking-tight">Semesterübersicht</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                {modules.length} Modul(e) insgesamt · {visibleModules.length} sichtbar
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 lg:min-w-[34rem]">
-              <input
-                className="field-input"
-                placeholder="Modul suchen oder Semester eingeben…"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-              />
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className={`filter-pill ${statusFilter === "all" ? "filter-pill-active" : ""}`}
-                  onClick={() => setStatusFilter("all")}
-                >
-                  Alle · {modules.length}
-                </button>
-                {statusOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`filter-pill ${statusFilter === option.value ? "filter-pill-active" : ""}`}
-                    onClick={() => setStatusFilter(option.value)}
-                  >
-                    {option.shortLabel} · {statusCounts[option.value]}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {modules.length === 0 && (
-            <div className="border-t border-slate-100 p-6">
-              <div className="rounded-3xl border border-dashed border-violet-200 bg-violet-50/70 p-8 text-center">
-                <p className="text-4xl">✨</p>
-                <h3 className="mt-3 text-2xl font-black">Noch keine Module eingetragen</h3>
-                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-                  Starte oben mit deinem ersten Modul. Danach erscheinen hier automatisch Semestergruppen, Schnitte und Einzelleistungen.
+                <p className="text-sm font-bold text-violet-700">
+                  Prüfungsplaner
                 </p>
+                <h2 className="mt-1 text-2xl font-black tracking-tight">
+                  Prüfungen & Lernplan
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Nur öffnen, wenn du wirklich Prüfungen planen willst.
+                </p>
+              </div>
+              <span className="rounded-2xl bg-violet-50 px-4 py-2 text-2xl font-black text-violet-700 ring-1 ring-violet-100">
+                {isExamPlannerVisible ? "−" : "+"}
+              </span>
+            </button>
+            {isExamPlannerVisible && (
+              <div className="border-t border-slate-100 p-5 sm:p-6">
+                <GradeGlowPlanner user={user} modules={modules} />
+              </div>
+            )}
+          </section>
+        )}
+
+        {page === "planning" && (
+          <div id="study-planning" className="scroll-mt-6">
+            <StudyPlanningPanel modules={modules} setModules={setModules} />
+          </div>
+        )}
+
+        {page === "modules" && (
+          <>
+            <section
+              id="modules"
+              className="scroll-mt-6 grid gap-6 xl:grid-cols-[1.02fr_0.98fr]"
+            >
+              <div className="overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
                 <button
                   type="button"
-                  className="mt-5 rounded-2xl bg-violet-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 transition hover:-translate-y-0.5"
-                  onClick={() => setIsAddModuleOpen(true)}
+                  className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
+                  onClick={() => setIsAddModuleOpen((open) => !open)}
                 >
-                  Erstes Modul anlegen
+                  <div>
+                    <p className="text-sm font-bold text-violet-700">
+                      Schnellerfassung
+                    </p>
+                    <h2 className="mt-1 text-2xl font-black tracking-tight">
+                      Modul hinzufügen
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Pflicht: Name, ECTS und Semester. Note darf leer bleiben.
+                    </p>
+                  </div>
+                  <span className="rounded-2xl bg-violet-50 px-4 py-2 text-2xl font-black text-violet-700 ring-1 ring-violet-100">
+                    {isAddModuleOpen ? "−" : "+"}
+                  </span>
                 </button>
-              </div>
-            </div>
-          )}
 
-          {modules.length > 0 && visibleModules.length === 0 && (
-            <div className="border-t border-slate-100 p-6">
-              <div className="rounded-3xl bg-slate-50 p-8 text-center text-slate-500 ring-1 ring-slate-200">
-                Keine Module für diese Suche oder diesen Filter gefunden.
-              </div>
-            </div>
-          )}
+                {isAddModuleOpen && (
+                  <form
+                    className="border-t border-slate-100 p-5 sm:p-6"
+                    onSubmit={handleAddModule}
+                  >
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <label className="block md:col-span-2">
+                        <span className="mb-1.5 block text-sm font-bold text-slate-700">
+                          Modulname
+                        </span>
+                        <input
+                          className="field-input"
+                          placeholder="z. B. Statistik"
+                          value={name}
+                          onChange={(event) => setName(event.target.value)}
+                        />
+                      </label>
 
-          {visibleModules.length > 0 && (
-            <div className="flex flex-col gap-6 border-t border-slate-100 p-5 sm:p-6">
-              {semesterNumbers.map((semesterNumber) => {
-                const semesterModules = semesterGroups[semesterNumber];
-                const semesterPassedEcts = getSemesterPassedEcts(semesterModules);
-                const semesterAverage = getSemesterAverage(semesterModules);
+                      <label className="block">
+                        <span className="mb-1.5 block text-sm font-bold text-slate-700">
+                          Semester
+                        </span>
+                        <input
+                          className="field-input"
+                          placeholder="z. B. 1"
+                          inputMode="decimal"
+                          value={semester}
+                          onChange={(event) => setSemester(event.target.value)}
+                        />
+                      </label>
 
-                return (
-                  <div key={semesterNumber} className="rounded-3xl bg-slate-50/80 p-4 ring-1 ring-slate-200">
-                    <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                      <div>
-                        <h3 className="text-2xl font-black tracking-tight">{semesterNumber}. Semester</h3>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {semesterModules.length} Modul(e) · {semesterPassedEcts} bestandene ECTS
-                          {semesterAverage > 0 && ` · Schnitt ${formatGrade(semesterAverage)}`}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-600 ring-1 ring-slate-200">
-                        {semesterAverage > 0 ? `Ø ${formatGrade(semesterAverage)}` : "Noch kein Schnitt"}
-                      </div>
+                      <label className="block">
+                        <span className="mb-1.5 block text-sm font-bold text-slate-700">
+                          ECTS
+                        </span>
+                        <input
+                          className="field-input"
+                          placeholder="z. B. 6"
+                          inputMode="decimal"
+                          value={ects}
+                          onChange={(event) => setEcts(event.target.value)}
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-1.5 block text-sm font-bold text-slate-700">
+                          Gesamtnote
+                        </span>
+                        <input
+                          className="field-input"
+                          placeholder="optional, z. B. 2,3"
+                          inputMode="decimal"
+                          value={grade}
+                          onChange={(event) => setGrade(event.target.value)}
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-1.5 block text-sm font-bold text-slate-700">
+                          Status
+                        </span>
+                        <select
+                          className="field-input"
+                          value={status}
+                          onChange={(event) =>
+                            setStatus(event.target.value as ModuleStatus)
+                          }
+                        >
+                          {statusOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
                     </div>
 
-                    <div className="grid gap-4">
-                      {semesterModules.map((module) => {
-                        const finalGrade = getFinalGrade(module);
-                        const effectiveStatus = getEffectiveStatus(module);
-                        const totalAssessmentWeight = getTotalAssessmentWeight(module);
-                        const isEditing = editingModules[module.id];
-                        const weightProgress = Math.min(totalAssessmentWeight, 100);
+                    <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm text-slate-500">
+                        Note &gt; 4,0 wird automatisch als „nicht bestanden“
+                        gewertet.
+                      </p>
+                      <button
+                        type="submit"
+                        className="rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 transition hover:-translate-y-0.5 disabled:opacity-50"
+                        disabled={!name.trim() || !ects || !semester}
+                      >
+                        Modul speichern
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
 
-                        return (
-                          <article key={module.id} className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
-                            {!isEditing ? (
-                              <>
-                                <div className="p-4 sm:p-5">
-                                  <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-                                    <div className="min-w-0 flex-1">
-                                      <div className="mb-3 flex flex-wrap items-center gap-2">
-                                        <span className={`rounded-full px-3 py-1 text-xs font-black ${getStatusStyle(effectiveStatus)}`}>
-                                          {getStatusLabel(effectiveStatus)}
-                                        </span>
-                                        {module.assessments.length > 0 && (
-                                          <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700 ring-1 ring-violet-100">
-                                            {module.assessments.length} Einzelleistung(en)
-                                          </span>
-                                        )}
-                                        <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-black text-slate-600 ring-1 ring-slate-200">
-                                          geplant S{module.plannedSemester ?? module.semester}
-                                        </span>
-                                        {(module.attemptCount ?? 0) > 0 && (
-                                          <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700 ring-1 ring-amber-100">
-                                            Versuch {module.attemptCount}/{module.maxAttempts ?? 3}
-                                          </span>
-                                        )}
-                                      </div>
+              <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+                <div className="mb-5 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-bold text-violet-700">Planung</p>
+                    <h2 className="mt-1 text-2xl font-black tracking-tight">
+                      Zielnotenrechner
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Was du ab jetzt im Schnitt brauchst.
+                    </p>
+                  </div>
+                </div>
 
-                                      <h4 className="truncate text-xl font-black tracking-tight sm:text-2xl">{module.name}</h4>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1.5 block text-sm font-bold text-slate-700">
+                      Ziel-Schnitt
+                    </span>
+                    <input
+                      className="field-input"
+                      placeholder="z. B. 1,8"
+                      inputMode="decimal"
+                      value={targetAverage}
+                      onChange={(event) => setTargetAverage(event.target.value)}
+                    />
+                  </label>
 
-                                      <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                                        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
-                                          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">ECTS</p>
-                                          <p className="mt-1 text-xl font-black">{formatCompactNumber(module.ects)}</p>
-                                        </div>
-                                        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
-                                          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Modulnote</p>
-                                          <p className="mt-1 text-xl font-black">{finalGrade !== null ? formatGrade(finalGrade) : "—"}</p>
-                                        </div>
-                                        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
-                                          <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Gewichtung</p>
-                                          <p className="mt-1 text-xl font-black">{module.assessments.length > 0 ? `${totalAssessmentWeight}%` : "—"}</p>
-                                        </div>
-                                      </div>
+                  <label className="block">
+                    <span className="mb-1.5 block text-sm font-bold text-slate-700">
+                      Noch benotete ECTS
+                    </span>
+                    <input
+                      className="field-input"
+                      placeholder="optional"
+                      inputMode="decimal"
+                      value={targetRemainingEcts}
+                      onChange={(event) =>
+                        setTargetRemainingEcts(event.target.value)
+                      }
+                    />
+                  </label>
+                </div>
 
-                                      {module.assessments.length > 0 && (
-                                        <div className="mt-4">
-                                          <div className="mb-1 flex justify-between text-xs font-bold text-slate-400">
-                                            <span>Einzelleistungen</span>
-                                            <span>{totalAssessmentWeight}% / 100%</span>
+                <div className="mt-5 rounded-3xl bg-slate-950 p-5 text-white">
+                  <p className="text-sm text-slate-300">
+                    Benötigter Restschnitt
+                  </p>
+                  <p className="mt-2 text-5xl font-black tracking-tight">
+                    {remainingGradedEcts > 0 && target > 0
+                      ? formatGrade(requiredAverage)
+                      : "—"}
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-slate-300">
+                    Berechnet mit {analytics.gradedEcts} benoteten ECTS und{" "}
+                    {remainingGradedEcts} offenen benoteten ECTS
+                    {targetRemainingEcts
+                      ? " (manuell gesetzt)."
+                      : " aus deinen offenen/nicht bestandenen Modulen."}
+                  </p>
+
+                  {remainingGradedEcts > 0 && target > 0 && (
+                    <div
+                      className={`mt-4 rounded-2xl p-3 text-sm font-bold ${targetOutlook.className}`}
+                    >
+                      <span className="block text-xs uppercase tracking-[0.18em] text-white/60">
+                        Einschätzung
+                      </span>
+                      <span className="mt-1 block text-base">
+                        {targetOutlook.label}
+                      </span>
+                      <span className="mt-1 block font-semibold opacity-90">
+                        {targetOutlook.text}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="mt-4 grid gap-2 text-xs font-bold text-slate-300 sm:grid-cols-3">
+                    <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
+                      Aktueller Schnitt:{" "}
+                      {analytics.average > 0
+                        ? formatGrade(analytics.average)
+                        : "—"}
+                    </div>
+                    <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
+                      Benotete ECTS: {analytics.gradedEcts}
+                    </div>
+                    <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
+                      Offene benotete ECTS: {remainingGradedEcts}
+                    </div>
+                  </div>
+
+                  {targetIsAlreadyReached && (
+                    <div className="mt-4 rounded-2xl bg-emerald-400/15 p-3 text-sm font-bold text-emerald-100 ring-1 ring-emerald-300/20">
+                      Ziel bereits erreicht.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            <section className="overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
+              <div className="flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-violet-700">Module</p>
+                  <h2 className="mt-1 text-3xl font-black tracking-tight">
+                    Semesterübersicht
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {modules.length} Modul(e) insgesamt ·{" "}
+                    {visibleModules.length} sichtbar
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3 lg:min-w-[34rem]">
+                  <input
+                    className="field-input"
+                    placeholder="Modul suchen oder Semester eingeben…"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                  />
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className={`filter-pill ${statusFilter === "all" ? "filter-pill-active" : ""}`}
+                      onClick={() => setStatusFilter("all")}
+                    >
+                      Alle · {modules.length}
+                    </button>
+                    {statusOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`filter-pill ${statusFilter === option.value ? "filter-pill-active" : ""}`}
+                        onClick={() => setStatusFilter(option.value)}
+                      >
+                        {option.shortLabel} · {statusCounts[option.value]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {modules.length === 0 && (
+                <div className="border-t border-slate-100 p-6">
+                  <div className="rounded-3xl border border-dashed border-violet-200 bg-violet-50/70 p-8 text-center">
+                    <p className="text-4xl">✨</p>
+                    <h3 className="mt-3 text-2xl font-black">
+                      Noch keine Module eingetragen
+                    </h3>
+                    <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                      Starte oben mit deinem ersten Modul. Danach erscheinen
+                      hier automatisch Semestergruppen, Schnitte und
+                      Einzelleistungen.
+                    </p>
+                    <button
+                      type="button"
+                      className="mt-5 rounded-2xl bg-violet-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 transition hover:-translate-y-0.5"
+                      onClick={() => setIsAddModuleOpen(true)}
+                    >
+                      Erstes Modul anlegen
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {modules.length > 0 && visibleModules.length === 0 && (
+                <div className="border-t border-slate-100 p-6">
+                  <div className="rounded-3xl bg-slate-50 p-8 text-center text-slate-500 ring-1 ring-slate-200">
+                    Keine Module für diese Suche oder diesen Filter gefunden.
+                  </div>
+                </div>
+              )}
+
+              {visibleModules.length > 0 && (
+                <div className="flex flex-col gap-6 border-t border-slate-100 p-5 sm:p-6">
+                  {semesterNumbers.map((semesterNumber) => {
+                    const semesterModules = semesterGroups[semesterNumber];
+                    const semesterPassedEcts =
+                      getSemesterPassedEcts(semesterModules);
+                    const semesterAverage = getSemesterAverage(semesterModules);
+
+                    return (
+                      <div
+                        key={semesterNumber}
+                        className="rounded-3xl bg-slate-50/80 p-4 ring-1 ring-slate-200"
+                      >
+                        <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                          <div>
+                            <h3 className="text-2xl font-black tracking-tight">
+                              {semesterNumber}. Semester
+                            </h3>
+                            <p className="mt-1 text-sm text-slate-500">
+                              {semesterModules.length} Modul(e) ·{" "}
+                              {semesterPassedEcts} bestandene ECTS
+                              {semesterAverage > 0 &&
+                                ` · Schnitt ${formatGrade(semesterAverage)}`}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-600 ring-1 ring-slate-200">
+                            {semesterAverage > 0
+                              ? `Ø ${formatGrade(semesterAverage)}`
+                              : "Noch kein Schnitt"}
+                          </div>
+                        </div>
+
+                        <div className="grid gap-4">
+                          {semesterModules.map((module) => {
+                            const finalGrade = getFinalGrade(module);
+                            const effectiveStatus = getEffectiveStatus(module);
+                            const totalAssessmentWeight =
+                              getTotalAssessmentWeight(module);
+                            const isEditing = editingModules[module.id];
+                            const weightProgress = Math.min(
+                              totalAssessmentWeight,
+                              100,
+                            );
+
+                            return (
+                              <article
+                                key={module.id}
+                                className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200"
+                              >
+                                {!isEditing ? (
+                                  <>
+                                    <div className="p-4 sm:p-5">
+                                      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+                                        <div className="min-w-0 flex-1">
+                                          <div className="mb-3 flex flex-wrap items-center gap-2">
+                                            <span
+                                              className={`rounded-full px-3 py-1 text-xs font-black ${getStatusStyle(effectiveStatus)}`}
+                                            >
+                                              {getStatusLabel(effectiveStatus)}
+                                            </span>
+                                            {module.assessments.length > 0 && (
+                                              <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700 ring-1 ring-violet-100">
+                                                {module.assessments.length}{" "}
+                                                Einzelleistung(en)
+                                              </span>
+                                            )}
+                                            <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-black text-slate-600 ring-1 ring-slate-200">
+                                              geplant S
+                                              {module.plannedSemester ??
+                                                module.semester}
+                                            </span>
+                                            {(module.attemptCount ?? 0) > 0 && (
+                                              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700 ring-1 ring-amber-100">
+                                                Versuch {module.attemptCount}/
+                                                {module.maxAttempts ?? 3}
+                                              </span>
+                                            )}
                                           </div>
-                                          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                                            <div
-                                              className={`h-full rounded-full ${totalAssessmentWeight > 100 ? "bg-rose-500" : "bg-violet-600"}`}
-                                              style={{ width: `${weightProgress}%` }}
-                                            />
-                                          </div>
-                                        </div>
-                                      )}
 
-                                      {module.assessments.length > 0 && (
-                                        <div className="mt-4 rounded-2xl bg-violet-50/70 p-3 ring-1 ring-violet-100">
-                                          <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-violet-700">
-                                            Eingetragene Leistungen
-                                          </p>
-                                          <div className="grid gap-2">
-                                            {module.assessments.slice(0, 3).map((assessment) => (
-                                              <div
-                                                key={assessment.id}
-                                                className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-violet-100"
-                                              >
-                                                <span className="font-black text-slate-800">{assessment.name}</span>
-                                                <span className="font-bold text-slate-500">
-                                                  {assessment.weight}% · Note {formatGrade(assessment.grade)}
+                                          <h4 className="truncate text-xl font-black tracking-tight sm:text-2xl">
+                                            {module.name}
+                                          </h4>
+
+                                          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                                            <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
+                                              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                                                ECTS
+                                              </p>
+                                              <p className="mt-1 text-xl font-black">
+                                                {formatCompactNumber(
+                                                  module.ects,
+                                                )}
+                                              </p>
+                                            </div>
+                                            <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
+                                              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                                                Modulnote
+                                              </p>
+                                              <p className="mt-1 text-xl font-black">
+                                                {finalGrade !== null
+                                                  ? formatGrade(finalGrade)
+                                                  : "—"}
+                                              </p>
+                                            </div>
+                                            <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
+                                              <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                                                Gewichtung
+                                              </p>
+                                              <p className="mt-1 text-xl font-black">
+                                                {module.assessments.length > 0
+                                                  ? `${totalAssessmentWeight}%`
+                                                  : "—"}
+                                              </p>
+                                            </div>
+                                          </div>
+
+                                          {module.assessments.length > 0 && (
+                                            <div className="mt-4">
+                                              <div className="mb-1 flex justify-between text-xs font-bold text-slate-400">
+                                                <span>Einzelleistungen</span>
+                                                <span>
+                                                  {totalAssessmentWeight}% /
+                                                  100%
                                                 </span>
                                               </div>
-                                            ))}
-                                          </div>
-                                          {module.assessments.length > 3 && (
-                                            <p className="mt-2 text-xs font-bold text-violet-700">
-                                              + {module.assessments.length - 3} weitere Leistung(en) im Aufklappbereich
-                                            </p>
+                                              <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                                                <div
+                                                  className={`h-full rounded-full ${totalAssessmentWeight > 100 ? "bg-rose-500" : "bg-violet-600"}`}
+                                                  style={{
+                                                    width: `${weightProgress}%`,
+                                                  }}
+                                                />
+                                              </div>
+                                            </div>
+                                          )}
+
+                                          {module.assessments.length > 0 && (
+                                            <div className="mt-4 rounded-2xl bg-violet-50/70 p-3 ring-1 ring-violet-100">
+                                              <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-violet-700">
+                                                Eingetragene Leistungen
+                                              </p>
+                                              <div className="grid gap-2">
+                                                {module.assessments
+                                                  .slice(0, 3)
+                                                  .map((assessment) => (
+                                                    <div
+                                                      key={assessment.id}
+                                                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-violet-100"
+                                                    >
+                                                      <span className="font-black text-slate-800">
+                                                        {assessment.name}
+                                                      </span>
+                                                      <span className="font-bold text-slate-500">
+                                                        {assessment.weight}% ·
+                                                        Note{" "}
+                                                        {formatGrade(
+                                                          assessment.grade,
+                                                        )}
+                                                      </span>
+                                                    </div>
+                                                  ))}
+                                              </div>
+                                              {module.assessments.length >
+                                                3 && (
+                                                <p className="mt-2 text-xs font-bold text-violet-700">
+                                                  +{" "}
+                                                  {module.assessments.length -
+                                                    3}{" "}
+                                                  weitere Leistung(en) im
+                                                  Aufklappbereich
+                                                </p>
+                                              )}
+                                            </div>
                                           )}
                                         </div>
-                                      )}
-                                    </div>
 
-                                    <div className="flex flex-wrap gap-2 lg:justify-end">
-                                      <button
-                                        type="button"
-                                        className="soft-button"
-                                        onClick={() => startEditingModule(module)}
-                                      >
-                                        Bearbeiten
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        className="rounded-2xl bg-rose-50 px-4 py-2.5 text-sm font-black text-rose-700 ring-1 ring-rose-100 transition hover:-translate-y-0.5 hover:bg-rose-100"
-                                        onClick={() => deleteModule(module.id)}
-                                      >
-                                        Löschen
-                                      </button>
-                                    </div>
-                                  </div>
-
-                                  <button
-                                    type="button"
-                                    className="mt-5 flex w-full items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-left ring-1 ring-slate-100 transition hover:bg-violet-50 hover:ring-violet-100"
-                                    onClick={() => toggleAssessments(module.id)}
-                                  >
-                                    <div>
-                                      <p className="font-black">Einzelleistungen</p>
-                                      <p className="mt-0.5 text-sm text-slate-500">
-                                        {module.assessments.length === 0
-                                          ? "Aufklappen, um Klausur, Präsentation oder Projekt einzutragen."
-                                          : `${module.assessments.length} Leistung(en) · ${totalAssessmentWeight}% eingetragen`}
-                                      </p>
-                                    </div>
-
-                                    <span className="rounded-xl bg-white px-3 py-1 text-lg font-black text-slate-500 ring-1 ring-slate-200">
-                                      {expandedModules[module.id] ? "−" : "+"}
-                                    </span>
-                                  </button>
-                                </div>
-
-                                {expandedModules[module.id] && (
-                                  <div className="border-t border-slate-100 bg-slate-50/70 p-4 sm:p-5">
-                                    {module.assessments.length === 0 && (
-                                      <p className="mb-4 rounded-2xl bg-white p-3 text-sm text-slate-500 ring-1 ring-slate-200">
-                                        Noch keine Einzelleistungen eingetragen.
-                                      </p>
-                                    )}
-
-                                    <div className="mb-4 grid gap-2">
-                                      {module.assessments.map((assessment) => (
-                                        <div key={assessment.id} className="flex flex-col justify-between gap-3 rounded-2xl bg-white p-3 text-sm ring-1 ring-slate-200 sm:flex-row sm:items-center">
-                                          <div>
-                                            <p className="font-black">{assessment.name}</p>
-                                            <p className="mt-0.5 text-slate-500">
-                                              {assessment.weight}% Gewichtung · Note {formatGrade(assessment.grade)}
-                                            </p>
-                                          </div>
+                                        <div className="flex flex-wrap gap-2 lg:justify-end">
+                                          <button
+                                            type="button"
+                                            className="soft-button"
+                                            onClick={() =>
+                                              startEditingModule(module)
+                                            }
+                                          >
+                                            Bearbeiten
+                                          </button>
 
                                           <button
                                             type="button"
-                                            className="self-start rounded-xl bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700 ring-1 ring-rose-100 hover:bg-rose-100 sm:self-auto"
-                                            onClick={() => deleteAssessment(module.id, assessment.id)}
+                                            className="rounded-2xl bg-rose-50 px-4 py-2.5 text-sm font-black text-rose-700 ring-1 ring-rose-100 transition hover:-translate-y-0.5 hover:bg-rose-100"
+                                            onClick={() =>
+                                              deleteModule(module.id)
+                                            }
                                           >
-                                            Entfernen
+                                            Löschen
                                           </button>
                                         </div>
-                                      ))}
-                                    </div>
-
-                                    <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr_0.8fr_auto]">
-                                      <input
-                                        className="field-input bg-white"
-                                        placeholder="Leistung, z. B. Klausur"
-                                        value={assessmentInputs[module.id]?.name ?? ""}
-                                        onChange={(event) => updateAssessmentInput(module.id, "name", event.target.value)}
-                                      />
-
-                                      <input
-                                        className="field-input bg-white"
-                                        placeholder="Gewichtung %"
-                                        inputMode="decimal"
-                                        value={assessmentInputs[module.id]?.weight ?? ""}
-                                        onChange={(event) => updateAssessmentInput(module.id, "weight", event.target.value)}
-                                      />
-
-                                      <input
-                                        className="field-input bg-white"
-                                        placeholder="Note"
-                                        inputMode="decimal"
-                                        value={assessmentInputs[module.id]?.grade ?? ""}
-                                        onChange={(event) => updateAssessmentInput(module.id, "grade", event.target.value)}
-                                      />
+                                      </div>
 
                                       <button
                                         type="button"
-                                        className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
-                                        onClick={() => addAssessment(module.id)}
+                                        className="mt-5 flex w-full items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-left ring-1 ring-slate-100 transition hover:bg-violet-50 hover:ring-violet-100"
+                                        onClick={() =>
+                                          toggleAssessments(module.id)
+                                        }
                                       >
-                                        Hinzufügen
+                                        <div>
+                                          <p className="font-black">
+                                            Einzelleistungen
+                                          </p>
+                                          <p className="mt-0.5 text-sm text-slate-500">
+                                            {module.assessments.length === 0
+                                              ? "Aufklappen, um Klausur, Präsentation oder Projekt einzutragen."
+                                              : `${module.assessments.length} Leistung(en) · ${totalAssessmentWeight}% eingetragen`}
+                                          </p>
+                                        </div>
+
+                                        <span className="rounded-xl bg-white px-3 py-1 text-lg font-black text-slate-500 ring-1 ring-slate-200">
+                                          {expandedModules[module.id]
+                                            ? "−"
+                                            : "+"}
+                                        </span>
                                       </button>
                                     </div>
 
-                                    {totalAssessmentWeight > 100 && (
-                                      <p className="mt-3 rounded-2xl bg-rose-50 p-3 text-sm font-bold text-rose-700 ring-1 ring-rose-100">
-                                        Achtung: Die Gewichtung liegt über 100%.
+                                    {expandedModules[module.id] && (
+                                      <div className="border-t border-slate-100 bg-slate-50/70 p-4 sm:p-5">
+                                        {module.assessments.length === 0 && (
+                                          <p className="mb-4 rounded-2xl bg-white p-3 text-sm text-slate-500 ring-1 ring-slate-200">
+                                            Noch keine Einzelleistungen
+                                            eingetragen.
+                                          </p>
+                                        )}
+
+                                        <div className="mb-4 grid gap-2">
+                                          {module.assessments.map(
+                                            (assessment) => (
+                                              <div
+                                                key={assessment.id}
+                                                className="flex flex-col justify-between gap-3 rounded-2xl bg-white p-3 text-sm ring-1 ring-slate-200 sm:flex-row sm:items-center"
+                                              >
+                                                <div>
+                                                  <p className="font-black">
+                                                    {assessment.name}
+                                                  </p>
+                                                  <p className="mt-0.5 text-slate-500">
+                                                    {assessment.weight}%
+                                                    Gewichtung · Note{" "}
+                                                    {formatGrade(
+                                                      assessment.grade,
+                                                    )}
+                                                  </p>
+                                                </div>
+
+                                                <button
+                                                  type="button"
+                                                  className="self-start rounded-xl bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700 ring-1 ring-rose-100 hover:bg-rose-100 sm:self-auto"
+                                                  onClick={() =>
+                                                    deleteAssessment(
+                                                      module.id,
+                                                      assessment.id,
+                                                    )
+                                                  }
+                                                >
+                                                  Entfernen
+                                                </button>
+                                              </div>
+                                            ),
+                                          )}
+                                        </div>
+
+                                        <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr_0.8fr_auto]">
+                                          <input
+                                            className="field-input bg-white"
+                                            placeholder="Leistung, z. B. Klausur"
+                                            value={
+                                              assessmentInputs[module.id]
+                                                ?.name ?? ""
+                                            }
+                                            onChange={(event) =>
+                                              updateAssessmentInput(
+                                                module.id,
+                                                "name",
+                                                event.target.value,
+                                              )
+                                            }
+                                          />
+
+                                          <input
+                                            className="field-input bg-white"
+                                            placeholder="Gewichtung %"
+                                            inputMode="decimal"
+                                            value={
+                                              assessmentInputs[module.id]
+                                                ?.weight ?? ""
+                                            }
+                                            onChange={(event) =>
+                                              updateAssessmentInput(
+                                                module.id,
+                                                "weight",
+                                                event.target.value,
+                                              )
+                                            }
+                                          />
+
+                                          <input
+                                            className="field-input bg-white"
+                                            placeholder="Note"
+                                            inputMode="decimal"
+                                            value={
+                                              assessmentInputs[module.id]
+                                                ?.grade ?? ""
+                                            }
+                                            onChange={(event) =>
+                                              updateAssessmentInput(
+                                                module.id,
+                                                "grade",
+                                                event.target.value,
+                                              )
+                                            }
+                                          />
+
+                                          <button
+                                            type="button"
+                                            className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
+                                            onClick={() =>
+                                              addAssessment(module.id)
+                                            }
+                                          >
+                                            Hinzufügen
+                                          </button>
+                                        </div>
+
+                                        {totalAssessmentWeight > 100 && (
+                                          <p className="mt-3 rounded-2xl bg-rose-50 p-3 text-sm font-bold text-rose-700 ring-1 ring-rose-100">
+                                            Achtung: Die Gewichtung liegt über
+                                            100%.
+                                          </p>
+                                        )}
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <div className="bg-slate-50/80 p-4 sm:p-5">
+                                    <div className="mb-5 flex items-center justify-between gap-4">
+                                      <div>
+                                        <p className="text-sm font-bold text-violet-700">
+                                          Bearbeitung
+                                        </p>
+                                        <h4 className="text-2xl font-black tracking-tight">
+                                          Modul bearbeiten
+                                        </h4>
+                                      </div>
+                                    </div>
+
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                      <label className="block md:col-span-2">
+                                        <span className="mb-1.5 block text-sm font-bold text-slate-700">
+                                          Modulname
+                                        </span>
+                                        <input
+                                          className="field-input bg-white"
+                                          placeholder="Modulname"
+                                          value={
+                                            editInputs[module.id]?.name ?? ""
+                                          }
+                                          onChange={(event) =>
+                                            updateEditInput(
+                                              module.id,
+                                              "name",
+                                              event.target.value,
+                                            )
+                                          }
+                                        />
+                                      </label>
+
+                                      <label className="block">
+                                        <span className="mb-1.5 block text-sm font-bold text-slate-700">
+                                          StuPo-Semester
+                                        </span>
+                                        <input
+                                          className="field-input bg-white"
+                                          placeholder="Semester"
+                                          inputMode="decimal"
+                                          value={
+                                            editInputs[module.id]?.semester ??
+                                            ""
+                                          }
+                                          onChange={(event) =>
+                                            updateEditInput(
+                                              module.id,
+                                              "semester",
+                                              event.target.value,
+                                            )
+                                          }
+                                        />
+                                      </label>
+
+                                      <label className="block">
+                                        <span className="mb-1.5 block text-sm font-bold text-slate-700">
+                                          Geplantes Semester
+                                        </span>
+                                        <input
+                                          className="field-input bg-white"
+                                          placeholder="Semester"
+                                          inputMode="decimal"
+                                          value={
+                                            editInputs[module.id]
+                                              ?.plannedSemester ?? ""
+                                          }
+                                          onChange={(event) =>
+                                            updateEditInput(
+                                              module.id,
+                                              "plannedSemester",
+                                              event.target.value,
+                                            )
+                                          }
+                                        />
+                                      </label>
+
+                                      <label className="block">
+                                        <span className="mb-1.5 block text-sm font-bold text-slate-700">
+                                          ECTS
+                                        </span>
+                                        <input
+                                          className="field-input bg-white"
+                                          placeholder="ECTS"
+                                          inputMode="decimal"
+                                          value={
+                                            editInputs[module.id]?.ects ?? ""
+                                          }
+                                          onChange={(event) =>
+                                            updateEditInput(
+                                              module.id,
+                                              "ects",
+                                              event.target.value,
+                                            )
+                                          }
+                                        />
+                                      </label>
+
+                                      <label className="block">
+                                        <span className="mb-1.5 block text-sm font-bold text-slate-700">
+                                          Gesamtnote
+                                        </span>
+                                        <input
+                                          className="field-input bg-white"
+                                          placeholder="optional"
+                                          inputMode="decimal"
+                                          value={
+                                            editInputs[module.id]?.grade ?? ""
+                                          }
+                                          onChange={(event) =>
+                                            updateEditInput(
+                                              module.id,
+                                              "grade",
+                                              event.target.value,
+                                            )
+                                          }
+                                        />
+                                      </label>
+
+                                      <label className="block">
+                                        <span className="mb-1.5 block text-sm font-bold text-slate-700">
+                                          Status
+                                        </span>
+                                        <select
+                                          className="field-input bg-white"
+                                          value={
+                                            editInputs[module.id]?.status ??
+                                            "passed"
+                                          }
+                                          onChange={(event) =>
+                                            updateEditInput(
+                                              module.id,
+                                              "status",
+                                              event.target
+                                                .value as ModuleStatus,
+                                            )
+                                          }
+                                        >
+                                          {statusOptions.map((option) => (
+                                            <option
+                                              key={option.value}
+                                              value={option.value}
+                                            >
+                                              {option.label}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </label>
+
+                                      <label className="block">
+                                        <span className="mb-1.5 block text-sm font-bold text-slate-700">
+                                          Fehlversuche
+                                        </span>
+                                        <input
+                                          className="field-input bg-white"
+                                          placeholder="0"
+                                          inputMode="numeric"
+                                          value={
+                                            editInputs[module.id]
+                                              ?.attemptCount ?? "0"
+                                          }
+                                          onChange={(event) =>
+                                            updateEditInput(
+                                              module.id,
+                                              "attemptCount",
+                                              event.target.value,
+                                            )
+                                          }
+                                        />
+                                      </label>
+
+                                      <label className="block">
+                                        <span className="mb-1.5 block text-sm font-bold text-slate-700">
+                                          Max. Versuche
+                                        </span>
+                                        <input
+                                          className="field-input bg-white"
+                                          placeholder="3"
+                                          inputMode="numeric"
+                                          value={
+                                            editInputs[module.id]
+                                              ?.maxAttempts ?? "3"
+                                          }
+                                          onChange={(event) =>
+                                            updateEditInput(
+                                              module.id,
+                                              "maxAttempts",
+                                              event.target.value,
+                                            )
+                                          }
+                                        />
+                                      </label>
+                                    </div>
+
+                                    <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                                      <button
+                                        type="button"
+                                        className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                                        onClick={() =>
+                                          cancelEditingModule(module.id)
+                                        }
+                                      >
+                                        Abbrechen
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        className="rounded-2xl bg-violet-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 transition hover:-translate-y-0.5 hover:bg-violet-800"
+                                        onClick={() =>
+                                          saveEditedModule(module.id)
+                                        }
+                                      >
+                                        Speichern
+                                      </button>
+                                    </div>
+
+                                    {module.assessments.length > 0 && (
+                                      <p className="mt-4 rounded-2xl bg-white p-3 text-sm text-slate-500 ring-1 ring-slate-200">
+                                        Hinweis: Wenn Einzelleistungen
+                                        eingetragen sind, wird die sichtbare
+                                        Modulnote aus diesen Leistungen
+                                        berechnet.
                                       </p>
                                     )}
                                   </div>
                                 )}
-                              </>
-                            ) : (
-                              <div className="bg-slate-50/80 p-4 sm:p-5">
-                                <div className="mb-5 flex items-center justify-between gap-4">
-                                  <div>
-                                    <p className="text-sm font-bold text-violet-700">Bearbeitung</p>
-                                    <h4 className="text-2xl font-black tracking-tight">Modul bearbeiten</h4>
-                                  </div>
-                                </div>
-
-                                <div className="grid gap-4 md:grid-cols-2">
-                                  <label className="block md:col-span-2">
-                                    <span className="mb-1.5 block text-sm font-bold text-slate-700">Modulname</span>
-                                    <input
-                                      className="field-input bg-white"
-                                      placeholder="Modulname"
-                                      value={editInputs[module.id]?.name ?? ""}
-                                      onChange={(event) => updateEditInput(module.id, "name", event.target.value)}
-                                    />
-                                  </label>
-
-                                  <label className="block">
-                                    <span className="mb-1.5 block text-sm font-bold text-slate-700">StuPo-Semester</span>
-                                    <input
-                                      className="field-input bg-white"
-                                      placeholder="Semester"
-                                      inputMode="decimal"
-                                      value={editInputs[module.id]?.semester ?? ""}
-                                      onChange={(event) => updateEditInput(module.id, "semester", event.target.value)}
-                                    />
-                                  </label>
-
-                                  <label className="block">
-                                    <span className="mb-1.5 block text-sm font-bold text-slate-700">Geplantes Semester</span>
-                                    <input
-                                      className="field-input bg-white"
-                                      placeholder="Semester"
-                                      inputMode="decimal"
-                                      value={editInputs[module.id]?.plannedSemester ?? ""}
-                                      onChange={(event) => updateEditInput(module.id, "plannedSemester", event.target.value)}
-                                    />
-                                  </label>
-
-                                  <label className="block">
-                                    <span className="mb-1.5 block text-sm font-bold text-slate-700">ECTS</span>
-                                    <input
-                                      className="field-input bg-white"
-                                      placeholder="ECTS"
-                                      inputMode="decimal"
-                                      value={editInputs[module.id]?.ects ?? ""}
-                                      onChange={(event) => updateEditInput(module.id, "ects", event.target.value)}
-                                    />
-                                  </label>
-
-                                  <label className="block">
-                                    <span className="mb-1.5 block text-sm font-bold text-slate-700">Gesamtnote</span>
-                                    <input
-                                      className="field-input bg-white"
-                                      placeholder="optional"
-                                      inputMode="decimal"
-                                      value={editInputs[module.id]?.grade ?? ""}
-                                      onChange={(event) => updateEditInput(module.id, "grade", event.target.value)}
-                                    />
-                                  </label>
-
-                                  <label className="block">
-                                    <span className="mb-1.5 block text-sm font-bold text-slate-700">Status</span>
-                                    <select
-                                      className="field-input bg-white"
-                                      value={editInputs[module.id]?.status ?? "passed"}
-                                      onChange={(event) => updateEditInput(module.id, "status", event.target.value as ModuleStatus)}
-                                    >
-                                      {statusOptions.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                          {option.label}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </label>
-
-                                  <label className="block">
-                                    <span className="mb-1.5 block text-sm font-bold text-slate-700">Fehlversuche</span>
-                                    <input
-                                      className="field-input bg-white"
-                                      placeholder="0"
-                                      inputMode="numeric"
-                                      value={editInputs[module.id]?.attemptCount ?? "0"}
-                                      onChange={(event) => updateEditInput(module.id, "attemptCount", event.target.value)}
-                                    />
-                                  </label>
-
-                                  <label className="block">
-                                    <span className="mb-1.5 block text-sm font-bold text-slate-700">Max. Versuche</span>
-                                    <input
-                                      className="field-input bg-white"
-                                      placeholder="3"
-                                      inputMode="numeric"
-                                      value={editInputs[module.id]?.maxAttempts ?? "3"}
-                                      onChange={(event) => updateEditInput(module.id, "maxAttempts", event.target.value)}
-                                    />
-                                  </label>
-                                </div>
-
-                                <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
-                                  <button
-                                    type="button"
-                                    className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-100"
-                                    onClick={() => cancelEditingModule(module.id)}
-                                  >
-                                    Abbrechen
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    className="rounded-2xl bg-violet-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 transition hover:-translate-y-0.5 hover:bg-violet-800"
-                                    onClick={() => saveEditedModule(module.id)}
-                                  >
-                                    Speichern
-                                  </button>
-                                </div>
-
-                                {module.assessments.length > 0 && (
-                                  <p className="mt-4 rounded-2xl bg-white p-3 text-sm text-slate-500 ring-1 ring-slate-200">
-                                    Hinweis: Wenn Einzelleistungen eingetragen sind, wird die sichtbare Modulnote aus diesen Leistungen berechnet.
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                          </article>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        <section id="backup" className="scroll-mt-6 overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
-          <button
-            type="button"
-            className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
-            onClick={() => setIsToolsOpen((open) => !open)}
-          >
-            <div>
-              <p className="text-sm font-bold text-violet-700">Backup & Export</p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight">Daten sichern & übertragen</h2>
-              <p className="mt-1 text-sm text-slate-500">JSON Backup, Import oder CSV für Excel.</p>
-            </div>
-            <span className="rounded-2xl bg-violet-50 px-4 py-2 text-2xl font-black text-violet-700 ring-1 ring-violet-100">
-              {isToolsOpen ? "−" : "+"}
-            </span>
-          </button>
-
-          {isToolsOpen && (
-            <div className="border-t border-slate-100 p-5 sm:p-6">
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                  type="button"
-                  className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
-                  onClick={exportJsonBackup}
-                >
-                  Backup exportieren
-                </button>
-
-                <button
-                  type="button"
-                  className="soft-button"
-                  onClick={triggerImport}
-                >
-                  Backup importieren
-                </button>
-
-                <button
-                  type="button"
-                  className="soft-button"
-                  onClick={exportCsv}
-                >
-                  CSV exportieren
-                </button>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".json,application/json"
-                  className="hidden"
-                  onChange={importJsonBackup}
-                />
-              </div>
-
-              {importMessage && (
-                <div className="mt-4 rounded-2xl bg-violet-50 p-3 text-sm font-bold text-violet-700 ring-1 ring-violet-100">
-                  {importMessage}
+                              </article>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
+            </section>
+          </>
+        )}
 
-              <p className="mt-3 text-xs leading-5 text-slate-400">
-                Achtung: Beim Import wird deine aktuelle Modul-Liste durch die importierte Backup-Datei ersetzt.
-              </p>
-            </div>
-          )}
-        </section>
+        {page === "backup" && (
+          <section
+            id="backup"
+            className="scroll-mt-6 overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur"
+          >
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
+              onClick={() => setIsToolsOpen((open) => !open)}
+            >
+              <div>
+                <p className="text-sm font-bold text-violet-700">
+                  Backup & Export
+                </p>
+                <h2 className="mt-1 text-2xl font-black tracking-tight">
+                  Daten sichern & übertragen
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  JSON Backup, Import oder CSV für Excel.
+                </p>
+              </div>
+              <span className="rounded-2xl bg-violet-50 px-4 py-2 text-2xl font-black text-violet-700 ring-1 ring-violet-100">
+                {isBackupVisible ? "−" : "+"}
+              </span>
+            </button>
+
+            {isBackupVisible && (
+              <div className="border-t border-slate-100 p-5 sm:p-6">
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
+                    onClick={exportJsonBackup}
+                  >
+                    Backup exportieren
+                  </button>
+
+                  <button
+                    type="button"
+                    className="soft-button"
+                    onClick={triggerImport}
+                  >
+                    Backup importieren
+                  </button>
+
+                  <button
+                    type="button"
+                    className="soft-button"
+                    onClick={exportCsv}
+                  >
+                    CSV exportieren
+                  </button>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json,application/json"
+                    className="hidden"
+                    onChange={importJsonBackup}
+                  />
+                </div>
+
+                {importMessage && (
+                  <div className="mt-4 rounded-2xl bg-violet-50 p-3 text-sm font-bold text-violet-700 ring-1 ring-violet-100">
+                    {importMessage}
+                  </div>
+                )}
+
+                <p className="mt-3 text-xs leading-5 text-slate-400">
+                  Achtung: Beim Import wird deine aktuelle Modul-Liste durch die
+                  importierte Backup-Datei ersetzt.
+                </p>
+              </div>
+            )}
+          </section>
+        )}
 
         <footer className="flex flex-col items-center justify-between gap-3 pb-2 text-xs font-bold text-slate-400 sm:flex-row">
           <span>GradeGlow Prototype</span>

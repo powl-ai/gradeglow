@@ -93,7 +93,7 @@ Nach dem Deployment:
 5. DevTools → Application → Service Workers prüfen
 6. Kurz offline gehen und prüfen, ob `offline.html` erscheint
 
-## 8. Vercel Analytics
+## 8. Vercel Analytics & Speed Insights
 
 Vercel Analytics ist eingebaut über:
 
@@ -101,11 +101,17 @@ Vercel Analytics ist eingebaut über:
 import { Analytics } from "@vercel/analytics/next";
 ```
 
-Die Komponente liegt im Root Layout (`src/app/layout.tsx`). Auf Vercel musst du im Projekt zusätzlich Analytics aktivieren:
+Speed Insights ist zusätzlich eingebaut über:
+
+```tsx
+import { SpeedInsights } from "@vercel/speed-insights/next";
+```
+
+Beide Komponenten liegen im Root Layout (`src/app/layout.tsx`). Auf Vercel musst du im Projekt zusätzlich Analytics und Speed Insights aktivieren:
 
 1. Vercel Projekt öffnen
-2. Tab **Analytics** öffnen
-3. Analytics aktivieren
+2. Tab **Analytics** öffnen und Analytics aktivieren
+3. Tab **Speed Insights** öffnen und Speed Insights aktivieren
 4. Danach neues Production Deployment auslösen
 
 ## 9. Eigene Domain als Zusatz-Domain

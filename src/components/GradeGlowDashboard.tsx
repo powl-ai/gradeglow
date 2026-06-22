@@ -42,6 +42,22 @@ type GradeGlowDashboardProps = {
   onLogout: () => Promise<void>;
 };
 
+
+type DashboardNavItem = {
+  id: string;
+  label: string;
+  description: string;
+};
+
+const dashboardNavItems: DashboardNavItem[] = [
+  { id: "overview", label: "Überblick", description: "Schnitt, ECTS und Fortschritt" },
+  { id: "insights", label: "Insights", description: "Diagramme und Glow Check" },
+  { id: "exams", label: "Prüfungen", description: "Prüfungsplaner und Lernplan" },
+  { id: "study-planning", label: "StuPo & Planung", description: "Import, Semesterplanung und Fehlversuche" },
+  { id: "modules", label: "Module", description: "Eintragen, bearbeiten und Leistungen" },
+  { id: "backup", label: "Backup", description: "Export, Import und CSV" },
+];
+
 const statusOptions: { value: ModuleStatus; label: string; shortLabel: string }[] = [
   { value: "passed", label: "Bestanden", shortLabel: "Bestanden" },
   { value: "ungraded", label: "Unbenotet bestanden", shortLabel: "Unbenotet" },
@@ -80,9 +96,17 @@ export default function GradeGlowDashboard({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [isAddModuleOpen, setIsAddModuleOpen] = useState(true);
   const [isToolsOpen, setIsToolsOpen] = useState(false);
+  const [isInsightsOpen, setIsInsightsOpen] = useState(false);
+  const [isExamPlannerOpen, setIsExamPlannerOpen] = useState(false);
+  const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const [importMessage, setImportMessage] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const jumpToSection = (sectionId: string) => {
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setIsNavigationOpen(false);
+  };
 
   const { profile } = useGradeGlowProfile(user);
   const totalTargetEcts = profile.targetEcts > 0 ? profile.targetEcts : DEFAULT_TARGET_ECTS;
@@ -737,6 +761,45 @@ export default function GradeGlowDashboard({
         <div className="absolute bottom-[-12rem] left-1/2 h-[30rem] w-[30rem] -translate-x-1/2 rounded-full bg-pink-200/50 blur-3xl" />
       </div>
 
+      {isNavigationOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/45 p-4 backdrop-blur-sm" onClick={() => setIsNavigationOpen(false)}>
+          <nav
+            className="max-h-[calc(100vh-2rem)] w-full max-w-sm overflow-y-auto rounded-[2rem] bg-white p-4 shadow-2xl shadow-slate-950/25 ring-1 ring-violet-100"
+            onClick={(event) => event.stopPropagation()}
+            aria-label="GradeGlow Navigation"
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold text-violet-700">Navigation</p>
+                <h2 className="text-2xl font-black tracking-tight">GradeGlow Bereiche</h2>
+              </div>
+              <button
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-50 text-lg font-black text-slate-600 ring-1 ring-slate-200"
+                onClick={() => setIsNavigationOpen(false)}
+                aria-label="Navigation schließen"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="grid gap-2">
+              {dashboardNavItems.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="rounded-2xl bg-slate-50 p-4 text-left ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50 hover:ring-violet-100"
+                  onClick={() => jumpToSection(item.id)}
+                >
+                  <span className="block text-sm font-black text-slate-950">{item.label}</span>
+                  <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{item.description}</span>
+                </button>
+              ))}
+            </div>
+          </nav>
+        </div>
+      )}
+
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8 lg:py-8">
         <header className="overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl shadow-violet-950/20 ring-1 ring-white/10">
           <div className="relative p-5 sm:p-7 lg:p-8">
@@ -746,6 +809,15 @@ export default function GradeGlowDashboard({
             <div className="relative flex flex-col gap-7 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
                 <div className="mb-5 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-xl font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15"
+                    onClick={() => setIsNavigationOpen(true)}
+                    aria-label="Navigation öffnen"
+                  >
+                    ☰
+                  </button>
+
                   <GradeGlowLogo size="md" tone="light" />
 
                   <div className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${getSyncStyle()}`}>
@@ -820,7 +892,7 @@ export default function GradeGlowDashboard({
           </div>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section id="overview" className="scroll-mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-3xl bg-white/80 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -885,13 +957,55 @@ export default function GradeGlowDashboard({
 
         <PwaInstallCard />
 
-        <GradeGlowInsights modules={modules} totalTargetEcts={totalTargetEcts} />
+        <section id="insights" className="scroll-mt-6 overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
+            onClick={() => setIsInsightsOpen((open) => !open)}
+          >
+            <div>
+              <p className="text-sm font-bold text-violet-700">Insights</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight">Diagramme & Glow Check</h2>
+              <p className="mt-1 text-sm text-slate-500">Einklappbar, damit das Dashboard nicht so lang wirkt.</p>
+            </div>
+            <span className="rounded-2xl bg-violet-50 px-4 py-2 text-2xl font-black text-violet-700 ring-1 ring-violet-100">
+              {isInsightsOpen ? "−" : "+"}
+            </span>
+          </button>
+          {isInsightsOpen && (
+            <div className="border-t border-slate-100 p-5 sm:p-6">
+              <GradeGlowInsights modules={modules} totalTargetEcts={totalTargetEcts} />
+            </div>
+          )}
+        </section>
 
-        <GradeGlowPlanner user={user} modules={modules} />
+        <section id="exams" className="scroll-mt-6 overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
+            onClick={() => setIsExamPlannerOpen((open) => !open)}
+          >
+            <div>
+              <p className="text-sm font-bold text-violet-700">Prüfungsplaner</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight">Prüfungen & Lernplan</h2>
+              <p className="mt-1 text-sm text-slate-500">Nur öffnen, wenn du wirklich Prüfungen planen willst.</p>
+            </div>
+            <span className="rounded-2xl bg-violet-50 px-4 py-2 text-2xl font-black text-violet-700 ring-1 ring-violet-100">
+              {isExamPlannerOpen ? "−" : "+"}
+            </span>
+          </button>
+          {isExamPlannerOpen && (
+            <div className="border-t border-slate-100 p-5 sm:p-6">
+              <GradeGlowPlanner user={user} modules={modules} />
+            </div>
+          )}
+        </section>
 
-        <StudyPlanningPanel modules={modules} setModules={setModules} />
+        <div id="study-planning" className="scroll-mt-6">
+          <StudyPlanningPanel modules={modules} setModules={setModules} />
+        </div>
 
-        <section className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
+        <section id="modules" className="scroll-mt-6 grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
           <div className="overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
             <button
               type="button"
@@ -1212,6 +1326,32 @@ export default function GradeGlowDashboard({
                                           </div>
                                         </div>
                                       )}
+
+                                      {module.assessments.length > 0 && (
+                                        <div className="mt-4 rounded-2xl bg-violet-50/70 p-3 ring-1 ring-violet-100">
+                                          <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-violet-700">
+                                            Eingetragene Leistungen
+                                          </p>
+                                          <div className="grid gap-2">
+                                            {module.assessments.slice(0, 3).map((assessment) => (
+                                              <div
+                                                key={assessment.id}
+                                                className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-sm ring-1 ring-violet-100"
+                                              >
+                                                <span className="font-black text-slate-800">{assessment.name}</span>
+                                                <span className="font-bold text-slate-500">
+                                                  {assessment.weight}% · Note {formatGrade(assessment.grade)}
+                                                </span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                          {module.assessments.length > 3 && (
+                                            <p className="mt-2 text-xs font-bold text-violet-700">
+                                              + {module.assessments.length - 3} weitere Leistung(en) im Aufklappbereich
+                                            </p>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
 
                                     <div className="flex flex-wrap gap-2 lg:justify-end">
@@ -1461,7 +1601,7 @@ export default function GradeGlowDashboard({
           )}
         </section>
 
-        <section className="overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
+        <section id="backup" className="scroll-mt-6 overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
           <button
             type="button"
             className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"

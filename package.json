@@ -13,6 +13,7 @@
   "dependencies": {
     "@tailwindcss/postcss": "latest",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "firebase": "latest",
     "next": "latest",
     "react": "latest",

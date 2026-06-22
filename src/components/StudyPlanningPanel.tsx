@@ -775,7 +775,16 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
   return (
     <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
       <div className="space-y-6">
-        <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+        <details open className="rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-left marker:hidden sm:p-6">
+            <div>
+              <p className="text-sm font-bold text-violet-700">StuPo-Assistent</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight">Importe & Vorlagen</h2>
+              <p className="mt-1 text-sm text-slate-500">Aufklappen für Prompt, PDF-Workflow und Import-Vorschau.</p>
+            </div>
+            <span className="rounded-2xl bg-violet-50 px-4 py-2 text-sm font-black text-violet-700 ring-1 ring-violet-100">öffnen/schließen</span>
+          </summary>
+          <div className="border-t border-slate-100 p-5 sm:p-6">
           <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
             <div>
               <p className="text-sm font-bold text-violet-700">StuPo-Assistent</p>
@@ -1001,9 +1010,19 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
               {stupoMessage}
             </p>
           )}
-        </div>
+          </div>
+        </details>
 
-        <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+        <details className="rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-left marker:hidden sm:p-6">
+            <div>
+              <p className="text-sm font-bold text-violet-700">Versuchsübersicht</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight">Fehlversuche & Warnungen</h2>
+              <p className="mt-1 text-sm text-slate-500">Kompakt eingeklappt, damit der Assistent nicht die ganze Seite füllt.</p>
+            </div>
+            <span className="rounded-2xl bg-violet-50 px-4 py-2 text-sm font-black text-violet-700 ring-1 ring-violet-100">öffnen/schließen</span>
+          </summary>
+          <div className="border-t border-slate-100 p-5 sm:p-6">
           <div className="mb-5">
             <p className="text-sm font-bold text-violet-700">Versuchsübersicht</p>
             <h2 className="mt-1 text-2xl font-black tracking-tight">Fehlversuche & Drittversuch-Warnung</h2>
@@ -1085,11 +1104,21 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
               })}
             </div>
           )}
-        </div>
+          </div>
+        </details>
       </div>
 
       <div className="space-y-6">
-        <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+        <details className="rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-left marker:hidden sm:p-6">
+            <div>
+              <p className="text-sm font-bold text-violet-700">Semesterplanung</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight">Module verschieben</h2>
+              <p className="mt-1 text-sm text-slate-500">Aufklappen, wenn du Module ins nächste Semester ziehen willst.</p>
+            </div>
+            <span className="rounded-2xl bg-violet-50 px-4 py-2 text-sm font-black text-violet-700 ring-1 ring-violet-100">öffnen/schließen</span>
+          </summary>
+          <div className="border-t border-slate-100 p-5 sm:p-6">
           <div className="mb-5">
             <p className="text-sm font-bold text-violet-700">Semesterplanung</p>
             <h2 className="mt-1 text-2xl font-black tracking-tight">Module ins nächste Semester schieben</h2>
@@ -1172,9 +1201,19 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
               </p>
             )}
           </div>
-        </div>
+          </div>
+        </details>
 
-        <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+        <details className="rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-left marker:hidden sm:p-6">
+            <div>
+              <p className="text-sm font-bold text-violet-700">Plan-Auslastung</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight">ECTS je geplantem Semester</h2>
+              <p className="mt-1 text-sm text-slate-500">Semesterbelastung nur bei Bedarf anzeigen.</p>
+            </div>
+            <span className="rounded-2xl bg-violet-50 px-4 py-2 text-sm font-black text-violet-700 ring-1 ring-violet-100">öffnen/schließen</span>
+          </summary>
+          <div className="border-t border-slate-100 p-5 sm:p-6">
           <div className="mb-5">
             <p className="text-sm font-bold text-violet-700">Plan-Auslastung</p>
             <h2 className="mt-1 text-2xl font-black tracking-tight">ECTS je geplantem Semester</h2>
@@ -1222,7 +1261,8 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
               })}
             </div>
           )}
-        </div>
+          </div>
+        </details>
       </div>
     </section>
   );

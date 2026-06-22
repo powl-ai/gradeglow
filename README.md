@@ -15,9 +15,11 @@ GradeGlow ist eine Next.js/TypeScript/Tailwind-Web-App für Studienfortschritt, 
 - Prüfungsplaner unter `users/{userId}/exams/{examId}`
 - lokaler Fallback über `localStorage`
 - PWA mit Manifest, Service Worker, Offline-Fallback, Install-Button und App-Icons
-- Dashboard mit Semester-Gruppierung, Diagrammen, Zielnotenrechner und Backup Export/Import
+- Dashboard mit kompakter Navigation, Semester-Gruppierung, Diagrammen, Zielnotenrechner und Backup Export/Import
+- Einzelleistungen direkt auf der Modulkarte sichtbar; Bearbeitung weiterhin ausklappbar
+- StuPo-Import, Versuchsübersicht, Semesterplanung und Plan-Auslastung als ausklappbare Bereiche
 - lokaler KI-Lernplan-Generator für Prüfungsvorbereitung
-- Vercel Analytics eingebaut
+- Vercel Analytics und Speed Insights eingebaut
 
 ## Entwicklung starten
 
@@ -77,9 +79,9 @@ src/components/PwaRegister.tsx
 
 Der Install-Button erscheint im Dashboard. Auf iPhone/iPad wird weiterhin die Safari-Installation über Teilen → „Zum Home-Bildschirm“ genutzt.
 
-## Vercel Analytics
+## Vercel Analytics & Speed Insights
 
-Analytics ist im Root Layout eingebaut. Nach dem Deploy in Vercel im Projekt unter **Analytics** aktivieren.
+Analytics und Speed Insights sind im Root Layout eingebaut. Nach dem Deploy in Vercel im Projekt unter **Analytics** und **Speed Insights** aktivieren.
 
 ## Empfohlene Custom Domain
 

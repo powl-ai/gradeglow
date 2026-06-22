@@ -19,6 +19,7 @@ GradeGlow ist eine Next.js/TypeScript/Tailwind-Web-App für Studienfortschritt, 
 - Einzelleistungen direkt auf der Modulkarte sichtbar; Bearbeitung weiterhin ausklappbar
 - StuPo-Import, Versuchsübersicht, Semesterplanung und Plan-Auslastung als ausklappbare Bereiche
 - lokaler KI-Lernplan-Generator für Prüfungsvorbereitung
+- Monats-/Wochenkalender im Prüfungen-Reiter mit Prüfungstagen, Countdowns und Lernblock-Empfehlungen
 - Vercel Analytics und Speed Insights eingebaut
 
 ## Entwicklung starten
@@ -112,7 +113,7 @@ GradeGlow ist jetzt in eigene App-Bereiche aufgeteilt. Der Startbildschirm bleib
 
 - `/modules` – Module, Zielnotenrechner und Einzelleistungen
 - `/planning` – StuPo-Assistent, Semesterplanung und Versuchsübersicht
-- `/exams` – Prüfungsplaner und lokaler Lernplan
+- `/exams` – Prüfungsplaner, Monats-/Wochenkalender und lokaler Lernplan
 - `/insights` – Diagramme und Glow Check
 - `/backup` – JSON-Backup, Import und CSV-Export
 - `/settings` – Profil und Studiengang
@@ -123,3 +124,8 @@ Die Navigation ist über das Menü links oben und zusätzlich über die horizont
 ### Mobile/PWA Layout Fix
 
 Dieses Update enthält zusätzliche Mobile-Sicherungen gegen horizontales Überlaufen in der installierten iOS-PWA. Wichtige Änderungen: Safe-Area-Abstand für die Statusleiste, `overflow-x-hidden`, umbrechende Buttons/Texte und kompaktere Header auf kleinen Screens. Nach dem Deployment die installierte PWA einmal komplett schließen und neu öffnen, damit der Service Worker und die neue CSS-Version greifen.
+
+
+### Prüfungskalender
+
+Der Bereich `/exams` enthält jetzt zusätzlich einen Monats-/Wochenkalender. Prüfungstage werden als rote Termine angezeigt, automatisch vorgeschlagene Lernblöcke als violette Einträge. Die Ansicht zeigt außerdem die nächste Prüfung, heutige Lernblöcke und die Lernbelastung der aktuellen Woche.

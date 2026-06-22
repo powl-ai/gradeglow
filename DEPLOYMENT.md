@@ -170,9 +170,20 @@ Nach dem Deployment sollten diese URLs erreichbar sein:
 - `/settings`
 - `/info`
 
-Wenn am Handy noch die alte Ein-Seiten-Ansicht erscheint, Safari/Browser-Cache hart neu laden oder die PWA einmal schließen und erneut öffnen. Der Service Worker nutzt jetzt `gradeglow-v10`.
+Wenn am Handy noch die alte Ein-Seiten-Ansicht erscheint, Safari/Browser-Cache hart neu laden oder die PWA einmal schließen und erneut öffnen. Der Service Worker nutzt jetzt mindestens `gradeglow-v12`.
 
 
 ### Mobile/PWA Layout Fix
 
 Dieses Update enthält zusätzliche Mobile-Sicherungen gegen horizontales Überlaufen in der installierten iOS-PWA. Wichtige Änderungen: Safe-Area-Abstand für die Statusleiste, `overflow-x-hidden`, umbrechende Buttons/Texte und kompaktere Header auf kleinen Screens. Nach dem Deployment die installierte PWA einmal komplett schließen und neu öffnen, damit der Service Worker und die neue CSS-Version greifen.
+
+
+### Prüfungen-Kalender testen
+
+Nach dem Deployment im Bereich `/exams` prüfen:
+
+1. Prüfung mit Datum anlegen
+2. Monats-/Wochenansicht umschalten
+3. Prüfungstag im Kalender anklicken
+4. Lernblock-Empfehlungen und den rechten Lernplan prüfen
+5. Mobile/PWA testen, weil der Kalender bewusst als 7-Spalten-Layout gebaut ist

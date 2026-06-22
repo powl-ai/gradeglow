@@ -8,7 +8,7 @@ GradeGlow ist eine Next.js/TypeScript/Tailwind-Web-App für Studienfortschritt, 
   - E-Mail/Passwort
   - Google Login
   - GitHub Login
-  - Apple Login
+  - Apple Login als deaktivierter „bald verfügbar“-Button
 - Firestore Cloud-Sync pro Account
 - Module als einzelne Firestore-Dokumente unter `users/{userId}/modules/{moduleId}`
 - Profil/Settings unter `users/{userId}/gradeglow/settings`
@@ -17,6 +17,7 @@ GradeGlow ist eine Next.js/TypeScript/Tailwind-Web-App für Studienfortschritt, 
 - PWA mit Manifest, Service Worker, Offline-Fallback, Install-Button und App-Icons
 - Dashboard mit Semester-Gruppierung, Diagrammen, Zielnotenrechner und Backup Export/Import
 - lokaler KI-Lernplan-Generator für Prüfungsvorbereitung
+- Vercel Analytics eingebaut
 
 ## Entwicklung starten
 
@@ -75,6 +76,18 @@ src/components/PwaRegister.tsx
 ```
 
 Der Install-Button erscheint im Dashboard. Auf iPhone/iPad wird weiterhin die Safari-Installation über Teilen → „Zum Home-Bildschirm“ genutzt.
+
+## Vercel Analytics
+
+Analytics ist im Root Layout eingebaut. Nach dem Deploy in Vercel im Projekt unter **Analytics** aktivieren.
+
+## Empfohlene Custom Domain
+
+```txt
+gradeglow.app
+```
+
+Die Domain kann in Vercel zusätzlich zur bestehenden `gradeglow-beryl.vercel.app` Domain hinzugefügt werden. Danach Firebase Authorized Domains und OAuth Redirects ergänzen. Details stehen in `DEPLOYMENT.md`.
 
 ## Checks
 

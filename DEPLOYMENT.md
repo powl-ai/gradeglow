@@ -93,6 +93,59 @@ Nach dem Deployment:
 5. DevTools → Application → Service Workers prüfen
 6. Kurz offline gehen und prüfen, ob `offline.html` erscheint
 
-## 8. Wichtiger Hinweis
+## 8. Vercel Analytics
+
+Vercel Analytics ist eingebaut über:
+
+```tsx
+import { Analytics } from "@vercel/analytics/next";
+```
+
+Die Komponente liegt im Root Layout (`src/app/layout.tsx`). Auf Vercel musst du im Projekt zusätzlich Analytics aktivieren:
+
+1. Vercel Projekt öffnen
+2. Tab **Analytics** öffnen
+3. Analytics aktivieren
+4. Danach neues Production Deployment auslösen
+
+## 9. Eigene Domain als Zusatz-Domain
+
+Empfehlung für GradeGlow:
+
+```txt
+gradeglow.app
+```
+
+Die bestehende Vercel Domain bleibt weiterhin erreichbar. Die eigene Domain ist nur ein zusätzlicher Einstiegspunkt.
+
+Vercel Setup:
+
+1. Vercel Projekt öffnen
+2. Settings → Domains
+3. `gradeglow.app` hinzufügen
+4. Falls du auch `www.gradeglow.app` willst, ebenfalls hinzufügen
+5. DNS-Einträge beim Domain-Anbieter exakt so setzen, wie Vercel sie anzeigt
+6. Warten, bis Vercel die Domain als validiert anzeigt
+
+Danach auch Firebase aktualisieren:
+
+- Firebase Console → Authentication → Settings → Authorized domains
+- `gradeglow.app` hinzufügen
+- optional zusätzlich `www.gradeglow.app` hinzufügen
+
+Falls Google/GitHub Login über die neue Domain genutzt werden soll, müssen die OAuth Redirects ebenfalls ergänzt werden:
+
+```txt
+https://gradeglow.app/__/auth/handler
+https://www.gradeglow.app/__/auth/handler
+```
+
+Die bestehende Firebase Handler-URL bleibt zusätzlich drin:
+
+```txt
+https://gradeglow.firebaseapp.com/__/auth/handler
+```
+
+## 10. Wichtiger Hinweis
 
 Die Firebase Web Config darf mit `NEXT_PUBLIC_` im Browser landen. Sie ersetzt aber keine Firestore Security Rules. Die Rules sind der eigentliche Schutz für private Nutzerdaten.

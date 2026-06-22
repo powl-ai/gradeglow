@@ -31,6 +31,8 @@ type TechnicalTrack =
   | "verkehr"
   | "energie";
 
+type StudyImportMode = "universal" | "tuBerlinWiIng";
+
 const categoryOptions: { value: ModuleCategory; label: string; pill: string }[] = [
   { value: "mandatory", label: "Pflichtmodul", pill: "bg-violet-50 text-violet-700 ring-violet-100" },
   {
@@ -441,10 +443,26 @@ const createTemplateText = (modulesToImport: DetectedStudyModule[]) =>
     )
     .join("\n");
 
-const createExternalAiPrompt = (trackLabel: string) => `Du bist ein präziser Parser für Studien- und Prüfungsordnungen.
+const createExternalAiPrompt = ({
+  mode,
+  studyContext,
+  trackLabel,
+}: {
+  mode: StudyImportMode;
+  studyContext: string;
+  trackLabel: string;
+}) => {
+  const cleanStudyContext = studyContext.trim();
+  const targetDescription =
+    mode === "tuBerlinWiIng"
+      ? `Bachelor Wirtschaftsingenieurwesen an der TU Berlin, technische Studienrichtung: ${trackLabel}`
+      : cleanStudyContext || "den im Dokument genannten Studiengang";
+  const exampleArea = mode === "tuBerlinWiIng" ? trackLabel : "Modulbereich / Fachbereich";
+
+  return `Du bist ein präziser Parser für Studien- und Prüfungsordnungen, Modulhandbücher und Studienverlaufspläne.
 
 Aufgabe:
-Analysiere die hochgeladene Studien- und Prüfungsordnung / StuPo als PDF und extrahiere den Modulplan für Bachelor Wirtschaftsingenieurwesen, technische Studienrichtung: ${trackLabel}.
+Analysiere die hochgeladene Studien- und Prüfungsordnung / StuPo als PDF und extrahiere den Modulplan für: ${targetDescription}.
 
 Gib ausschließlich kopierbare Zeilen zurück. Keine Erklärung, keine Tabelle in Markdown, keine Bulletpoints außerhalb der Zeilen.
 
@@ -453,27 +471,18 @@ S<Semester> | <Pflichtmodul/Wahlpflicht/Wahlmodul> | <Modulname> | <ECTS> ECTS |
 
 Regeln:
 - Nutze den exemplarischen Studienverlaufsplan, wenn daraus ein Semester erkennbar ist.
+- Wenn kein Semester erkennbar ist, schreibe S? statt ein Semester zu erfinden.
 - Nutze die Modulliste, wenn daraus ECTS, Pflicht/Wahlpflicht/Wahlbereich oder Bereich erkennbar sind.
-- Wenn ein Wahlpflichtbereich keine einzelnen Module nennt, erstelle eine Sammelzeile, z. B. "S5 | Wahlpflicht | Wahlpflichtmodule Maschinenbau | 12 ECTS | Maschinenbau".
+- Wenn ein Wahlpflichtbereich keine einzelnen Module nennt, erstelle eine Sammelzeile, z. B. "S5 | Wahlpflicht | Wahlpflichtmodule ${exampleArea} | 12 ECTS | ${exampleArea}".
 - Nimm nur echte Module oder echte Wahlpflicht-/Wahlbereiche auf.
 - Entferne Seitenzahlen, Paragraphen, Überschriften, Prüfungsform-Kürzel und Hinweise.
-- Wenn ein Modul über mehrere Semester verteilt ist, nutze das Semester, in dem der größere ECTS-Anteil liegt.
 - Bei Unsicherheit lieber eine saubere Sammelzeile als erfundene Einzelmodule.
+- Falls die PDF mehrere Studiengänge, Prüfungsordnungen oder Änderungssatzungen enthält, nutze nur den passendsten Studiengang und vermeide Dopplungen.
 
 Beispielausgabe:
-S1 | Pflichtmodul | Analysis I und Lineare Algebra für Ingenieurwissenschaften | 12 ECTS | Integrationsbereich
-S2 | Pflichtmodul | Bilanzierung und Kostenrechnung | 6 ECTS | Wirtschaftswissenschaften
-S5 | Wahlpflicht | Wahlpflichtmodule Maschinenbau | 12 ECTS | Maschinenbau`;
-
-
-const looksLikeWiIngStupo = (fileName: string) => {
-  const normalized = normalizeText(fileName);
-  return (
-    normalized.includes("stupo") ||
-    normalized.includes("stu po") ||
-    normalized.includes("wiing") ||
-    normalized.includes("wirtschaftsingenieur")
-  );
+S1 | Pflichtmodul | Mathematik I | 6 ECTS | Grundlagenbereich
+S2 | Pflichtmodul | Einführung in die Betriebswirtschaftslehre | 6 ECTS | Wirtschaftswissenschaften
+S5 | Wahlpflicht | Wahlpflichtmodule ${exampleArea} | 12 ECTS | ${exampleArea}`;
 };
 
 export default function StudyPlanningPanel({ modules, setModules }: StudyPlanningPanelProps) {
@@ -486,6 +495,8 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
   const [selectedMoveSemester, setSelectedMoveSemester] = useState("2");
   const [selectedAttemptModuleId, setSelectedAttemptModuleId] = useState("");
   const [technicalTrack, setTechnicalTrack] = useState<TechnicalTrack>("maschinenbau");
+  const [studyImportMode, setStudyImportMode] = useState<StudyImportMode>("universal");
+  const [studyContext, setStudyContext] = useState("");
   const [copiedAiPrompt, setCopiedAiPrompt] = useState(false);
 
   const planEditableModules = useMemo(
@@ -520,7 +531,17 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
   const selectedTrackLabel =
     technicalTrackOptions.find((option) => option.value === technicalTrack)?.label ?? "deine technische Studienrichtung";
 
-  const aiPrompt = useMemo(() => createExternalAiPrompt(selectedTrackLabel), [selectedTrackLabel]);
+  const isTuBerlinWiIngMode = studyImportMode === "tuBerlinWiIng";
+
+  const aiPrompt = useMemo(
+    () =>
+      createExternalAiPrompt({
+        mode: studyImportMode,
+        studyContext,
+        trackLabel: selectedTrackLabel,
+      }),
+    [selectedTrackLabel, studyContext, studyImportMode]
+  );
 
   const detectedModules = useMemo(() => parseStudyPlanText(stupoText), [stupoText]);
 
@@ -563,14 +584,15 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
     }
   };
 
-  const loadWiIngTemplate = (sourceLabel = "TU Berlin WiIng 2015/2019 StuPo-Vorlage") => {
+  const loadWiIngTemplate = (sourceLabel = "TU Berlin WiIng Spezialvorlage") => {
     const templateModules = getWiIngTemplateModules(technicalTrack);
     const trackLabel = technicalTrackOptions.find((option) => option.value === technicalTrack)?.label ?? "Studienrichtung";
 
+    setStudyImportMode("tuBerlinWiIng");
     setStupoText(createTemplateText(templateModules));
     setUploadedFileName(sourceLabel);
     setStupoMessage(
-      `Saubere Vorlage geladen: ${templateModules.length} Einträge für Wirtschaftsingenieurwesen mit Studienrichtung ${trackLabel}. Bitte kurz prüfen, weil StuPos und Änderungssatzungen je Prüfungsstand abweichen können.`
+      `Spezialvorlage geladen: ${templateModules.length} Einträge nur für TU Berlin Wirtschaftsingenieurwesen mit Studienrichtung ${trackLabel}. Für andere Hochschulen oder Studiengänge bitte nicht verwenden.`
     );
   };
 
@@ -584,17 +606,12 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
     const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 
     if (isPdf) {
-      if (looksLikeWiIngStupo(file.name)) {
-        loadWiIngTemplate(file.name);
-        setStupoMessage(
-          "PDF erkannt. Ich lese PDFs nicht mehr als Rohtext ein, damit kein Zeichenmüll entsteht. Für diese TU-Berlin-WiIng-StuPo wurde stattdessen eine saubere Vorlage geladen. Bitte Studienrichtung prüfen und dann übernehmen."
-        );
-      } else {
-        setStupoText("");
-        setStupoMessage(
-          "PDF erkannt. Direktes Rohtext-Auslesen wurde deaktiviert, weil dabei Zeichenmüll entsteht. Kopiere den relevanten Modulplan aus der PDF hier hinein oder nutze eine TXT/CSV-Liste."
-        );
-      }
+      setStupoText("");
+      setStupoMessage(
+        isTuBerlinWiIngMode
+          ? "PDF erkannt. Direktes Rohtext-Auslesen bleibt deaktiviert. Nutze für genau TU Berlin WiIng die Spezialvorlage oder kopiere den Prompt und lass die PDF extern strukturieren."
+          : "PDF erkannt. Ich lade keine feste Vorlage automatisch, weil Hochschulen und StuPos stark unterschiedlich sind. Kopiere den Prompt, lade die PDF extern hoch und füge die strukturierten Zeilen hier ein."
+      );
 
       event.target.value = "";
       return;
@@ -764,7 +781,7 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
               <p className="text-sm font-bold text-violet-700">StuPo-Assistent</p>
               <h2 className="mt-1 text-2xl font-black tracking-tight">Pflicht- & Wahlmodule sauber importieren</h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Der PDF-Upload wird nicht als magische Erkennung verkauft: Nutze entweder die TU-Berlin-WiIng-Vorlage oder lass deine PDF extern mit dem Prompt unten in ein sauberes Zeilenformat bringen.
+                Der PDF-Upload wird nicht als magische Erkennung verkauft: Für die meisten Studiengänge nutzt du den universellen Prompt. Die TU-Berlin-WiIng-Vorlage ist nur ein optionaler Spezialfall.
               </p>
             </div>
 
@@ -798,33 +815,85 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
           </div>
 
           <div className="mb-4 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-800 ring-1 ring-amber-100">
-            PDFs werden absichtlich nicht roh als Browser-Text ausgewertet, weil dabei schnell Zeichenmüll entsteht. Für deine TU-Berlin-WiIng-StuPo kannst du die Vorlage laden; für andere StuPos nimm den externen ChatGPT-Prompt und füge das Ergebnis hier ein.
+            PDFs werden absichtlich nicht roh als Browser-Text ausgewertet, weil dabei schnell Zeichenmüll entsteht. GradeGlow lädt deshalb keine feste Vorlage automatisch. Standard ist der universelle Import per Prompt; die TU-Berlin-WiIng-Vorlage ist nur ein Spezialfall für genau diesen Studiengang.
           </div>
 
-          <div className="mb-4 grid gap-3 rounded-2xl bg-violet-50 p-4 ring-1 ring-violet-100 md:grid-cols-[1fr_auto] md:items-end">
-            <label>
-              <span className="mb-1.5 block text-sm font-bold text-violet-900">TU-Berlin-WiIng-Vorlage: technische Studienrichtung</span>
-              <select
-                className="field-input bg-white"
-                value={technicalTrack}
-                onChange={(event) => setTechnicalTrack(event.target.value as TechnicalTrack)}
-              >
-                {technicalTrackOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <div className="mb-4 grid gap-3 md:grid-cols-2">
+            <button
+              type="button"
+              className={`rounded-2xl p-4 text-left ring-1 transition hover:-translate-y-0.5 ${
+                studyImportMode === "universal"
+                  ? "bg-slate-950 text-white ring-slate-950"
+                  : "bg-white text-slate-700 ring-slate-200"
+              }`}
+              onClick={() => setStudyImportMode("universal")}
+            >
+              <span className="block text-sm font-black">Universeller StuPo-Import</span>
+              <span className={`mt-1 block text-xs leading-5 ${studyImportMode === "universal" ? "text-slate-300" : "text-slate-500"}`}>
+                Für HTW, TU, HU, FU oder andere Studiengänge. Nutzt deinen eigenen PDF-Inhalt statt einer festen Vorlage.
+              </span>
+            </button>
 
             <button
               type="button"
-              className="rounded-2xl bg-violet-700 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-800"
-              onClick={() => loadWiIngTemplate()}
+              className={`rounded-2xl p-4 text-left ring-1 transition hover:-translate-y-0.5 ${
+                studyImportMode === "tuBerlinWiIng"
+                  ? "bg-violet-700 text-white ring-violet-700"
+                  : "bg-white text-slate-700 ring-slate-200"
+              }`}
+              onClick={() => setStudyImportMode("tuBerlinWiIng")}
             >
-              Vorlage laden
+              <span className="block text-sm font-black">TU Berlin WiIng Spezialvorlage</span>
+              <span className={`mt-1 block text-xs leading-5 ${studyImportMode === "tuBerlinWiIng" ? "text-violet-100" : "text-slate-500"}`}>
+                Nur sinnvoll für B.Sc. Wirtschaftsingenieurwesen an der TU Berlin. Für andere Studis bitte nicht nutzen.
+              </span>
             </button>
           </div>
+
+          {isTuBerlinWiIngMode ? (
+            <div className="mb-4 grid gap-3 rounded-2xl bg-violet-50 p-4 ring-1 ring-violet-100 md:grid-cols-[1fr_auto] md:items-end">
+              <label>
+                <span className="mb-1.5 block text-sm font-bold text-violet-900">TU-Berlin-WiIng-Vorlage: technische Studienrichtung</span>
+                <select
+                  className="field-input bg-white"
+                  value={technicalTrack}
+                  onChange={(event) => setTechnicalTrack(event.target.value as TechnicalTrack)}
+                >
+                  {technicalTrackOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-2 block text-xs leading-5 text-violet-700">
+                  Diese Vorlage ist absichtlich versteckt hinter dem Spezialmodus, damit niemand aus Versehen TU-WiIng-Module in einen anderen Studiengang importiert.
+                </span>
+              </label>
+
+              <button
+                type="button"
+                className="rounded-2xl bg-violet-700 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-800"
+                onClick={() => loadWiIngTemplate()}
+              >
+                Spezialvorlage laden
+              </button>
+            </div>
+          ) : (
+            <div className="mb-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <label>
+                <span className="mb-1.5 block text-sm font-bold text-slate-700">Studiengang für den Prompt</span>
+                <input
+                  className="field-input bg-white"
+                  placeholder="z. B. BWL B.Sc. an der HTW Berlin oder mein Studiengang aus der PDF"
+                  value={studyContext}
+                  onChange={(event) => setStudyContext(event.target.value)}
+                />
+              </label>
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                Das ist nur Kontext für den kopierten Prompt. Der Import selbst nutzt danach die Zeilen, die du unten einfügst.
+              </p>
+            </div>
+          )}
 
           <div className="mb-4 rounded-2xl bg-slate-950 p-4 text-white shadow-sm">
             <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
@@ -922,7 +991,7 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
               </div>
             ) : (
               <p className="mt-3 text-sm leading-6 text-slate-500">
-                Lade die Vorlage oder füge Zeilen im Format <span className="font-bold">S1 | Pflichtmodul | Modulname | 6 ECTS | Bereich</span> ein. Dann erscheint hier vor dem Übernehmen eine echte Vorschau.
+                Füge Zeilen im Format <span className="font-bold">S1 | Pflichtmodul | Modulname | 6 ECTS | Bereich</span> ein. Im TU-Berlin-WiIng-Spezialmodus kannst du alternativ die Vorlage laden. Dann erscheint hier vor dem Übernehmen eine echte Vorschau.
               </p>
             )}
           </div>

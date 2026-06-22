@@ -117,16 +117,16 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   const userInitial = userLabel.trim().charAt(0).toUpperCase() || "G";
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#fbf7ff] text-slate-950">
+    <main className="min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950">
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute left-[-8rem] top-[-8rem] h-96 w-96 rounded-full bg-fuchsia-200/60 blur-3xl" />
         <div className="absolute right-[-10rem] top-40 h-[28rem] w-[28rem] rounded-full bg-violet-200/60 blur-3xl" />
         <div className="absolute bottom-[-12rem] left-1/2 h-[30rem] w-[30rem] -translate-x-1/2 rounded-full bg-pink-200/50 blur-3xl" />
       </div>
 
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8 lg:py-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-3 py-4 sm:gap-6 sm:px-6 lg:px-8 lg:py-8">
         <header className="overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl shadow-violet-950/20 ring-1 ring-white/10">
-          <div className="relative p-5 sm:p-7 lg:p-8">
+          <div className="relative p-4 sm:p-7 lg:p-8">
             <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-fuchsia-500/25 blur-3xl" />
             <div className="absolute -bottom-24 left-16 h-72 w-72 rounded-full bg-violet-500/30 blur-3xl" />
 
@@ -143,7 +143,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                 <p className="text-sm font-bold uppercase tracking-[0.35em] text-fuchsia-200/80">
                   GradeGlow Profil
                 </p>
-                <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+                <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl">
                   Deine App, dein Studium.
                 </h1>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
@@ -152,7 +152,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                 </p>
               </div>
 
-              <div className="flex flex-col gap-3 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur sm:min-w-80">
+              <div className="flex w-full min-w-0 flex-col gap-3 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur sm:min-w-80 lg:w-auto">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10">
                     {userInitial}
@@ -203,7 +203,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
           >
             <div className="mb-6">
               <p className="text-sm font-bold text-violet-700">Profil & Einstellungen</p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight">Basisdaten bearbeiten</h2>
+              <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Basisdaten bearbeiten</h2>
               <p className="mt-1 text-sm text-slate-500">
                 Diese Daten werden pro Account gespeichert und auf dem Dashboard verwendet.
               </p>
@@ -268,7 +268,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
 
               <button
                 type="submit"
-                className="rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 disabled={!hasChanges || isSaving || !isProfileLoaded}
               >
                 {isSaving ? "Speichern…" : "Profil speichern"}
@@ -279,7 +279,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
           <aside className="flex flex-col gap-4">
             <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
               <p className="text-sm font-bold text-violet-700">Vorschau</p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight">So erscheint es im Dashboard</h2>
+              <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">So erscheint es im Dashboard</h2>
 
               <div className="mt-5 rounded-3xl bg-slate-950 p-5 text-white shadow-lg shadow-violet-950/15">
                 <div className="flex items-center gap-3">
@@ -296,7 +296,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
 
                 <div className="mt-4 rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
                   <p className="text-xs text-slate-300">Bachelor-Fortschritt</p>
-                  <p className="mt-1 text-2xl font-black">0 / {targetEcts || DEFAULT_TARGET_ECTS} ECTS</p>
+                  <p className="mt-1 text-xl font-black sm:text-2xl">0 / {targetEcts || DEFAULT_TARGET_ECTS} ECTS</p>
                 </div>
               </div>
             </div>

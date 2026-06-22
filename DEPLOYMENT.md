@@ -171,3 +171,8 @@ Nach dem Deployment sollten diese URLs erreichbar sein:
 - `/info`
 
 Wenn am Handy noch die alte Ein-Seiten-Ansicht erscheint, Safari/Browser-Cache hart neu laden oder die PWA einmal schließen und erneut öffnen. Der Service Worker nutzt jetzt `gradeglow-v10`.
+
+
+### Mobile/PWA Layout Fix
+
+Dieses Update enthält zusätzliche Mobile-Sicherungen gegen horizontales Überlaufen in der installierten iOS-PWA. Wichtige Änderungen: Safe-Area-Abstand für die Statusleiste, `overflow-x-hidden`, umbrechende Buttons/Texte und kompaktere Header auf kleinen Screens. Nach dem Deployment die installierte PWA einmal komplett schließen und neu öffnen, damit der Service Worker und die neue CSS-Version greifen.

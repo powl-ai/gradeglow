@@ -886,7 +886,7 @@ export default function GradeGlowDashboard({
   const isBackupVisible = page === "backup" || isToolsOpen;
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#fbf7ff] text-slate-950">
+    <main className="min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950">
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute left-[-8rem] top-[-8rem] h-96 w-96 rounded-full bg-fuchsia-200/60 blur-3xl" />
         <div className="absolute right-[-10rem] top-40 h-[28rem] w-[28rem] rounded-full bg-violet-200/60 blur-3xl" />
@@ -952,9 +952,9 @@ export default function GradeGlowDashboard({
         </div>
       )}
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8 lg:py-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-3 py-4 sm:gap-6 sm:px-6 lg:px-8 lg:py-8">
         <header className="overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl shadow-violet-950/20 ring-1 ring-white/10">
-          <div className="relative p-5 sm:p-7 lg:p-8">
+          <div className="relative p-4 sm:p-7 lg:p-8">
             <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-fuchsia-500/25 blur-3xl" />
             <div className="absolute -bottom-24 left-16 h-72 w-72 rounded-full bg-violet-500/30 blur-3xl" />
 
@@ -994,7 +994,7 @@ export default function GradeGlowDashboard({
                 <p className="text-sm font-bold uppercase tracking-[0.35em] text-fuchsia-200/80">
                   GradeGlow · {activeNavItem.label}
                 </p>
-                <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+                <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl">
                   {activeNavItem.label}
                 </h1>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
@@ -1003,7 +1003,7 @@ export default function GradeGlowDashboard({
                 </p>
               </div>
 
-              <div className="flex flex-col gap-3 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur sm:min-w-80">
+              <div className="flex w-full min-w-0 flex-col gap-3 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur sm:min-w-80 lg:w-auto">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10">
                     {userInitial}
@@ -1057,14 +1057,14 @@ export default function GradeGlowDashboard({
         </header>
 
         <nav
-          className="flex gap-2 overflow-x-auto rounded-3xl bg-white/75 p-2 shadow-sm ring-1 ring-violet-100 backdrop-blur"
+          className="no-scrollbar flex max-w-full gap-2 overflow-x-auto rounded-3xl bg-white/75 p-2 shadow-sm ring-1 ring-violet-100 backdrop-blur"
           aria-label="GradeGlow Seiten"
         >
           {dashboardNavItems.map((item) => (
             <Link
               key={item.id}
               href={item.href}
-              className={`whitespace-nowrap rounded-2xl px-4 py-3 text-sm font-black transition ${
+              className={`shrink-0 whitespace-nowrap rounded-2xl px-4 py-3 text-sm font-black transition ${
                 item.id === page
                   ? "bg-slate-950 text-white shadow-lg shadow-violet-100"
                   : "text-slate-600 hover:bg-violet-50 hover:text-violet-700"
@@ -1191,7 +1191,7 @@ export default function GradeGlowDashboard({
           >
             <button
               type="button"
-              className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
+              className="flex w-full flex-col items-start justify-between gap-4 p-5 text-left sm:flex-row sm:items-center sm:p-6"
               onClick={() => setIsInsightsOpen((open) => !open)}
             >
               <div>
@@ -1225,7 +1225,7 @@ export default function GradeGlowDashboard({
           >
             <button
               type="button"
-              className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
+              className="flex w-full flex-col items-start justify-between gap-4 p-5 text-left sm:flex-row sm:items-center sm:p-6"
               onClick={() => setIsExamPlannerOpen((open) => !open)}
             >
               <div>
@@ -1266,7 +1266,7 @@ export default function GradeGlowDashboard({
               <div className="overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
                 <button
                   type="button"
-                  className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
+                  className="flex w-full flex-col items-start justify-between gap-4 p-5 text-left sm:flex-row sm:items-center sm:p-6"
                   onClick={() => setIsAddModuleOpen((open) => !open)}
                 >
                   <div>
@@ -2142,7 +2142,7 @@ export default function GradeGlowDashboard({
           >
             <button
               type="button"
-              className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
+              className="flex w-full flex-col items-start justify-between gap-4 p-5 text-left sm:flex-row sm:items-center sm:p-6"
               onClick={() => setIsToolsOpen((open) => !open)}
             >
               <div>

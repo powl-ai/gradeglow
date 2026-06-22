@@ -105,3 +105,77 @@ button:disabled {
   color: #6d28d9;
   box-shadow: 0 0 0 1px #ddd6fe inset;
 }
+
+/* Mobile/PWA safety -------------------------------------------------------
+   iOS standalone apps with `viewport-fit=cover` can draw behind the status bar.
+   These defaults also prevent one wide card/button from stretching the whole page. */
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  -webkit-text-size-adjust: 100%;
+}
+
+main,
+section,
+article,
+header,
+footer,
+nav,
+aside,
+form,
+div {
+  min-width: 0;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+h1,
+h2,
+h3,
+p,
+a,
+button,
+span,
+label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+summary > * {
+  min-width: 0;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

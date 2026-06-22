@@ -118,3 +118,8 @@ GradeGlow ist jetzt in eigene App-Bereiche aufgeteilt. Der Startbildschirm bleib
 - `/settings` – Profil und Studiengang
 
 Die Navigation ist über das Menü links oben und zusätzlich über die horizontale Bereichsleiste erreichbar.
+
+
+### Mobile/PWA Layout Fix
+
+Dieses Update enthält zusätzliche Mobile-Sicherungen gegen horizontales Überlaufen in der installierten iOS-PWA. Wichtige Änderungen: Safe-Area-Abstand für die Statusleiste, `overflow-x-hidden`, umbrechende Buttons/Texte und kompaktere Header auf kleinen Screens. Nach dem Deployment die installierte PWA einmal komplett schließen und neu öffnen, damit der Service Worker und die neue CSS-Version greifen.

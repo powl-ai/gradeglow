@@ -30,16 +30,16 @@ const storageItems = [
 
 export default function InfoPage() {
   return (
-    <main className="min-h-screen overflow-hidden bg-[#fbf7ff] text-slate-950">
+    <main className="min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950">
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute left-[-8rem] top-[-8rem] h-96 w-96 rounded-full bg-fuchsia-200/60 blur-3xl" />
         <div className="absolute right-[-10rem] top-40 h-[28rem] w-[28rem] rounded-full bg-violet-200/60 blur-3xl" />
         <div className="absolute bottom-[-12rem] left-1/2 h-[30rem] w-[30rem] -translate-x-1/2 rounded-full bg-pink-200/50 blur-3xl" />
       </div>
 
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8 lg:py-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-3 py-4 sm:gap-6 sm:px-6 lg:px-8 lg:py-8">
         <header className="overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl shadow-violet-950/20 ring-1 ring-white/10">
-          <div className="relative p-5 sm:p-7 lg:p-8">
+          <div className="relative p-4 sm:p-7 lg:p-8">
             <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-fuchsia-500/25 blur-3xl" />
             <div className="absolute -bottom-24 left-16 h-72 w-72 rounded-full bg-violet-500/30 blur-3xl" />
 
@@ -55,7 +55,7 @@ export default function InfoPage() {
                 <p className="text-sm font-bold uppercase tracking-[0.35em] text-fuchsia-200/80">
                   GradeGlow Info
                 </p>
-                <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+                <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl">
                   Datenschutz, Impressum & App-Infos.
                 </h1>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">

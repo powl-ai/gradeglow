@@ -471,20 +471,20 @@ export default function AuthGate({ children }: AuthGateProps) {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,_#f5d0fe,_transparent_34%),radial-gradient(circle_at_bottom_right,_#fbcfe8,_transparent_30%),linear-gradient(135deg,_#2e1065,_#4c1d95_48%,_#831843)] p-4 text-white md:p-8">
-      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl items-center gap-8 lg:grid-cols-[1.08fr_0.92fr]">
-        <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/10 p-7 shadow-2xl backdrop-blur md:p-10">
+    <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_left,_#f5d0fe,_transparent_34%),radial-gradient(circle_at_bottom_right,_#fbcfe8,_transparent_30%),linear-gradient(135deg,_#2e1065,_#4c1d95_48%,_#831843)] px-3 py-4 text-white sm:px-4 md:p-8">
+      <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-5 sm:gap-8 lg:grid-cols-[1.08fr_0.92fr]">
+        <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur md:p-10">
           <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-fuchsia-300/20 blur-3xl" />
           <div className="absolute -bottom-28 left-10 h-72 w-72 rounded-full bg-pink-300/20 blur-3xl" />
 
           <div className="relative">
-            <div className="mb-8 flex items-center gap-4">
+            <div className="mb-8 flex min-w-0 items-center gap-4">
               <GradeGlowLogo size="lg" tone="light" />
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.3em] text-fuchsia-100">
                   GradeGlow
                 </p>
-                <h1 className="text-4xl font-black tracking-tight md:text-6xl">
+                <h1 className="text-3xl font-black tracking-tight sm:text-4xl md:text-6xl">
                   Dein Studium, aber schön.
                 </h1>
               </div>
@@ -518,7 +518,7 @@ export default function AuthGate({ children }: AuthGateProps) {
           </div>
         </section>
 
-        <section className="rounded-[2rem] bg-white p-6 text-slate-950 shadow-2xl md:p-8">
+        <section className="min-w-0 rounded-[2rem] bg-white p-5 text-slate-950 shadow-2xl md:p-8">
           <div className="mb-6">
             <div className="mb-3 inline-flex rounded-full bg-violet-50 px-3 py-1 text-sm font-semibold text-violet-700">
               {mode === "login" ? "Login" : "Registrierung"}

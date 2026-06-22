@@ -187,3 +187,12 @@ Nach dem Deployment im Bereich `/exams` prüfen:
 3. Prüfungstag im Kalender anklicken
 4. Lernblock-Empfehlungen und den rechten Lernplan prüfen
 5. Mobile/PWA testen, weil der Kalender bewusst als 7-Spalten-Layout gebaut ist
+
+
+## Update: Prüfungsplanung v2
+
+- Kalender nutzt deutsche Datumsanzeige (TT.MM.JJJJ) und 24h-Uhrzeit.
+- Automatischer Lernplan verteilt Blöcke mit maximal 5 Stunden Lernzeit pro Tag.
+- Prüfungsseite ist nicht mehr doppelt eingeklappt, sondern zeigt Kalender und Details direkter.
+- Mobile/PWA-Kalenderzellen sind kompakter und gegen horizontalen Overflow abgesichert.
+- Service Worker Cache-Version: `gradeglow-v13`.

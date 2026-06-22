@@ -129,3 +129,12 @@ Dieses Update enthält zusätzliche Mobile-Sicherungen gegen horizontales Überl
 ### Prüfungskalender
 
 Der Bereich `/exams` enthält jetzt zusätzlich einen Monats-/Wochenkalender. Prüfungstage werden als rote Termine angezeigt, automatisch vorgeschlagene Lernblöcke als violette Einträge. Die Ansicht zeigt außerdem die nächste Prüfung, heutige Lernblöcke und die Lernbelastung der aktuellen Woche.
+
+
+## Update: Prüfungsplanung v2
+
+- Kalender nutzt deutsche Datumsanzeige (TT.MM.JJJJ) und 24h-Uhrzeit.
+- Automatischer Lernplan verteilt Blöcke mit maximal 5 Stunden Lernzeit pro Tag.
+- Prüfungsseite ist nicht mehr doppelt eingeklappt, sondern zeigt Kalender und Details direkter.
+- Mobile/PWA-Kalenderzellen sind kompakter und gegen horizontalen Overflow abgesichert.
+- Service Worker Cache-Version: `gradeglow-v13`.

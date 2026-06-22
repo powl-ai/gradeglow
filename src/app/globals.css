@@ -179,3 +179,24 @@ textarea {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+input,
+select,
+textarea {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 16px;
+}
+
+@supports (padding: max(0px)) {
+  body {
+    padding-top: max(env(safe-area-inset-top, 0px), 0px);
+    padding-right: max(env(safe-area-inset-right, 0px), 0px);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
+    padding-left: max(env(safe-area-inset-left, 0px), 0px);
+  }
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}

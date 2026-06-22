@@ -776,24 +776,19 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
     <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
       <div className="space-y-6">
         <details open className="rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
-          <summary className="flex cursor-pointer list-none flex-col items-start justify-between gap-4 p-5 text-left marker:hidden sm:flex-row sm:items-center sm:p-6">
+          <summary className="flex cursor-pointer list-none flex-col items-start justify-between gap-3 p-4 text-left marker:hidden sm:flex-row sm:items-center sm:p-6">
             <div>
               <p className="text-sm font-bold text-violet-700">StuPo-Assistent</p>
               <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Importe & Vorlagen</h2>
               <p className="mt-1 text-sm text-slate-500">Aufklappen für Prompt, PDF-Workflow und Import-Vorschau.</p>
             </div>
-            <span className="w-full rounded-2xl bg-violet-50 px-4 py-2 text-center text-sm font-black text-violet-700 ring-1 ring-violet-100 sm:w-auto">öffnen/schließen</span>
+            <span className="w-full rounded-2xl bg-violet-50 px-4 py-2 text-center text-xs font-black text-violet-700 ring-1 ring-violet-100 sm:w-auto sm:text-sm">Details öffnen</span>
           </summary>
           <div className="border-t border-slate-100 p-5 sm:p-6">
-          <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-            <div>
-              <p className="text-sm font-bold text-violet-700">StuPo-Assistent</p>
-              <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Pflicht- & Wahlmodule sauber importieren</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Der PDF-Upload wird nicht als magische Erkennung verkauft: Für die meisten Studiengänge nutzt du den universellen Prompt. Die TU-Berlin-WiIng-Vorlage ist nur ein optionaler Spezialfall.
-              </p>
-            </div>
-
+          <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <p className="max-w-2xl text-sm leading-6 text-slate-500">
+              Universeller Prompt zuerst, TU-Berlin-WiIng nur als klar markierter Spezialfall. PDF-Dateien werden nicht als magische Direkt-Erkennung verkauft.
+            </p>
             <button
               type="button"
               className="soft-button shrink-0"
@@ -1014,23 +1009,15 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
         </details>
 
         <details className="rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
-          <summary className="flex cursor-pointer list-none flex-col items-start justify-between gap-4 p-5 text-left marker:hidden sm:flex-row sm:items-center sm:p-6">
+          <summary className="flex cursor-pointer list-none flex-col items-start justify-between gap-3 p-4 text-left marker:hidden sm:flex-row sm:items-center sm:p-6">
             <div>
               <p className="text-sm font-bold text-violet-700">Versuchsübersicht</p>
               <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Fehlversuche & Warnungen</h2>
               <p className="mt-1 text-sm text-slate-500">Kompakt eingeklappt, damit der Assistent nicht die ganze Seite füllt.</p>
             </div>
-            <span className="w-full rounded-2xl bg-violet-50 px-4 py-2 text-center text-sm font-black text-violet-700 ring-1 ring-violet-100 sm:w-auto">öffnen/schließen</span>
+            <span className="w-full rounded-2xl bg-violet-50 px-4 py-2 text-center text-xs font-black text-violet-700 ring-1 ring-violet-100 sm:w-auto sm:text-sm">Details öffnen</span>
           </summary>
           <div className="border-t border-slate-100 p-5 sm:p-6">
-          <div className="mb-5">
-            <p className="text-sm font-bold text-violet-700">Versuchsübersicht</p>
-            <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Fehlversuche & Drittversuch-Warnung</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Trage Fehlversuche ein, damit GradeGlow dich vor kritischen Modulen warnt. Das ist eine Planungswarnung und ersetzt keine offizielle Prüfungsamtsauskunft.
-            </p>
-          </div>
-
           <div className="rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-800 ring-1 ring-amber-100">
             Wichtig: Regeln zu Drittversuch, endgültigem Nichtbestehen und Studiengangwechsel unterscheiden sich je Hochschule, StuPo und Moduläquivalenz. GradeGlow markiert Risiken, entscheidet aber nichts rechtlich verbindlich.
           </div>
@@ -1110,23 +1097,15 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
 
       <div className="space-y-6">
         <details className="rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
-          <summary className="flex cursor-pointer list-none flex-col items-start justify-between gap-4 p-5 text-left marker:hidden sm:flex-row sm:items-center sm:p-6">
+          <summary className="flex cursor-pointer list-none flex-col items-start justify-between gap-3 p-4 text-left marker:hidden sm:flex-row sm:items-center sm:p-6">
             <div>
               <p className="text-sm font-bold text-violet-700">Semesterplanung</p>
               <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Module verschieben</h2>
               <p className="mt-1 text-sm text-slate-500">Aufklappen, wenn du Module ins nächste Semester ziehen willst.</p>
             </div>
-            <span className="w-full rounded-2xl bg-violet-50 px-4 py-2 text-center text-sm font-black text-violet-700 ring-1 ring-violet-100 sm:w-auto">öffnen/schließen</span>
+            <span className="w-full rounded-2xl bg-violet-50 px-4 py-2 text-center text-xs font-black text-violet-700 ring-1 ring-violet-100 sm:w-auto sm:text-sm">Details öffnen</span>
           </summary>
           <div className="border-t border-slate-100 p-5 sm:p-6">
-          <div className="mb-5">
-            <p className="text-sm font-bold text-violet-700">Semesterplanung</p>
-            <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Module ins nächste Semester schieben</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Plane unabhängig vom ursprünglichen Fachsemester, wann du ein Modul wirklich belegen willst. Bestehende und importierte Module sind hier gemeinsam sichtbar.
-            </p>
-          </div>
-
           <div className="grid gap-3 md:grid-cols-[1fr_8rem_auto]">
             <select
               className="field-input bg-white"
@@ -1205,20 +1184,15 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
         </details>
 
         <details className="rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
-          <summary className="flex cursor-pointer list-none flex-col items-start justify-between gap-4 p-5 text-left marker:hidden sm:flex-row sm:items-center sm:p-6">
+          <summary className="flex cursor-pointer list-none flex-col items-start justify-between gap-3 p-4 text-left marker:hidden sm:flex-row sm:items-center sm:p-6">
             <div>
               <p className="text-sm font-bold text-violet-700">Plan-Auslastung</p>
               <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">ECTS je geplantem Semester</h2>
               <p className="mt-1 text-sm text-slate-500">Semesterbelastung nur bei Bedarf anzeigen.</p>
             </div>
-            <span className="w-full rounded-2xl bg-violet-50 px-4 py-2 text-center text-sm font-black text-violet-700 ring-1 ring-violet-100 sm:w-auto">öffnen/schließen</span>
+            <span className="w-full rounded-2xl bg-violet-50 px-4 py-2 text-center text-xs font-black text-violet-700 ring-1 ring-violet-100 sm:w-auto sm:text-sm">Details öffnen</span>
           </summary>
           <div className="border-t border-slate-100 p-5 sm:p-6">
-          <div className="mb-5">
-            <p className="text-sm font-bold text-violet-700">Plan-Auslastung</p>
-            <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">ECTS je geplantem Semester</h2>
-          </div>
-
           {semesterNumbers.length === 0 ? (
             <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500 ring-1 ring-slate-200">
               Noch keine Module geplant.

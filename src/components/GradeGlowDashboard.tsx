@@ -157,7 +157,6 @@ export default function GradeGlowDashboard({
   const [isAddModuleOpen, setIsAddModuleOpen] = useState(true);
   const [isToolsOpen, setIsToolsOpen] = useState(false);
   const [isInsightsOpen, setIsInsightsOpen] = useState(false);
-  const [isExamPlannerOpen, setIsExamPlannerOpen] = useState(false);
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const [importMessage, setImportMessage] = useState("");
 
@@ -882,7 +881,6 @@ export default function GradeGlowDashboard({
   const activeNavItem =
     dashboardNavItems.find((item) => item.id === page) ?? dashboardNavItems[0];
   const isInsightsVisible = page === "insights" || isInsightsOpen;
-  const isExamPlannerVisible = page === "exams" || isExamPlannerOpen;
   const isBackupVisible = page === "backup" || isToolsOpen;
 
   return (
@@ -952,7 +950,7 @@ export default function GradeGlowDashboard({
         </div>
       )}
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-3 py-4 sm:gap-6 sm:px-6 lg:px-8 lg:py-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-3 pb-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] sm:gap-6 sm:px-6 lg:px-8 lg:pb-8 lg:pt-[calc(env(safe-area-inset-top,0px)+2rem)]">
         <header className="overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl shadow-violet-950/20 ring-1 ring-white/10">
           <div className="relative p-4 sm:p-7 lg:p-8">
             <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-fuchsia-500/25 blur-3xl" />
@@ -1219,35 +1217,8 @@ export default function GradeGlowDashboard({
         )}
 
         {page === "exams" && (
-          <section
-            id="exams"
-            className="scroll-mt-6 overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur"
-          >
-            <button
-              type="button"
-              className="flex w-full flex-col items-start justify-between gap-4 p-5 text-left sm:flex-row sm:items-center sm:p-6"
-              onClick={() => setIsExamPlannerOpen((open) => !open)}
-            >
-              <div>
-                <p className="text-sm font-bold text-violet-700">
-                  Prüfungsplaner
-                </p>
-                <h2 className="mt-1 text-2xl font-black tracking-tight">
-                  Prüfungen & Lernplan
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Nur öffnen, wenn du wirklich Prüfungen planen willst.
-                </p>
-              </div>
-              <span className="rounded-2xl bg-violet-50 px-4 py-2 text-2xl font-black text-violet-700 ring-1 ring-violet-100">
-                {isExamPlannerVisible ? "−" : "+"}
-              </span>
-            </button>
-            {isExamPlannerVisible && (
-              <div className="border-t border-slate-100 p-5 sm:p-6">
-                <GradeGlowPlanner user={user} modules={modules} />
-              </div>
-            )}
+          <section id="exams" className="scroll-mt-6">
+            <GradeGlowPlanner user={user} modules={modules} />
           </section>
         )}
 

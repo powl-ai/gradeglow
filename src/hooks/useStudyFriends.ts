@@ -1,7 +1,7 @@
 "use client";
 
 import { FirebaseError } from "firebase/app";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   collection,
   deleteDoc,
@@ -25,6 +25,7 @@ import type {
   ExamPlanItem,
   GradeGlowProfile,
   PlanLimits,
+  PublicStudyActivity,
   PublicStudyProfile,
 } from "../types";
 
@@ -52,6 +53,7 @@ type FriendLookupResult = {
 const PUBLIC_PROFILES_COLLECTION = "publicStudyProfiles";
 const FRIEND_CODES_COLLECTION = "studyFriendCodes";
 const FRIENDS_COLLECTION = "friends";
+const STUDY_ACTIVITY_COLLECTION = "studyActivityEvents";
 
 export const buildStudyFriendCode = (uid: string) => {
   const compactUid = uid.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
@@ -202,6 +204,54 @@ const migratePublicProfile = (
   };
 };
 
+
+const migratePublicActivity = (rawActivity: unknown): PublicStudyActivity | null => {
+  if (typeof rawActivity !== "object" || rawActivity === null) return null;
+  const record = rawActivity as Record<string, unknown>;
+  const status = record.status === "started" || record.status === "completed" ? record.status : null;
+  if (!status) return null;
+
+  return {
+    uid: typeof record.uid === "string" ? record.uid : "",
+    displayName:
+      typeof record.displayName === "string" && record.displayName.trim()
+        ? record.displayName.trim()
+        : "GradeGlow Friend",
+    avatarDataUrl:
+      typeof record.avatarDataUrl === "string" && record.avatarDataUrl.startsWith("data:image/")
+        ? record.avatarDataUrl
+        : "",
+    status,
+    title: typeof record.title === "string" && record.title.trim() ? record.title.trim() : "Lernsession",
+    examId: typeof record.examId === "string" ? record.examId : "",
+    sessionId: typeof record.sessionId === "string" ? record.sessionId : null,
+    durationMinutes:
+      typeof record.durationMinutes === "number" && Number.isFinite(record.durationMinutes)
+        ? Math.max(0, Math.round(record.durationMinutes))
+        : 0,
+    startedAtIso: typeof record.startedAtIso === "string" ? record.startedAtIso : "",
+    completedAtIso: typeof record.completedAtIso === "string" ? record.completedAtIso : "",
+    updatedAtIso: typeof record.updatedAtIso === "string" ? record.updatedAtIso : "",
+  };
+};
+
+const notifyFriendActivity = (activity: PublicStudyActivity) => {
+  if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") {
+    return;
+  }
+
+  const body =
+    activity.status === "started"
+      ? `${activity.displayName} hat gerade eine Lernsession gestartet: ${activity.title}.`
+      : `${activity.displayName} hat ${activity.durationMinutes > 0 ? `${activity.durationMinutes} min ` : ""}gelernt: ${activity.title}.`;
+
+  new Notification(activity.status === "started" ? "Freund lernt gerade ✨" : "Freund hat gelernt ✅", {
+    body,
+    icon: "/icons/icon-192.png",
+    tag: `gradeglow-friend-${activity.uid}-${activity.status}`,
+  });
+};
+
 const buildMissingFriend = (friendId: string): FriendListItem => ({
   uid: friendId,
   friendCode: buildStudyFriendCode(friendId),
@@ -241,6 +291,7 @@ export function useStudyFriends({ user, profile, exams, limits }: UseStudyFriend
   const [message, setMessage] = useState("");
   const [isBusy, setIsBusy] = useState(false);
   const [publishMessage, setPublishMessage] = useState("");
+  const seenActivityEventRef = useRef<Record<string, string>>({});
   const [debugStatus, setDebugStatus] = useState<StudyCircleDebugStatus>(() => ({
     canUseCloudSocial: false,
     sharingEnabled: false,
@@ -460,6 +511,39 @@ export function useStudyFriends({ user, profile, exams, limits }: UseStudyFriend
       unsubscribes.forEach((unsubscribe) => unsubscribe());
     };
   }, [canUseCloudSocial, friendIds]);
+
+  useEffect(() => {
+    if (!canUseCloudSocial || !db || friendIds.length === 0 || !profile.friendActivityNotificationsEnabled) {
+      return undefined;
+    }
+
+    if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") {
+      return undefined;
+    }
+
+    const unsubscribes = friendIds.map((friendId) =>
+      onSnapshot(
+        doc(db!, STUDY_ACTIVITY_COLLECTION, friendId),
+        (activitySnapshot) => {
+          if (!activitySnapshot.exists()) return;
+          const activity = migratePublicActivity(activitySnapshot.data());
+          if (!activity?.updatedAtIso) return;
+
+          const previousEventKey = seenActivityEventRef.current[friendId];
+          seenActivityEventRef.current[friendId] = activity.updatedAtIso;
+
+          if (!previousEventKey || previousEventKey === activity.updatedAtIso) return;
+
+          notifyFriendActivity(activity);
+        },
+        () => undefined,
+      ),
+    );
+
+    return () => {
+      unsubscribes.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [canUseCloudSocial, friendIds, profile.friendActivityNotificationsEnabled]);
 
   const resolveFriendId = async (friendCode: string): Promise<FriendLookupResult> => {
     if (!db) return { uid: null, reason: "not-found" };

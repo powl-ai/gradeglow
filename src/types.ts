@@ -48,6 +48,12 @@ export type GradeGlowProfile = {
   shareStudyTime: boolean;
   shareStudySubjects: boolean;
   shareStudyStreak: boolean;
+  glowPoints: number;
+  dailyLoginStreak: number;
+  dailyLoginLastClaimDateKey: string;
+  studyReminderNotificationsEnabled: boolean;
+  friendActivityNotificationsEnabled: boolean;
+  studyReminderTime: string;
   themeMode: ThemeMode;
   accentColor: AccentColor;
 };
@@ -164,5 +170,22 @@ export type PublicStudyProfile = {
   shareStudyTime: boolean;
   shareStudySubjects: boolean;
   shareStudyStreak: boolean;
+  updatedAtIso: string;
+};
+
+
+export type StudyActivityStatus = "started" | "completed";
+
+export type PublicStudyActivity = {
+  uid: string;
+  displayName: string;
+  avatarDataUrl: string;
+  status: StudyActivityStatus;
+  title: string;
+  examId: string;
+  sessionId: string | null;
+  durationMinutes: number;
+  startedAtIso: string;
+  completedAtIso: string;
   updatedAtIso: string;
 };

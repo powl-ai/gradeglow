@@ -3,11 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 import { formatLimit } from "../lib/gradeglowAccess";
+import { publishStudyActivity } from "../lib/studyActivity";
 import type {
+  AppUser,
   ExamKind,
   ExamPlanItem,
   ExamPriority,
   ExamStatus,
+  GradeGlowProfile,
   ModuleStatus,
   StudySessionItem,
   UniModule,
@@ -22,6 +25,8 @@ type GradeGlowPlannerProps = {
   syncMessage: string;
   limits: PlanLimits;
   planLabel: string;
+  user: AppUser;
+  profile: GradeGlowProfile;
 };
 
 type CalendarMode = "month" | "week";
@@ -539,6 +544,8 @@ export default function GradeGlowPlanner({
   syncMessage,
   limits,
   planLabel,
+  user,
+  profile,
 }: GradeGlowPlannerProps) {
   const [form, setForm] = useState(emptyForm);
   const [manualStudyForm, setManualStudyForm] = useState<StudyForm>(emptyStudyForm);
@@ -555,6 +562,8 @@ export default function GradeGlowPlanner({
   const [timerExamId, setTimerExamId] = useState("");
   const [timerSessionId, setTimerSessionId] = useState("free");
   const [timerNow, setTimerNow] = useState(() => Date.now());
+  const [draggedSession, setDraggedSession] = useState<{ examId: string; sessionId: string } | null>(null);
+  const [calendarMoveMessage, setCalendarMoveMessage] = useState("");
 
   useEffect(() => {
     if (!activeTimer) return undefined;
@@ -778,6 +787,31 @@ export default function GradeGlowPlanner({
     }));
   };
 
+  const moveStudySessionToDate = (examId: string, sessionId: string, targetDateKey: string) => {
+    const targetDate = toDate(targetDateKey);
+    if (!targetDate) return;
+
+    let movedTitle = "Lernblock";
+    updateStudySession(examId, sessionId, (current) => {
+      movedTitle = current.title;
+      return { ...current, dateKey: targetDateKey };
+    });
+    setFocusedExamId(examId);
+    setCalendarCursorDate(targetDate);
+    setCalendarMoveMessage(`${movedTitle} auf ${formatDate(targetDateKey)} verschoben.`);
+  };
+
+  const handleSessionDragStart = (examId: string, sessionId: string) => {
+    setDraggedSession({ examId, sessionId });
+    setCalendarMoveMessage("Ziehe den Lernblock auf einen anderen Kalendertag.");
+  };
+
+  const handleSessionDrop = (targetDateKey: string) => {
+    if (!draggedSession) return;
+    moveStudySessionToDate(draggedSession.examId, draggedSession.sessionId, targetDateKey);
+    setDraggedSession(null);
+  };
+
   const regenerateExamPlan = (examId: string) => {
     const exam = sortedExams.find((item) => item.id === examId);
     if (!exam) return;
@@ -833,11 +867,22 @@ export default function GradeGlowPlanner({
   };
 
   const startStudyTimer = (examId: string, sessionId: string | null, title: string) => {
+    const startedAt = new Date();
     setActiveTimer({
       examId,
       sessionId,
       title,
-      startedAt: new Date().getTime(),
+      startedAt: startedAt.getTime(),
+    });
+
+    void publishStudyActivity({
+      user,
+      profile,
+      status: "started",
+      title,
+      examId,
+      sessionId,
+      startedAtIso: startedAt.toISOString(),
     });
   };
 
@@ -881,6 +926,18 @@ export default function GradeGlowPlanner({
         studySessions: sortSessions([...exam.studySessions, session]),
       }));
     }
+
+    void publishStudyActivity({
+      user,
+      profile,
+      status: "completed",
+      title: activeTimer.title,
+      examId: activeTimer.examId,
+      sessionId: activeTimer.sessionId,
+      durationMinutes: elapsedMinutes,
+      startedAtIso: startedAtDate.toISOString(),
+      completedAtIso: new Date().toISOString(),
+    });
 
     setFocusedExamId(activeTimer.examId);
     setCalendarCursorDate(new Date());
@@ -1138,20 +1195,50 @@ export default function GradeGlowPlanner({
               const isToday = dateKey === todayKey;
               const load = getStudyLoadLabel(dayStudyMinutes, dayExams.length);
               const muted = calendarMode === "month" && !isSameMonth(date, calendarCursorDate);
+              const isDropTarget = Boolean(draggedSession);
               return (
-                <div key={dateKey} className={`min-h-20 overflow-hidden rounded-xl p-1.5 ring-1 transition sm:min-h-28 sm:rounded-2xl sm:p-2.5 ${isToday ? "bg-violet-50 ring-violet-300" : muted ? "bg-slate-50/70 ring-slate-100" : "bg-white ring-slate-200"}`}>
+                <div
+                  key={dateKey}
+                  className={`min-h-24 overflow-hidden rounded-xl p-1.5 ring-1 transition sm:min-h-32 sm:rounded-2xl sm:p-2.5 ${isDropTarget ? "ring-violet-300" : ""} ${isToday ? "bg-violet-50 ring-violet-300" : muted ? "bg-slate-50/70 ring-slate-100" : "bg-white ring-slate-200"}`}
+                  onDragOver={(event) => {
+                    if (!draggedSession) return;
+                    event.preventDefault();
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    handleSessionDrop(dateKey);
+                  }}
+                >
                   <div className="flex items-start justify-between gap-1"><span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[0.68rem] font-black sm:h-7 sm:w-7 sm:text-xs ${isToday ? "bg-violet-700 text-white" : muted ? "text-slate-300" : "text-slate-700"}`}>{date.getDate()}</span><span className={`hidden rounded-full px-2 py-1 text-[0.6rem] font-black sm:inline-flex ${load.className}`}>{load.label}</span></div>
                   <div className="mt-1.5 space-y-1">
                     {dayExams.slice(0, 1).map((exam) => { const kind = examKindOptions.find((option) => option.value === exam.kind); return <button key={exam.id} type="button" className="block w-full truncate rounded-lg bg-rose-50 px-1.5 py-1 text-left text-[0.58rem] font-black text-rose-700 ring-1 ring-rose-100 sm:rounded-xl sm:px-2 sm:text-[0.68rem]" onClick={() => setFocusedExamId(exam.id)} title={exam.title}><span className="sm:hidden">{kind?.emoji ?? "📌"}</span><span className="hidden sm:inline">{kind?.emoji ?? "📌"} {exam.title}</span></button>; })}
                     {dayExams.length > 1 && <p className="truncate rounded-lg bg-rose-50 px-1.5 py-1 text-[0.58rem] font-bold text-rose-500 sm:rounded-xl sm:px-2 sm:text-[0.68rem]">+{dayExams.length - 1} Prüfung</p>}
-                    {dayStudyMinutes > 0 && <button type="button" className="block w-full truncate rounded-lg bg-violet-50 px-1.5 py-1 text-left text-[0.58rem] font-bold text-violet-700 ring-1 ring-violet-100 sm:rounded-xl sm:px-2 sm:text-[0.68rem]" onClick={() => setFocusedExamId(daySessions[0]?.examId ?? null)} title={daySessions.map((session) => `${session.title}: ${formatMinutes(session.durationMinutes)}`).join(" · ")}>Lernen · {formatMinutes(dayStudyMinutes)}</button>}
-                    {daySessions.some((session) => session.isDone) && <p className="truncate rounded-lg bg-emerald-50 px-1.5 py-1 text-[0.58rem] font-bold text-emerald-700">✓ erledigt</p>}
+                    {daySessions.slice(0, calendarMode === "week" ? 4 : 2).map((session) => (
+                      <button
+                        key={session.id}
+                        type="button"
+                        draggable
+                        className={`block w-full cursor-grab truncate rounded-lg px-1.5 py-1 text-left text-[0.58rem] font-bold ring-1 active:cursor-grabbing sm:rounded-xl sm:px-2 sm:text-[0.68rem] ${session.isDone ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-violet-50 text-violet-700 ring-violet-100"}`}
+                        onClick={() => setFocusedExamId(session.examId)}
+                        onDragStart={(event) => {
+                          event.dataTransfer.effectAllowed = "move";
+                          event.dataTransfer.setData("text/plain", `${session.examId}:${session.id}`);
+                          handleSessionDragStart(session.examId, session.id);
+                        }}
+                        onDragEnd={() => setDraggedSession(null)}
+                        title={`${session.title}: ${formatMinutes(session.durationMinutes)} · zum Verschieben ziehen`}
+                      >
+                        {session.isDone ? "✓ " : "↕ "}{session.title || "Lernblock"}
+                      </button>
+                    ))}
+                    {daySessions.length > (calendarMode === "week" ? 4 : 2) && <p className="truncate rounded-lg bg-violet-50 px-1.5 py-1 text-[0.58rem] font-bold text-violet-500 sm:rounded-xl sm:px-2 sm:text-[0.68rem]">+{daySessions.length - (calendarMode === "week" ? 4 : 2)} Lernblock</p>}
+                    {dayStudyMinutes > 0 && <p className="truncate rounded-lg bg-slate-50 px-1.5 py-1 text-[0.58rem] font-black text-slate-500 ring-1 ring-slate-100">Σ {formatMinutes(dayStudyMinutes)}</p>}
                   </div>
                 </div>
               );
             })}
           </div>
-          <div className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"><p className="text-sm font-black text-slate-700">Legende</p><div className="mt-3 flex flex-wrap gap-2 text-xs font-black"><span className="rounded-full bg-rose-50 px-3 py-1 text-rose-700 ring-1 ring-rose-100">Prüfung</span><span className="rounded-full bg-violet-50 px-3 py-1 text-violet-700 ring-1 ring-violet-100">Lernblock</span><span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-100">erledigt</span><span className="rounded-full bg-amber-50 px-3 py-1 text-amber-700 ring-1 ring-amber-100">viel geplant</span></div></div>
+          <div className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"><p className="text-sm font-black text-slate-700">Legende</p><div className="mt-3 flex flex-wrap gap-2 text-xs font-black"><span className="rounded-full bg-rose-50 px-3 py-1 text-rose-700 ring-1 ring-rose-100">Prüfung</span><span className="rounded-full bg-violet-50 px-3 py-1 text-violet-700 ring-1 ring-violet-100">Lernblock ziehbar</span><span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-100">erledigt</span><span className="rounded-full bg-amber-50 px-3 py-1 text-amber-700 ring-1 ring-amber-100">viel geplant</span></div>{calendarMoveMessage && <p className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600 ring-1 ring-slate-200">{calendarMoveMessage}</p>}</div>
         </div>
       </div>
 

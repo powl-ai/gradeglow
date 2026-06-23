@@ -21,7 +21,7 @@ const unlimited = Number.POSITIVE_INFINITY;
 const limitsByPlan: Record<UserPlan, PlanLimits> = {
   free: {
     maxFriends: 3,
-    maxModules: 35,
+    maxModules: 10,
     maxExams: 5,
     advancedStats: false,
     premiumThemes: false,

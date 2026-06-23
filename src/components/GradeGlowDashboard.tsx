@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, CSSProperties, FormEvent } from "react";
+import GlowRewardsPanel from "./GlowRewardsPanel";
 import GradeGlowInsights from "./GradeGlowInsights";
 import GradeGlowLogo from "./GradeGlowLogo";
 import GradeGlowPlanner from "./GradeGlowPlanner";
+import PlanUsagePanel from "./PlanUsagePanel";
 import PwaInstallCard from "./PwaInstallCard";
 import StudyFriendsPanel from "./StudyFriendsPanel";
 import StudyPlanningPanel from "./StudyPlanningPanel";
@@ -1341,6 +1343,13 @@ export default function GradeGlowDashboard({
               </div>
             </section>
 
+            <PlanUsagePanel
+              plan={entitlement.plan}
+              limits={limits}
+              modulesCount={modules.length}
+              examsCount={exams.length}
+            />
+
             <section className="rounded-3xl bg-white/85 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
               <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
                 <div>
@@ -1363,6 +1372,8 @@ export default function GradeGlowDashboard({
                 />
               </div>
             </section>
+
+            <GlowRewardsPanel profile={profile} exams={exams} saveProfile={saveProfile} />
 
             <PwaInstallCard />
           </>
@@ -1424,6 +1435,8 @@ export default function GradeGlowDashboard({
               syncMessage={examsSyncMessage}
               limits={limits}
               planLabel={planLabels[entitlement.plan]}
+              user={user}
+              profile={profile}
             />
           </section>
         )}

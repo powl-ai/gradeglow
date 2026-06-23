@@ -66,6 +66,22 @@ const getAvatarDataUrl = (value: unknown) => {
 };
 
 const getShareFlag = (value: unknown) => value !== false;
+const getBooleanValue = (value: unknown, fallback = false) =>
+  typeof value === "boolean" ? value : fallback;
+const getPositiveNumberValue = (value: unknown, fallback = 0) => {
+  if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, Math.round(value));
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(",", "."));
+    if (Number.isFinite(parsed)) return Math.max(0, Math.round(parsed));
+  }
+  return fallback;
+};
+
+const getReminderTime = (value: unknown) => {
+  if (typeof value !== "string") return "19:00";
+  const trimmed = value.trim();
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(trimmed) ? trimmed : "19:00";
+};
 
 const migrateProfile = (
   rawProfile: unknown,
@@ -90,6 +106,12 @@ const migrateProfile = (
     shareStudyTime: getShareFlag(profileObject.shareStudyTime),
     shareStudySubjects: getShareFlag(profileObject.shareStudySubjects),
     shareStudyStreak: getShareFlag(profileObject.shareStudyStreak),
+    glowPoints: getPositiveNumberValue(profileObject.glowPoints),
+    dailyLoginStreak: getPositiveNumberValue(profileObject.dailyLoginStreak),
+    dailyLoginLastClaimDateKey: getStringValue(profileObject.dailyLoginLastClaimDateKey),
+    studyReminderNotificationsEnabled: getBooleanValue(profileObject.studyReminderNotificationsEnabled),
+    friendActivityNotificationsEnabled: getBooleanValue(profileObject.friendActivityNotificationsEnabled),
+    studyReminderTime: getReminderTime(profileObject.studyReminderTime),
     themeMode: getThemeMode(profileObject.themeMode),
     accentColor: getAccentColor(profileObject.accentColor),
   };
@@ -115,6 +137,12 @@ export function useGradeGlowProfile(user: AppUser) {
       shareStudyTime: true,
       shareStudySubjects: true,
       shareStudyStreak: true,
+      glowPoints: 0,
+      dailyLoginStreak: 0,
+      dailyLoginLastClaimDateKey: "",
+      studyReminderNotificationsEnabled: false,
+      friendActivityNotificationsEnabled: false,
+      studyReminderTime: "19:00",
       themeMode: "system",
       accentColor: "violet",
     }),
@@ -222,7 +250,7 @@ export function useGradeGlowProfile(user: AppUser) {
             ...normalizedProfile,
             ownerUid: user.uid,
             updatedAt: serverTimestamp(),
-            version: 3,
+            version: 4,
           },
           { merge: true }
         );

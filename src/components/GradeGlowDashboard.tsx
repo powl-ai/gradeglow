@@ -18,6 +18,7 @@ import { useGradeGlowExams } from "../hooks/useGradeGlowExams";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { formatLimit, planLabels } from "../lib/gradeglowAccess";
 import { getAvatarFrameWrapperClassName, getProfileBannerClassName } from "../lib/glowRewards";
+import { getEffectivePageThemeId, getPageThemeStyle } from "../lib/gradeglowThemes";
 import {
   DEFAULT_TARGET_ECTS,
   useGradeGlowProfile,
@@ -78,8 +79,8 @@ const getThemeClassName = (themeMode: string) => {
   return "gg-theme-system";
 };
 
-const getThemeStyle = (accentColor: string): CSSProperties => ({
-  // CSS variables are resolved by globals.css, this object keeps React aware of the customization boundary.
+const getThemeStyle = (accentColor: string, pageThemeId: ReturnType<typeof getEffectivePageThemeId>): CSSProperties => ({
+  ...getPageThemeStyle(pageThemeId),
   colorScheme: accentColor === "amber" ? "light" : undefined,
 });
 
@@ -201,7 +202,8 @@ export default function GradeGlowDashboard({
 
   const { profile, isProfileLoaded, saveProfile } = useGradeGlowProfile(user);
   const themeClassName = getThemeClassName(profile.themeMode);
-  const themeStyle = getThemeStyle(profile.accentColor);
+  const effectivePageThemeId = getEffectivePageThemeId(profile.activePageThemeId, limits.premiumThemes);
+  const themeStyle = getThemeStyle(profile.accentColor, effectivePageThemeId);
 
   const totalTargetEcts =
     profile.targetEcts > 0 ? profile.targetEcts : DEFAULT_TARGET_ECTS;
@@ -1005,7 +1007,7 @@ export default function GradeGlowDashboard({
   }
 
   return (
-    <main className={`gg-themed ${themeClassName} min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950`} data-accent={profile.accentColor} style={themeStyle}>
+    <main className={`gg-themed ${themeClassName} min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950`} data-accent={profile.accentColor} data-page-theme={effectivePageThemeId} style={themeStyle}>
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute left-[-8rem] top-[-8rem] h-96 w-96 rounded-full bg-fuchsia-200/60 blur-3xl" />
         <div className="absolute right-[-10rem] top-40 h-[28rem] w-[28rem] rounded-full bg-violet-200/60 blur-3xl" />
@@ -1383,7 +1385,7 @@ export default function GradeGlowDashboard({
               </div>
             </section>
 
-            <GlowRewardsPanel profile={profile} exams={exams} saveProfile={saveProfile} />
+            <GlowRewardsPanel profile={profile} exams={exams} saveProfile={saveProfile} limits={limits} planLabel={planLabels[entitlement.plan]} />
 
             <PwaInstallCard />
           </>

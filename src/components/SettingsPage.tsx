@@ -10,10 +10,11 @@ import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { DEFAULT_TARGET_ECTS, useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { formatLimit, planDescriptions, planLabels } from "../lib/gradeglowAccess";
+import { PAGE_THEMES, getEffectivePageThemeId, getPageThemeStyle } from "../lib/gradeglowThemes";
 import { STREAK_BADGES, getAvatarFrameWrapperClassName, getProfileBannerClassName } from "../lib/glowRewards";
 import { getUserModulesStorageKey } from "../lib/gradeglowModules";
 import { getUserExamsStorageKey } from "../lib/gradeglowExams";
-import type { AccentColor, AppUser, GradeGlowProfile, StartMode, ThemeMode } from "../types";
+import type { AccentColor, AppUser, GradeGlowProfile, PageThemeId, StartMode, ThemeMode } from "../types";
 
 type SettingsPageProps = {
   user: AppUser;
@@ -50,7 +51,7 @@ const getThemeClassName = (themeMode: ThemeMode) => {
   return "gg-theme-system";
 };
 
-const getThemeStyle = (): CSSProperties => ({});
+const getThemeStyle = (pageThemeId: PageThemeId): CSSProperties => getPageThemeStyle(pageThemeId);
 
 const LOCAL_USERS_KEY = "gradeglow-local-users-v1";
 const LOCAL_SESSION_KEY = "gradeglow-local-session-v1";
@@ -146,6 +147,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   const [preferredStartMode, setPreferredStartMode] = useState<StartMode>("manual");
   const [themeMode, setThemeMode] = useState<ThemeMode>("system");
   const [accentColor, setAccentColor] = useState<AccentColor>("violet");
+  const [activePageThemeId, setActivePageThemeId] = useState<PageThemeId>("default");
   const [avatarDataUrl, setAvatarDataUrl] = useState("");
   const [avatarMessage, setAvatarMessage] = useState("");
   const [formMessage, setFormMessage] = useState("");
@@ -169,6 +171,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     setPreferredStartMode(profile.preferredStartMode || "manual");
     setThemeMode(profile.themeMode || "system");
     setAccentColor(profile.accentColor || "violet");
+    setActivePageThemeId(profile.activePageThemeId || "default");
     setAvatarDataUrl(profile.avatarDataUrl || "");
   }, [isProfileLoaded, profile]);
 
@@ -202,10 +205,11 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
       preferredStartMode,
       themeMode,
       accentColor,
+      activePageThemeId: limits.premiumThemes ? activePageThemeId : "default",
       onboardingCompleted: true,
       avatarDataUrl,
     };
-  }, [accentColor, avatarDataUrl, currentSemester, degreeProgram, degreeType, displayName, preferredStartMode, profile, targetEcts, themeMode, university]);
+  }, [accentColor, activePageThemeId, avatarDataUrl, currentSemester, degreeProgram, degreeType, displayName, limits.premiumThemes, preferredStartMode, profile, targetEcts, themeMode, university]);
 
   const hasChanges = useMemo(() => {
     return JSON.stringify(nextProfile) !== JSON.stringify({ ...profile, onboardingCompleted: true });
@@ -348,7 +352,8 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   };
 
   const themeClassName = getThemeClassName(themeMode);
-  const themeStyle = getThemeStyle();
+  const effectivePageThemeId = getEffectivePageThemeId(activePageThemeId, limits.premiumThemes);
+  const themeStyle = getThemeStyle(effectivePageThemeId);
   const userLabel = profile.displayName || user.displayName || user.email || "GradeGlow User";
   const userInitial = userLabel.trim().charAt(0).toUpperCase() || "G";
   const avatarSource = avatarDataUrl || profile.avatarDataUrl || user.photoURL || "";
@@ -374,7 +379,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   };
 
   return (
-    <main className={`gg-themed ${themeClassName} min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950`} data-accent={accentColor} style={themeStyle}>
+    <main className={`gg-themed ${themeClassName} min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950`} data-accent={accentColor} data-page-theme={effectivePageThemeId} style={themeStyle}>
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute left-[-8rem] top-[-8rem] h-96 w-96 rounded-full bg-fuchsia-200/60 blur-3xl" />
         <div className="absolute right-[-10rem] top-40 h-[28rem] w-[28rem] rounded-full bg-violet-200/60 blur-3xl" />
@@ -578,6 +583,37 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                       );
                     })}
                   </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <span className="mb-2 block text-sm font-bold text-slate-700">Gesamte Seitenfarbe</span>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {PAGE_THEMES.map((theme) => {
+                      const isLocked = theme.isPremium && !limits.premiumThemes;
+                      const isSelected = effectivePageThemeId === theme.id;
+                      return (
+                        <button
+                          key={theme.id}
+                          type="button"
+                          className={`rounded-2xl p-3 text-left ring-1 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 ${isSelected ? "bg-slate-950 text-white ring-slate-900" : "bg-white text-slate-700 ring-slate-200 hover:bg-violet-50"}`}
+                          onClick={() => setActivePageThemeId(theme.id)}
+                          disabled={isLocked}
+                          title={isLocked ? "Premium-Theme · im Freundesbonus/Premium freischalten" : theme.title}
+                        >
+                          <span className={`mb-2 block h-10 rounded-xl bg-gradient-to-br ${theme.previewClassName} ring-1 ring-black/5`} />
+                          <span className="block text-sm font-black">{theme.title}</span>
+                          <span className={`mt-1 block text-[0.68rem] font-bold leading-4 ${isSelected ? "text-slate-300" : "text-slate-400"}`}>
+                            {theme.isPremium ? "Premium · " : ""}{theme.description}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {!limits.premiumThemes && (
+                    <p className="mt-2 rounded-2xl bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800 ring-1 ring-amber-100">
+                      Night Library und Study Sunrise als komplette App-Themes sind Premium. Free kann weiterhin Akzentfarben und Profilkosmetik nutzen.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

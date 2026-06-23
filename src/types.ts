@@ -12,6 +12,8 @@ export type ThemeMode = "system" | "light" | "dark";
 
 export type AccentColor = "violet" | "pink" | "blue" | "emerald" | "amber" | "cyan" | "rose";
 
+export type PageThemeId = "default" | "theme-night-library" | "theme-study-sunrise";
+
 export type UserPlan = "free" | "premium" | "lifetime" | "admin";
 
 export type GradeGlowEntitlement = {
@@ -63,6 +65,7 @@ export type GradeGlowProfile = {
   totalStudySessionRewards: number;
   activeAvatarFrameId: string;
   activeProfileBannerId: string;
+  activePageThemeId: PageThemeId;
   themeMode: ThemeMode;
   accentColor: AccentColor;
 };

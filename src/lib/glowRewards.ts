@@ -1,6 +1,6 @@
-import type { AccentColor, ExamPlanItem, GradeGlowProfile } from "../types";
+import type { AccentColor, ExamPlanItem, GradeGlowProfile, PageThemeId } from "../types";
 
-export type GlowCosmeticKind = "accent" | "avatarFrame" | "profileBanner";
+export type GlowCosmeticKind = "accent" | "avatarFrame" | "profileBanner" | "pageTheme";
 
 export type GlowCosmeticItem = {
   id: string;
@@ -10,6 +10,8 @@ export type GlowCosmeticItem = {
   cost: number;
   previewClassName: string;
   accentColor?: AccentColor;
+  pageThemeId?: PageThemeId;
+  premiumOnly?: boolean;
 };
 
 export type StreakBadge = {
@@ -38,6 +40,27 @@ export const GLOW_COSMETICS: GlowCosmeticItem[] = [
     cost: 80,
     previewClassName: "from-rose-400 to-pink-600",
     accentColor: "rose",
+  },
+
+  {
+    id: "theme-night-library",
+    kind: "pageTheme",
+    title: "Night Library Theme",
+    description: "Premium: färbt die komplette App dunkel, ruhig und library-like ein.",
+    cost: 220,
+    previewClassName: "from-slate-950 via-indigo-950 to-violet-900",
+    pageThemeId: "theme-night-library",
+    premiumOnly: true,
+  },
+  {
+    id: "theme-study-sunrise",
+    kind: "pageTheme",
+    title: "Study Sunrise Theme",
+    description: "Premium: färbt die komplette App warm, hell und sunrise-like ein.",
+    cost: 220,
+    previewClassName: "from-orange-100 via-pink-200 to-violet-300",
+    pageThemeId: "theme-study-sunrise",
+    premiumOnly: true,
   },
   {
     id: "frame-aurora",
@@ -128,6 +151,18 @@ export const getProfileBannerClassName = (bannerId: string) => {
       return "bg-gradient-to-br from-orange-200 via-pink-300 to-violet-400 text-slate-950";
     default:
       return "bg-slate-950";
+  }
+};
+
+
+export const getPageThemePreviewClassName = (themeId: string) => {
+  switch (themeId) {
+    case "theme-night-library":
+      return "bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 text-white";
+    case "theme-study-sunrise":
+      return "bg-gradient-to-br from-orange-100 via-pink-200 to-violet-300 text-slate-950";
+    default:
+      return "bg-gradient-to-br from-violet-100 via-fuchsia-100 to-pink-100 text-slate-950";
   }
 };
 

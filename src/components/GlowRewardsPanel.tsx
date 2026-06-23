@@ -10,11 +10,12 @@ import {
   getDoneStudyDayKeys,
   getLatestStudyCompletedAt,
   getNextStudyReminderAt,
+  getPageThemePreviewClassName,
   getProfileBannerClassName,
   normalizePurchasedCosmetics,
   ownsCosmetic,
 } from "../lib/glowRewards";
-import type { AccentColor, ExamPlanItem, GradeGlowProfile } from "../types";
+import type { AccentColor, ExamPlanItem, GradeGlowProfile, PageThemeId, PlanLimits } from "../types";
 
 const getDateKey = (date: Date) => {
   const year = date.getFullYear();
@@ -55,9 +56,11 @@ type GlowRewardsPanelProps = {
   profile: GradeGlowProfile;
   exams: ExamPlanItem[];
   saveProfile: (profile: GradeGlowProfile) => Promise<void>;
+  limits: PlanLimits;
+  planLabel: string;
 };
 
-export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRewardsPanelProps) {
+export default function GlowRewardsPanel({ profile, exams, saveProfile, limits, planLabel }: GlowRewardsPanelProps) {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -79,10 +82,12 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRe
   const previewFrameId = previewCosmetic?.kind === "avatarFrame" ? previewCosmetic.id : profile.activeAvatarFrameId;
   const previewBannerId = previewCosmetic?.kind === "profileBanner" ? previewCosmetic.id : profile.activeProfileBannerId;
   const previewAccent = previewCosmetic?.kind === "accent" && previewCosmetic.accentColor ? previewCosmetic.accentColor : profile.accentColor;
+  const previewPageThemeId = previewCosmetic?.kind === "pageTheme" && previewCosmetic.pageThemeId ? previewCosmetic.pageThemeId : profile.activePageThemeId;
   const activeBannerClassName = getProfileBannerClassName(profile.activeProfileBannerId);
   const activeFrameWrapperClassName = getAvatarFrameWrapperClassName(profile.activeAvatarFrameId);
   const previewBannerClassName = getProfileBannerClassName(previewBannerId);
   const previewFrameWrapperClassName = getAvatarFrameWrapperClassName(previewFrameId);
+  const previewPageThemeClassName = getPageThemePreviewClassName(previewPageThemeId);
   const previewInitial = (profile.displayName.trim()[0] || "G").toUpperCase();
 
   const todayDoneMinutes = useMemo(
@@ -217,6 +222,12 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRe
     const purchasedIds = normalizePurchasedCosmetics(profile.purchasedCosmeticIds);
     const alreadyOwned = purchasedIds.includes(cosmetic.id);
 
+    if (cosmetic.premiumOnly && !limits.premiumThemes) {
+      setMessage(`${cosmetic.title} ist ein Premium-Theme. Dein aktueller Plan: ${planLabel}.`);
+      setIsSaving(false);
+      return;
+    }
+
     if (!alreadyOwned && profile.glowPoints < cosmetic.cost) {
       setMessage(`Noch nicht genug Glow Points. Für ${cosmetic.title} brauchst du ${cosmetic.cost} Punkte.`);
       setIsSaving(false);
@@ -234,6 +245,10 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRe
             : profile.accentColor,
         activeAvatarFrameId: cosmetic.kind === "avatarFrame" ? cosmetic.id : profile.activeAvatarFrameId,
         activeProfileBannerId: cosmetic.kind === "profileBanner" ? cosmetic.id : profile.activeProfileBannerId,
+        activePageThemeId:
+          cosmetic.kind === "pageTheme" && cosmetic.pageThemeId
+            ? (cosmetic.pageThemeId as PageThemeId)
+            : profile.activePageThemeId,
       });
       setPreviewCosmeticId(null);
       setMessage(alreadyOwned ? `${cosmetic.title} aktiviert.` : `${cosmetic.title} freigeschaltet und aktiviert.`);
@@ -363,12 +378,12 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRe
             <div>
               <p className="text-sm font-bold text-violet-700">Glow Shop</p>
               <h2 className="mt-1 text-2xl font-black tracking-tight">Kosmetik mit Punkten freischalten</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">Teste Farben, Banner und Profilbild-Frames zuerst in der Vorschau. Punkte werden erst beim Kaufen eingelöst.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">Teste Farben, Banner, Profilbild-Frames und komplette App-Themes zuerst in der Vorschau. Die Ganzseiten-Themes sind Premium.</p>
             </div>
             <span className="self-start rounded-full bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-700 ring-1 ring-violet-100">{profile.glowPoints} Punkte</span>
           </div>
 
-          <div className={`mt-5 overflow-hidden rounded-3xl ${previewBannerClassName} p-4 text-white shadow-lg shadow-violet-950/10 ring-1 ring-slate-900/10`}>
+          <div className={`mt-5 overflow-hidden rounded-3xl p-4 shadow-lg shadow-violet-950/10 ring-1 ring-slate-900/10 ${previewCosmetic?.kind === "pageTheme" ? previewPageThemeClassName : `${previewBannerClassName} text-white`}`}>
             <div className="flex items-center gap-3">
               <div className={previewFrameWrapperClassName ? `${previewFrameWrapperClassName} shrink-0 rounded-[1.35rem]` : "shrink-0"}>
                 {profile.avatarDataUrl ? (
@@ -404,7 +419,8 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRe
               const isActive =
                 (item.kind === "accent" && item.accentColor === profile.accentColor) ||
                 (item.kind === "avatarFrame" && item.id === profile.activeAvatarFrameId) ||
-                (item.kind === "profileBanner" && item.id === profile.activeProfileBannerId);
+                (item.kind === "profileBanner" && item.id === profile.activeProfileBannerId) ||
+                (item.kind === "pageTheme" && item.pageThemeId === profile.activePageThemeId);
               const isPreviewing = previewCosmeticId === item.id;
 
               return (
@@ -415,7 +431,7 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRe
                   <div className="flex items-center gap-3">
                     <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${item.previewClassName} ${item.kind === "avatarFrame" ? activeFrameWrapperClassName : ""}`}>
                       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 text-sm font-black text-slate-950">
-                        {item.kind === "accent" ? "Aa" : item.kind === "avatarFrame" ? "G" : "▣"}
+                        {item.kind === "accent" ? "Aa" : item.kind === "avatarFrame" ? "G" : item.kind === "pageTheme" ? "UI" : "▣"}
                       </span>
                     </span>
                     <span className="min-w-0 flex-1">
@@ -430,7 +446,7 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRe
                     <button type="button" className="rounded-2xl bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200" onClick={() => setPreviewCosmeticId(item.id)}>
                       Vorschau
                     </button>
-                    <button type="button" className="rounded-2xl bg-violet-700 px-3 py-2 text-xs font-black text-white disabled:opacity-45" onClick={() => void redeemOrEquipCosmetic(item.id)} disabled={isSaving}>
+                    <button type="button" className="rounded-2xl bg-violet-700 px-3 py-2 text-xs font-black text-white disabled:opacity-45" onClick={() => void redeemOrEquipCosmetic(item.id)} disabled={isSaving || (item.premiumOnly && !limits.premiumThemes)}>
                       {isActive ? "Aktiv" : owned ? "Nutzen" : "Kaufen"}
                     </button>
                   </div>

@@ -12,23 +12,23 @@ type GradeGlowInsightsProps = {
 const statusConfig: Record<ModuleStatus, { label: string; barClassName: string; dotClassName: string }> = {
   passed: {
     label: "Bestanden",
-    barClassName: "bg-emerald-500",
-    dotClassName: "bg-emerald-500",
+    barClassName: "gg-chart-fill",
+    dotClassName: "gg-chart-dot",
   },
   ungraded: {
     label: "Unbenotet",
-    barClassName: "bg-sky-500",
-    dotClassName: "bg-sky-500",
+    barClassName: "gg-chart-fill",
+    dotClassName: "gg-chart-dot",
   },
   open: {
     label: "Offen",
-    barClassName: "bg-amber-500",
-    dotClassName: "bg-amber-500",
+    barClassName: "gg-chart-fill",
+    dotClassName: "gg-chart-dot",
   },
   failed: {
     label: "Nicht bestanden",
-    barClassName: "bg-rose-500",
-    dotClassName: "bg-rose-500",
+    barClassName: "gg-chart-fill",
+    dotClassName: "gg-chart-dot",
   },
 };
 
@@ -197,7 +197,7 @@ export default function GradeGlowInsights({
                 </div>
                 <div className="h-3 overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 transition-all duration-500"
+                    className="h-full rounded-full gg-chart-fill transition-all duration-500"
                     style={{ width: `${Math.min((row.ects / maxSemesterEcts) * 100, 100)}%` }}
                   />
                 </div>
@@ -214,7 +214,7 @@ export default function GradeGlowInsights({
                       <div key={row.semester} className="flex flex-1 flex-col items-center gap-2">
                         <div className="flex h-20 w-full items-end rounded-2xl bg-white/10 p-1 ring-1 ring-white/10">
                           <div
-                            className="w-full rounded-xl bg-white/90 transition-all duration-500"
+                            className="w-full rounded-xl gg-chart-fill transition-all duration-500"
                             style={{ height: `${height}%` }}
                             title={`Semester ${row.semester}: ${formatGrade(row.average)}`}
                           />
@@ -280,7 +280,7 @@ export default function GradeGlowInsights({
                     </div>
                     <div className="h-3 overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 transition-all duration-500"
+                        className="h-full rounded-full gg-chart-fill transition-all duration-500"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>

@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../lib/firebase";
-import type { AccentColor, AppUser, GradeGlowProfile, StartMode, ThemeMode } from "../types";
+import { validPageThemeIds } from "../lib/gradeglowThemes";
+import type { AccentColor, AppUser, GradeGlowProfile, PageThemeId, StartMode, ThemeMode } from "../types";
 
 export type ProfileSyncStatus =
   | "local"
@@ -58,6 +59,9 @@ const getThemeMode = (value: unknown): ThemeMode =>
 
 const getAccentColor = (value: unknown): AccentColor =>
   validAccentColors.includes(value as AccentColor) ? (value as AccentColor) : "violet";
+
+const getPageThemeId = (value: unknown): PageThemeId =>
+  validPageThemeIds.includes(value as PageThemeId) ? (value as PageThemeId) : "default";
 
 const getAvatarDataUrl = (value: unknown) => {
   if (typeof value !== "string") return "";
@@ -127,6 +131,7 @@ const migrateProfile = (
     totalStudySessionRewards: getPositiveNumberValue(profileObject.totalStudySessionRewards),
     activeAvatarFrameId: getStringValue(profileObject.activeAvatarFrameId),
     activeProfileBannerId: getStringValue(profileObject.activeProfileBannerId),
+    activePageThemeId: getPageThemeId(profileObject.activePageThemeId),
     themeMode: getThemeMode(profileObject.themeMode),
     accentColor: getAccentColor(profileObject.accentColor),
   };
@@ -167,6 +172,7 @@ export function useGradeGlowProfile(user: AppUser) {
       totalStudySessionRewards: 0,
       activeAvatarFrameId: "",
       activeProfileBannerId: "",
+      activePageThemeId: "default",
       themeMode: "system",
       accentColor: "violet",
     }),

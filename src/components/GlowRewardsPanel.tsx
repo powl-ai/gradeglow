@@ -61,6 +61,7 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRe
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [message, setMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [previewCosmeticId, setPreviewCosmeticId] = useState<string | null>(null);
 
   const todayKey = getDateKey(new Date());
   const yesterdayKey = getDateKey(addDays(new Date(), -1));
@@ -74,6 +75,15 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRe
   const maxStudyStreak = Math.max(profile.maxStudyStreakDays, bestStudyStreak);
   const latestStudyDateKey = getLatestStudyDateKey(latestStudyAt);
   const nextReminderAt = getNextStudyReminderAt(latestStudyAt);
+  const previewCosmetic = GLOW_COSMETICS.find((item) => item.id === previewCosmeticId) ?? null;
+  const previewFrameId = previewCosmetic?.kind === "avatarFrame" ? previewCosmetic.id : profile.activeAvatarFrameId;
+  const previewBannerId = previewCosmetic?.kind === "profileBanner" ? previewCosmetic.id : profile.activeProfileBannerId;
+  const previewAccent = previewCosmetic?.kind === "accent" && previewCosmetic.accentColor ? previewCosmetic.accentColor : profile.accentColor;
+  const activeBannerClassName = getProfileBannerClassName(profile.activeProfileBannerId);
+  const activeFrameWrapperClassName = getAvatarFrameWrapperClassName(profile.activeAvatarFrameId);
+  const previewBannerClassName = getProfileBannerClassName(previewBannerId);
+  const previewFrameWrapperClassName = getAvatarFrameWrapperClassName(previewFrameId);
+  const previewInitial = (profile.displayName.trim()[0] || "G").toUpperCase();
 
   const todayDoneMinutes = useMemo(
     () =>
@@ -218,10 +228,14 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRe
         ...profile,
         glowPoints: alreadyOwned ? profile.glowPoints : profile.glowPoints - cosmetic.cost,
         purchasedCosmeticIds: alreadyOwned ? purchasedIds : [...purchasedIds, cosmetic.id],
-        accentColor: cosmetic.kind === "accent" && cosmetic.accentColor && isValidAccentColor(cosmetic.accentColor) ? cosmetic.accentColor : profile.accentColor,
+        accentColor:
+          cosmetic.kind === "accent" && cosmetic.accentColor && isValidAccentColor(cosmetic.accentColor)
+            ? cosmetic.accentColor
+            : profile.accentColor,
         activeAvatarFrameId: cosmetic.kind === "avatarFrame" ? cosmetic.id : profile.activeAvatarFrameId,
         activeProfileBannerId: cosmetic.kind === "profileBanner" ? cosmetic.id : profile.activeProfileBannerId,
       });
+      setPreviewCosmeticId(null);
       setMessage(alreadyOwned ? `${cosmetic.title} aktiviert.` : `${cosmetic.title} freigeschaltet und aktiviert.`);
     } catch {
       setMessage("Kosmetik konnte nicht gespeichert werden.");
@@ -231,8 +245,6 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRe
   };
 
   const unlockedBadgeCount = STREAK_BADGES.filter((badge) => maxStudyStreak >= badge.threshold).length;
-  const activeBannerClassName = getProfileBannerClassName(profile.activeProfileBannerId);
-  const activeFrameWrapperClassName = getAvatarFrameWrapperClassName(profile.activeAvatarFrameId);
 
   return (
     <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
@@ -244,13 +256,17 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRe
             <p className="text-sm font-bold text-fuchsia-100">Daily Glow</p>
             <h2 className="mt-1 text-2xl font-black tracking-tight">Login, Streaks & Abzeichen</h2>
             <p className="mt-2 text-sm leading-6 text-white/75">
-              Sammle täglich Glow Points, halte deine Lernroutine und schalte dauerhafte Max-Streak-Abzeichen frei. Max-Streaks bleiben erhalten, auch wenn ein aktueller Streak endet.
+              Sammle täglich Glow Points, halte deine Lernroutine und schalte dauerhafte Max-Streak-Abzeichen frei. Nach erfolgreich gespeicherten Lernsessions werden Glow Points automatisch gutgeschrieben.
             </p>
 
-            <div className="mt-5 grid gap-2 sm:grid-cols-4">
+            <div className="mt-5 grid gap-2 sm:grid-cols-5">
               <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
                 <p className="text-xs text-white/70">Glow Points</p>
                 <p className="mt-1 text-2xl font-black">{profile.glowPoints}</p>
+              </div>
+              <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
+                <p className="text-xs text-white/70">Session Rewards</p>
+                <p className="mt-1 text-2xl font-black">{profile.totalStudySessionRewards}</p>
               </div>
               <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
                 <p className="text-xs text-white/70">Daily Login</p>
@@ -347,9 +363,39 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRe
             <div>
               <p className="text-sm font-bold text-violet-700">Glow Shop</p>
               <h2 className="mt-1 text-2xl font-black tracking-tight">Kosmetik mit Punkten freischalten</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">Glow Points werden pro Feature eingelöst. Gekaufte Farben, Banner und Profilbild-Frames bleiben freigeschaltet und können jederzeit wieder aktiviert werden.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">Teste Farben, Banner und Profilbild-Frames zuerst in der Vorschau. Punkte werden erst beim Kaufen eingelöst.</p>
             </div>
             <span className="self-start rounded-full bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-700 ring-1 ring-violet-100">{profile.glowPoints} Punkte</span>
+          </div>
+
+          <div className={`mt-5 overflow-hidden rounded-3xl ${previewBannerClassName} p-4 text-white shadow-lg shadow-violet-950/10 ring-1 ring-slate-900/10`}>
+            <div className="flex items-center gap-3">
+              <div className={previewFrameWrapperClassName ? `${previewFrameWrapperClassName} shrink-0 rounded-[1.35rem]` : "shrink-0"}>
+                {profile.avatarDataUrl ? (
+                  <div className="h-14 w-14 rounded-2xl bg-cover bg-center ring-1 ring-white/20" style={{ backgroundImage: `url(${profile.avatarDataUrl})` }} />
+                ) : (
+                  <div className="grid h-14 w-14 place-items-center rounded-2xl bg-white/15 text-xl font-black ring-1 ring-white/20">{previewInitial}</div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/70">Shop Preview</p>
+                <p className="truncate text-xl font-black">{profile.displayName || "GradeGlow Profil"}</p>
+                <p className="text-sm font-semibold text-white/75">
+                  {previewCosmetic ? `${previewCosmetic.title} in Vorschau · noch nicht gekauft` : "Wähle ein Item aus und teste den Look vor dem Kauf."}
+                </p>
+              </div>
+              <span className={`hidden rounded-full px-3 py-1 text-xs font-black sm:inline-flex ${previewAccent === "cyan" ? "bg-cyan-300 text-slate-950" : previewAccent === "rose" ? "bg-rose-300 text-slate-950" : "bg-white text-slate-950"}`}>Accent: {previewAccent}</span>
+            </div>
+            {previewCosmetic && (
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                <button type="button" className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 disabled:opacity-45" onClick={() => void redeemOrEquipCosmetic(previewCosmetic.id)} disabled={isSaving}>
+                  {ownsCosmetic(profile, previewCosmetic.id) ? "Aktivieren" : `${previewCosmetic.cost} GP einlösen`}
+                </button>
+                <button type="button" className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-black text-white ring-1 ring-white/10" onClick={() => setPreviewCosmeticId(null)}>
+                  Vorschau schließen
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-2">
@@ -359,14 +405,12 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRe
                 (item.kind === "accent" && item.accentColor === profile.accentColor) ||
                 (item.kind === "avatarFrame" && item.id === profile.activeAvatarFrameId) ||
                 (item.kind === "profileBanner" && item.id === profile.activeProfileBannerId);
+              const isPreviewing = previewCosmeticId === item.id;
 
               return (
-                <button
+                <div
                   key={item.id}
-                  type="button"
-                  className={`rounded-3xl p-3 text-left ring-1 transition hover:-translate-y-0.5 ${isActive ? "bg-slate-950 text-white ring-slate-900" : "bg-slate-50 text-slate-950 ring-slate-200 hover:bg-violet-50"}`}
-                  onClick={() => void redeemOrEquipCosmetic(item.id)}
-                  disabled={isSaving}
+                  className={`rounded-3xl p-3 ring-1 transition ${isActive ? "bg-slate-950 text-white ring-slate-900" : isPreviewing ? "bg-violet-50 text-slate-950 ring-violet-200" : "bg-slate-50 text-slate-950 ring-slate-200"}`}
                 >
                   <div className="flex items-center gap-3">
                     <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${item.previewClassName} ${item.kind === "avatarFrame" ? activeFrameWrapperClassName : ""}`}>
@@ -379,10 +423,18 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile }: GlowRe
                       <span className={`mt-0.5 block text-xs font-semibold leading-5 ${isActive ? "text-slate-300" : "text-slate-500"}`}>{item.description}</span>
                     </span>
                     <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${isActive ? "bg-white text-slate-950" : owned ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" : "bg-white text-slate-600 ring-1 ring-slate-200"}`}>
-                      {isActive ? "aktiv" : owned ? "nutzen" : `${item.cost} GP`}
+                      {isActive ? "aktiv" : owned ? "gekauft" : `${item.cost} GP`}
                     </span>
                   </div>
-                </button>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button type="button" className="rounded-2xl bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200" onClick={() => setPreviewCosmeticId(item.id)}>
+                      Vorschau
+                    </button>
+                    <button type="button" className="rounded-2xl bg-violet-700 px-3 py-2 text-xs font-black text-white disabled:opacity-45" onClick={() => void redeemOrEquipCosmetic(item.id)} disabled={isSaving}>
+                      {isActive ? "Aktiv" : owned ? "Nutzen" : "Kaufen"}
+                    </button>
+                  </div>
+                </div>
               );
             })}
           </div>

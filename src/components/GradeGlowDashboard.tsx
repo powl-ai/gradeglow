@@ -1447,6 +1447,7 @@ export default function GradeGlowDashboard({
               planLabel={planLabels[entitlement.plan]}
               user={user}
               profile={profile}
+              saveProfile={saveProfile}
             />
           </section>
         )}

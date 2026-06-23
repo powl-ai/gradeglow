@@ -83,6 +83,18 @@ export const STREAK_BADGES: StreakBadge[] = [
 
 export const normalizePurchasedCosmetics = (ids: string[]) => Array.from(new Set(ids.filter(Boolean)));
 
+export const STUDY_SESSION_REWARD_MINUTES = 10;
+export const STUDY_SESSION_REWARD_BASE_POINTS = 8;
+
+export const normalizeRewardedStudySessionIds = (ids: string[]) =>
+  Array.from(new Set(ids.filter(Boolean)));
+
+export const getStudySessionRewardPoints = (durationMinutes: number) => {
+  const safeDuration = Math.max(0, Math.round(Number(durationMinutes) || 0));
+  if (safeDuration < STUDY_SESSION_REWARD_MINUTES) return 0;
+  return Math.min(40, STUDY_SESSION_REWARD_BASE_POINTS + Math.floor(safeDuration / 20) * 4);
+};
+
 export const ownsCosmetic = (profile: GradeGlowProfile, cosmeticId: string) =>
   normalizePurchasedCosmetics(profile.purchasedCosmeticIds).includes(cosmeticId);
 

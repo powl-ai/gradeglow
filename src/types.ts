@@ -59,6 +59,8 @@ export type GradeGlowProfile = {
   currentStudyStreakDays: number;
   maxStudyStreakDays: number;
   purchasedCosmeticIds: string[];
+  rewardedStudySessionIds: string[];
+  totalStudySessionRewards: number;
   activeAvatarFrameId: string;
   activeProfileBannerId: string;
   themeMode: ThemeMode;

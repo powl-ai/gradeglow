@@ -688,6 +688,8 @@ export default function StudyPlanningPanel({ modules, setModules }: StudyPlannin
           isLocked: false,
           stupoMatched: true,
           stupoSource: sourceLabel,
+          notes: "",
+          targetGrade: null,
         });
       });
 

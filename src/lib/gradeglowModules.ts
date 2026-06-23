@@ -83,6 +83,8 @@ export const migrateModules = (rawModules: unknown): UniModule[] => {
       isLocked: module.isLocked === true || (status === "failed" && attemptCount >= maxAttempts),
       stupoMatched: module.stupoMatched === true,
       stupoSource: typeof module.stupoSource === "string" ? module.stupoSource : "",
+      notes: typeof module.notes === "string" ? module.notes : "",
+      targetGrade: toNullableGrade(module.targetGrade),
     };
   });
 };

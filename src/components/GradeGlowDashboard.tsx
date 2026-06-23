@@ -9,6 +9,7 @@ import GradeGlowPlanner from "./GradeGlowPlanner";
 import PwaInstallCard from "./PwaInstallCard";
 import StudyPlanningPanel from "./StudyPlanningPanel";
 import OnboardingWizard from "./OnboardingWizard";
+import ModuleDetailModal from "./ModuleDetailModal";
 import { useGradeGlowModules } from "../hooks/useGradeGlowModules";
 import {
   DEFAULT_TARGET_ECTS,
@@ -160,6 +161,7 @@ export default function GradeGlowDashboard({
   const [isInsightsOpen, setIsInsightsOpen] = useState(false);
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const [importMessage, setImportMessage] = useState("");
+  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -315,6 +317,8 @@ export default function GradeGlowDashboard({
       isLocked: initialAttemptCount >= 3,
       stupoMatched: false,
       stupoSource: "",
+      notes: "",
+      targetGrade: null,
     };
 
     setModules((currentModules) => [...currentModules, newModule]);
@@ -331,8 +335,22 @@ export default function GradeGlowDashboard({
   };
 
   const deleteModule = (moduleId: string) => {
+    setSelectedModuleId((currentModuleId) =>
+      currentModuleId === moduleId ? null : currentModuleId,
+    );
     setModules((currentModules) =>
       currentModules.filter((module) => module.id !== moduleId),
+    );
+  };
+
+  const updateModuleDetails = (
+    moduleId: string,
+    patch: Pick<UniModule, "notes" | "targetGrade">,
+  ) => {
+    setModules((currentModules) =>
+      currentModules.map((module) =>
+        module.id === moduleId ? { ...module, ...patch } : module,
+      ),
     );
   };
 
@@ -598,6 +616,8 @@ export default function GradeGlowDashboard({
         "Fehlversuche",
         "Max. Versuche",
         "StuPo-Quelle",
+        "Notizen",
+        "Zielnote",
       ],
       ...modules.map((module) => {
         const finalGrade = getFinalGrade(module);
@@ -623,6 +643,8 @@ export default function GradeGlowDashboard({
           module.attemptCount,
           module.maxAttempts,
           module.stupoSource,
+          module.notes,
+          module.targetGrade !== null ? formatGrade(module.targetGrade) : "",
         ];
       }),
     ];
@@ -882,6 +904,10 @@ export default function GradeGlowDashboard({
     profile.degreeProgram || "Studiengang noch nicht gesetzt";
   const activeNavItem =
     dashboardNavItems.find((item) => item.id === page) ?? dashboardNavItems[0];
+  const selectedModule =
+    selectedModuleId !== null
+      ? modules.find((module) => module.id === selectedModuleId) ?? null
+      : null;
   const isInsightsVisible = page === "insights" || isInsightsOpen;
   const isBackupVisible = page === "backup" || isToolsOpen;
 
@@ -1601,6 +1627,11 @@ export default function GradeGlowDashboard({
                                               {module.plannedSemester ??
                                                 module.semester}
                                             </span>
+                                            {module.targetGrade !== null && (
+                                              <span className="rounded-full bg-fuchsia-50 px-3 py-1 text-xs font-black text-fuchsia-700 ring-1 ring-fuchsia-100">
+                                                Ziel {formatGrade(module.targetGrade)}
+                                              </span>
+                                            )}
                                             {(module.attemptCount ?? 0) > 0 && (
                                               <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700 ring-1 ring-amber-100">
                                                 Versuch {module.attemptCount}/
@@ -1706,10 +1737,20 @@ export default function GradeGlowDashboard({
                                           )}
                                         </div>
 
-                                        <div className="flex flex-wrap gap-2 lg:justify-end">
+                                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap lg:justify-end">
                                           <button
                                             type="button"
-                                            className="soft-button"
+                                            className="soft-button w-full sm:w-auto"
+                                            onClick={() =>
+                                              setSelectedModuleId(module.id)
+                                            }
+                                          >
+                                            Details
+                                          </button>
+
+                                          <button
+                                            type="button"
+                                            className="soft-button w-full sm:w-auto"
                                             onClick={() =>
                                               startEditingModule(module)
                                             }
@@ -1719,7 +1760,7 @@ export default function GradeGlowDashboard({
 
                                           <button
                                             type="button"
-                                            className="rounded-2xl bg-rose-50 px-4 py-2.5 text-sm font-black text-rose-700 ring-1 ring-rose-100 transition hover:-translate-y-0.5 hover:bg-rose-100"
+                                            className="w-full rounded-2xl bg-rose-50 px-4 py-2.5 text-sm font-black text-rose-700 ring-1 ring-rose-100 transition hover:-translate-y-0.5 hover:bg-rose-100 sm:w-auto"
                                             onClick={() =>
                                               deleteModule(module.id)
                                             }
@@ -2187,6 +2228,20 @@ export default function GradeGlowDashboard({
               </div>
             )}
           </section>
+        )}
+
+        {selectedModule && (
+          <ModuleDetailModal
+            user={user}
+            module={selectedModule}
+            onClose={() => setSelectedModuleId(null)}
+            onDelete={() => deleteModule(selectedModule.id)}
+            onStartEdit={() => {
+              startEditingModule(selectedModule);
+              setSelectedModuleId(null);
+            }}
+            onUpdateModule={updateModuleDetails}
+          />
         )}
 
         <footer className="flex flex-col items-center justify-between gap-3 pb-2 text-xs font-bold text-slate-400 sm:flex-row">

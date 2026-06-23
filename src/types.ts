@@ -47,6 +47,8 @@ export type UniModule = {
   isLocked: boolean;
   stupoMatched: boolean;
   stupoSource: string;
+  notes: string;
+  targetGrade: number | null;
 };
 
 export type ExamKind = "exam" | "presentation" | "paper" | "project" | "oral" | "other";

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../lib/firebase";
-import type { AppUser, GradeGlowProfile, StartMode } from "../types";
+import type { AccentColor, AppUser, GradeGlowProfile, StartMode, ThemeMode } from "../types";
 
 export type ProfileSyncStatus =
   | "local"
@@ -17,6 +17,8 @@ const PROFILE_STORAGE_KEY = "gradeglow-profile-v1";
 export const DEFAULT_TARGET_ECTS = 180;
 
 const validStartModes: StartMode[] = ["manual", "stupo", "template", "demo"];
+const validThemeModes: ThemeMode[] = ["system", "light", "dark"];
+const validAccentColors: AccentColor[] = ["violet", "pink", "blue", "emerald", "amber"];
 
 const parseTargetEcts = (value: unknown) => {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
@@ -51,6 +53,12 @@ const getStringValue = (value: unknown) => {
 const getStartMode = (value: unknown): StartMode =>
   validStartModes.includes(value as StartMode) ? (value as StartMode) : "manual";
 
+const getThemeMode = (value: unknown): ThemeMode =>
+  validThemeModes.includes(value as ThemeMode) ? (value as ThemeMode) : "system";
+
+const getAccentColor = (value: unknown): AccentColor =>
+  validAccentColors.includes(value as AccentColor) ? (value as AccentColor) : "violet";
+
 const getAvatarDataUrl = (value: unknown) => {
   if (typeof value !== "string") return "";
   const trimmed = value.trim();
@@ -77,6 +85,8 @@ const migrateProfile = (
     onboardingCompleted: profileObject.onboardingCompleted === true,
     avatarDataUrl: getAvatarDataUrl(profileObject.avatarDataUrl),
     studySharingEnabled: profileObject.studySharingEnabled === true,
+    themeMode: getThemeMode(profileObject.themeMode),
+    accentColor: getAccentColor(profileObject.accentColor),
   };
 };
 
@@ -97,6 +107,8 @@ export function useGradeGlowProfile(user: AppUser) {
       onboardingCompleted: false,
       avatarDataUrl: "",
       studySharingEnabled: false,
+      themeMode: "system",
+      accentColor: "violet",
     }),
     [fallbackDisplayName]
   );

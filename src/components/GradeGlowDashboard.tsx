@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent, CSSProperties, FormEvent } from "react";
 import GradeGlowInsights from "./GradeGlowInsights";
 import GradeGlowLogo from "./GradeGlowLogo";
 import GradeGlowPlanner from "./GradeGlowPlanner";
@@ -64,6 +64,17 @@ type DashboardNavItem = {
   description: string;
   emoji: string;
 };
+
+const getThemeClassName = (themeMode: string) => {
+  if (themeMode === "dark") return "gg-theme-dark";
+  if (themeMode === "light") return "gg-theme-light";
+  return "gg-theme-system";
+};
+
+const getThemeStyle = (accentColor: string): CSSProperties => ({
+  // CSS variables are resolved by globals.css, this object keeps React aware of the customization boundary.
+  colorScheme: accentColor === "amber" ? "light" : undefined,
+});
 
 const dashboardNavItems: DashboardNavItem[] = [
   {
@@ -173,6 +184,8 @@ export default function GradeGlowDashboard({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const { profile, isProfileLoaded, saveProfile } = useGradeGlowProfile(user);
+  const themeClassName = getThemeClassName(profile.themeMode);
+  const themeStyle = getThemeStyle(profile.accentColor);
 
   const totalTargetEcts =
     profile.targetEcts > 0 ? profile.targetEcts : DEFAULT_TARGET_ECTS;
@@ -959,7 +972,7 @@ export default function GradeGlowDashboard({
   }
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950">
+    <main className={`gg-themed ${themeClassName} min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950`} data-accent={profile.accentColor} style={themeStyle}>
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute left-[-8rem] top-[-8rem] h-96 w-96 rounded-full bg-fuchsia-200/60 blur-3xl" />
         <div className="absolute right-[-10rem] top-40 h-[28rem] w-[28rem] rounded-full bg-violet-200/60 blur-3xl" />

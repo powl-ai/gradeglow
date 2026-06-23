@@ -8,6 +8,10 @@ export type AppUser = {
 
 export type StartMode = "manual" | "stupo" | "template" | "demo";
 
+export type ThemeMode = "system" | "light" | "dark";
+
+export type AccentColor = "violet" | "pink" | "blue" | "emerald" | "amber";
+
 export type GradeGlowProfile = {
   displayName: string;
   university: string;
@@ -19,6 +23,8 @@ export type GradeGlowProfile = {
   onboardingCompleted: boolean;
   avatarDataUrl: string;
   studySharingEnabled: boolean;
+  themeMode: ThemeMode;
+  accentColor: AccentColor;
 };
 
 export type ModuleStatus = "passed" | "ungraded" | "open" | "failed";

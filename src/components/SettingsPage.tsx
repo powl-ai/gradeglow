@@ -3,13 +3,14 @@
 import Link from "next/link";
 import GradeGlowLogo from "./GradeGlowLogo";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { deleteUser, updateProfile } from "firebase/auth";
 import { collection, deleteDoc, doc, getDocs, writeBatch } from "firebase/firestore";
 import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { DEFAULT_TARGET_ECTS, useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
 import { getUserModulesStorageKey } from "../lib/gradeglowModules";
 import { getUserExamsStorageKey } from "../lib/gradeglowExams";
-import type { AppUser, GradeGlowProfile, StartMode } from "../types";
+import type { AccentColor, AppUser, GradeGlowProfile, StartMode, ThemeMode } from "../types";
 
 type SettingsPageProps = {
   user: AppUser;
@@ -23,6 +24,28 @@ const startModeLabels: Record<StartMode, string> = {
   template: "Vorlage nutzen",
   demo: "Demo ansehen",
 };
+
+const themeModeLabels: { value: ThemeMode; label: string; description: string }[] = [
+  { value: "system", label: "System", description: "folgt Gerät" },
+  { value: "light", label: "Hell", description: "klassisch hell" },
+  { value: "dark", label: "Dark", description: "dunkle App" },
+];
+
+const accentColorLabels: { value: AccentColor; label: string; dotClassName: string }[] = [
+  { value: "violet", label: "Violett", dotClassName: "bg-violet-500" },
+  { value: "pink", label: "Pink", dotClassName: "bg-pink-500" },
+  { value: "blue", label: "Blau", dotClassName: "bg-blue-500" },
+  { value: "emerald", label: "Emerald", dotClassName: "bg-emerald-500" },
+  { value: "amber", label: "Amber", dotClassName: "bg-amber-500" },
+];
+
+const getThemeClassName = (themeMode: ThemeMode) => {
+  if (themeMode === "dark") return "gg-theme-dark";
+  if (themeMode === "light") return "gg-theme-light";
+  return "gg-theme-system";
+};
+
+const getThemeStyle = (): CSSProperties => ({});
 
 const LOCAL_USERS_KEY = "gradeglow-local-users-v1";
 const LOCAL_SESSION_KEY = "gradeglow-local-session-v1";
@@ -115,6 +138,8 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   const [currentSemester, setCurrentSemester] = useState("1");
   const [targetEcts, setTargetEcts] = useState(String(DEFAULT_TARGET_ECTS));
   const [preferredStartMode, setPreferredStartMode] = useState<StartMode>("manual");
+  const [themeMode, setThemeMode] = useState<ThemeMode>("system");
+  const [accentColor, setAccentColor] = useState<AccentColor>("violet");
   const [avatarDataUrl, setAvatarDataUrl] = useState("");
   const [avatarMessage, setAvatarMessage] = useState("");
   const [formMessage, setFormMessage] = useState("");
@@ -136,6 +161,8 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     setCurrentSemester(formatNumber(profile.currentSemester || 1));
     setTargetEcts(formatNumber(profile.targetEcts));
     setPreferredStartMode(profile.preferredStartMode || "manual");
+    setThemeMode(profile.themeMode || "system");
+    setAccentColor(profile.accentColor || "violet");
     setAvatarDataUrl(profile.avatarDataUrl || "");
   }, [isProfileLoaded, profile]);
 
@@ -167,10 +194,12 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
       currentSemester: Number.isFinite(parsedSemester) ? Math.max(1, Math.round(parsedSemester)) : 1,
       targetEcts: Number.isFinite(parsedTargetEcts) ? parsedTargetEcts : profile.targetEcts,
       preferredStartMode,
+      themeMode,
+      accentColor,
       onboardingCompleted: true,
       avatarDataUrl,
     };
-  }, [avatarDataUrl, currentSemester, degreeProgram, degreeType, displayName, preferredStartMode, profile, targetEcts, university]);
+  }, [accentColor, avatarDataUrl, currentSemester, degreeProgram, degreeType, displayName, preferredStartMode, profile, targetEcts, themeMode, university]);
 
   const hasChanges = useMemo(() => {
     return JSON.stringify(nextProfile) !== JSON.stringify({ ...profile, onboardingCompleted: true });
@@ -312,6 +341,8 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     }
   };
 
+  const themeClassName = getThemeClassName(themeMode);
+  const themeStyle = getThemeStyle();
   const userLabel = profile.displayName || user.displayName || user.email || "GradeGlow User";
   const userInitial = userLabel.trim().charAt(0).toUpperCase() || "G";
   const avatarSource = avatarDataUrl || profile.avatarDataUrl || user.photoURL || "";
@@ -328,7 +359,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     );
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950">
+    <main className={`gg-themed ${themeClassName} min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950`} data-accent={accentColor} style={themeStyle}>
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute left-[-8rem] top-[-8rem] h-96 w-96 rounded-full bg-fuchsia-200/60 blur-3xl" />
         <div className="absolute right-[-10rem] top-40 h-[28rem] w-[28rem] rounded-full bg-violet-200/60 blur-3xl" />
@@ -485,6 +516,49 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                   ))}
                 </select>
               </label>
+            </div>
+
+            <div className="mt-6 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <div className="mb-4">
+                <p className="text-sm font-black text-slate-950">Look & Feel</p>
+                <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">Passe GradeGlow an: Akzentfarbe, heller Modus, Dark Mode oder automatisch nach System.</p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <span className="mb-2 block text-sm font-bold text-slate-700">Design-Modus</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {themeModeLabels.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`rounded-2xl px-3 py-3 text-left ring-1 transition hover:-translate-y-0.5 ${themeMode === option.value ? "bg-violet-700 text-white ring-violet-600" : "bg-white text-slate-700 ring-slate-200 hover:bg-violet-50"}`}
+                        onClick={() => setThemeMode(option.value)}
+                      >
+                        <span className="block text-sm font-black">{option.label}</span>
+                        <span className={`mt-1 block text-[0.68rem] font-bold ${themeMode === option.value ? "text-violet-100" : "text-slate-400"}`}>{option.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="mb-2 block text-sm font-bold text-slate-700">Akzentfarbe</span>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {accentColorLabels.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`flex items-center gap-2 rounded-2xl px-3 py-3 text-sm font-black ring-1 transition hover:-translate-y-0.5 ${accentColor === option.value ? "bg-slate-950 text-white ring-slate-900" : "bg-white text-slate-700 ring-slate-200 hover:bg-violet-50"}`}
+                        onClick={() => setAccentColor(option.value)}
+                      >
+                        <span className={`h-4 w-4 shrink-0 rounded-full ${option.dotClassName}`} />
+                        <span>{option.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">

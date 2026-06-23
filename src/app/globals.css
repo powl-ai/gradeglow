@@ -153,7 +153,8 @@ button,
 span,
 label {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 h1,
@@ -199,4 +200,198 @@ textarea {
 
 details > summary::-webkit-details-marker {
   display: none;
+}
+
+
+/* GradeGlow theme layer ---------------------------------------------------
+   The app is still mostly Tailwind-based, but these variables let users
+   customize the product without rewriting every component. */
+.gg-themed {
+  --gg-accent-50: #f5f3ff;
+  --gg-accent-100: #ede9fe;
+  --gg-accent-200: #ddd6fe;
+  --gg-accent-500: #8b5cf6;
+  --gg-accent-600: #7c3aed;
+  --gg-accent-700: #6d28d9;
+  --gg-accent-900: #4c1d95;
+  --gg-app-bg: #fbf7ff;
+  --gg-app-text: #0f172a;
+  background: var(--gg-app-bg);
+  color: var(--gg-app-text);
+}
+
+.gg-themed[data-accent="pink"] {
+  --gg-accent-50: #fdf2f8;
+  --gg-accent-100: #fce7f3;
+  --gg-accent-200: #fbcfe8;
+  --gg-accent-500: #ec4899;
+  --gg-accent-600: #db2777;
+  --gg-accent-700: #be185d;
+  --gg-accent-900: #831843;
+}
+
+.gg-themed[data-accent="blue"] {
+  --gg-accent-50: #eff6ff;
+  --gg-accent-100: #dbeafe;
+  --gg-accent-200: #bfdbfe;
+  --gg-accent-500: #3b82f6;
+  --gg-accent-600: #2563eb;
+  --gg-accent-700: #1d4ed8;
+  --gg-accent-900: #1e3a8a;
+}
+
+.gg-themed[data-accent="emerald"] {
+  --gg-accent-50: #ecfdf5;
+  --gg-accent-100: #d1fae5;
+  --gg-accent-200: #a7f3d0;
+  --gg-accent-500: #10b981;
+  --gg-accent-600: #059669;
+  --gg-accent-700: #047857;
+  --gg-accent-900: #064e3b;
+}
+
+.gg-themed[data-accent="amber"] {
+  --gg-accent-50: #fffbeb;
+  --gg-accent-100: #fef3c7;
+  --gg-accent-200: #fde68a;
+  --gg-accent-500: #f59e0b;
+  --gg-accent-600: #d97706;
+  --gg-accent-700: #b45309;
+  --gg-accent-900: #78350f;
+}
+
+.gg-themed .text-violet-700,
+.gg-themed .text-fuchsia-600 {
+  color: var(--gg-accent-700) !important;
+}
+
+.gg-themed .text-violet-500,
+.gg-themed .text-fuchsia-500 {
+  color: var(--gg-accent-500) !important;
+}
+
+.gg-themed .bg-violet-700,
+.gg-themed .bg-fuchsia-600 {
+  background-color: var(--gg-accent-700) !important;
+}
+
+.gg-themed .bg-violet-50,
+.gg-themed .bg-fuchsia-50 {
+  background-color: var(--gg-accent-50) !important;
+}
+
+.gg-themed .bg-violet-100,
+.gg-themed .bg-fuchsia-100 {
+  background-color: var(--gg-accent-100) !important;
+}
+
+.gg-themed .ring-violet-100,
+.gg-themed .ring-fuchsia-100 {
+  --tw-ring-color: var(--gg-accent-100) !important;
+}
+
+.gg-themed .ring-violet-200,
+.gg-themed .ring-fuchsia-200 {
+  --tw-ring-color: var(--gg-accent-200) !important;
+}
+
+.gg-themed .from-violet-700 {
+  --tw-gradient-from: var(--gg-accent-700) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(109 40 217 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.gg-themed .to-fuchsia-600 {
+  --tw-gradient-to: var(--gg-accent-600) var(--tw-gradient-to-position) !important;
+}
+
+.gg-theme-dark,
+.gg-theme-system:is(.unused-specificity-helper) {
+  --gg-app-bg: #070817;
+  --gg-app-text: #f8fafc;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  .gg-theme-system {
+    --gg-app-bg: #070817;
+    --gg-app-text: #f8fafc;
+    color-scheme: dark;
+  }
+}
+
+.gg-theme-dark .bg-\[\#fbf7ff\],
+.gg-theme-dark.bg-\[\#fbf7ff\] {
+  background-color: #070817 !important;
+}
+
+.gg-theme-dark .bg-white,
+.gg-theme-dark .bg-white\/90,
+.gg-theme-dark .bg-white\/80,
+.gg-theme-dark .bg-white\/75,
+.gg-theme-dark .bg-slate-50,
+.gg-theme-dark .bg-slate-50\/70 {
+  background-color: rgba(15, 23, 42, 0.9) !important;
+}
+
+.gg-theme-dark .text-slate-950,
+.gg-theme-dark .text-slate-900,
+.gg-theme-dark .text-slate-800,
+.gg-theme-dark .text-slate-700 {
+  color: #f8fafc !important;
+}
+
+.gg-theme-dark .text-slate-600,
+.gg-theme-dark .text-slate-500,
+.gg-theme-dark .text-slate-400 {
+  color: #cbd5e1 !important;
+}
+
+.gg-theme-dark .ring-slate-200,
+.gg-theme-dark .ring-violet-100,
+.gg-theme-dark .border-slate-100,
+.gg-theme-dark .border-slate-200,
+.gg-theme-dark .border-violet-100 {
+  --tw-ring-color: rgba(148, 163, 184, 0.22) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+}
+
+.gg-theme-dark .field-input {
+  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(15, 23, 42, 0.9);
+  color: #f8fafc;
+}
+
+.gg-theme-dark .field-input:focus {
+  border-color: var(--gg-accent-500);
+  background: rgba(2, 6, 23, 0.95);
+}
+
+@media (prefers-color-scheme: dark) {
+  .gg-theme-system .bg-\[\#fbf7ff\],
+  .gg-theme-system.bg-\[\#fbf7ff\] {
+    background-color: #070817 !important;
+  }
+
+  .gg-theme-system .bg-white,
+  .gg-theme-system .bg-white\/90,
+  .gg-theme-system .bg-white\/80,
+  .gg-theme-system .bg-white\/75,
+  .gg-theme-system .bg-slate-50,
+  .gg-theme-system .bg-slate-50\/70 {
+    background-color: rgba(15, 23, 42, 0.9) !important;
+  }
+
+  .gg-theme-system .text-slate-950,
+  .gg-theme-system .text-slate-900,
+  .gg-theme-system .text-slate-800,
+  .gg-theme-system .text-slate-700 {
+    color: #f8fafc !important;
+  }
+
+  .gg-theme-system .text-slate-600,
+  .gg-theme-system .text-slate-500,
+  .gg-theme-system .text-slate-400 {
+    color: #cbd5e1 !important;
+  }
 }

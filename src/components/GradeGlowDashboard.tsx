@@ -7,6 +7,7 @@ import GradeGlowInsights from "./GradeGlowInsights";
 import GradeGlowLogo from "./GradeGlowLogo";
 import GradeGlowPlanner from "./GradeGlowPlanner";
 import PwaInstallCard from "./PwaInstallCard";
+import StudyFriendsPanel from "./StudyFriendsPanel";
 import StudyPlanningPanel from "./StudyPlanningPanel";
 import OnboardingWizard from "./OnboardingWizard";
 import ModuleDetailModal from "./ModuleDetailModal";
@@ -46,6 +47,7 @@ type EditInput = {
 export type DashboardPage =
   | "overview"
   | "insights"
+  | "friends"
   | "exams"
   | "planning"
   | "modules"
@@ -90,6 +92,13 @@ const dashboardNavItems: DashboardNavItem[] = [
     label: "Insights",
     description: "Diagramme und Glow Check",
     emoji: "📊",
+  },
+  {
+    id: "friends",
+    href: "/friends",
+    label: "Freunde",
+    description: "Study Circle und Lernvergleich",
+    emoji: "👥",
   },
   {
     id: "exams",
@@ -1373,15 +1382,23 @@ export default function GradeGlowDashboard({
             {isInsightsVisible && (
               <div className="border-t border-slate-100 p-5 sm:p-6">
                 <GradeGlowInsights
-                  user={user}
                   modules={modules}
                   exams={exams}
-                  profile={profile}
                   totalTargetEcts={totalTargetEcts}
-                  saveProfile={saveProfile}
                 />
               </div>
             )}
+          </section>
+        )}
+
+        {page === "friends" && (
+          <section id="friends" className="scroll-mt-6">
+            <StudyFriendsPanel
+              user={user}
+              profile={profile}
+              exams={exams}
+              saveProfile={saveProfile}
+            />
           </section>
         )}
 

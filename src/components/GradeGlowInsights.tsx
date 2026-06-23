@@ -1,16 +1,12 @@
 "use client";
 
-import StudyFriendsPanel from "./StudyFriendsPanel";
 import { formatStudyMinutes, getStudySubjectStats } from "../lib/studyStats";
-import type { AppUser, ExamPlanItem, GradeGlowProfile, ModuleStatus, UniModule } from "../types";
+import type { ExamPlanItem, ModuleStatus, UniModule } from "../types";
 
 type GradeGlowInsightsProps = {
-  user: AppUser;
   modules: UniModule[];
   exams: ExamPlanItem[];
-  profile: GradeGlowProfile;
   totalTargetEcts: number;
-  saveProfile: (nextProfile: GradeGlowProfile) => Promise<void>;
 };
 
 const statusConfig: Record<ModuleStatus, { label: string; barClassName: string; dotClassName: string }> = {
@@ -73,12 +69,9 @@ const getEffectiveStatus = (module: UniModule): ModuleStatus => {
 };
 
 export default function GradeGlowInsights({
-  user,
   modules,
   exams,
-  profile,
   totalTargetEcts,
-  saveProfile,
 }: GradeGlowInsightsProps) {
   const statusRows = (["passed", "ungraded", "open", "failed"] as ModuleStatus[]).map(
     (status) => {
@@ -324,13 +317,6 @@ export default function GradeGlowInsights({
           </div>
         </div>
       </div>
-
-      <StudyFriendsPanel
-        user={user}
-        profile={profile}
-        exams={exams}
-        saveProfile={saveProfile}
-      />
     </section>
   );
 }

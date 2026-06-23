@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { formatStudyMinutes } from "../lib/studyStats";
 import { useStudyFriends } from "../hooks/useStudyFriends";
-import type { AppUser, ExamPlanItem, GradeGlowProfile } from "../types";
+import type { AppUser, ExamPlanItem, GradeGlowProfile, PublicStudyProfile } from "../types";
 
 type StudyFriendsPanelProps = {
   user: AppUser;
@@ -12,26 +12,102 @@ type StudyFriendsPanelProps = {
   saveProfile: (nextProfile: GradeGlowProfile) => Promise<void>;
 };
 
+type CircleRow = PublicStudyProfile & {
+  isSelf?: boolean;
+  isMissing?: boolean;
+};
+
 const getInitial = (label: string) => label.trim().charAt(0).toUpperCase() || "G";
 
-const Avatar = ({ image, label }: { image: string; label: string }) => {
+const formatDateLabel = (dateKey: string) => {
+  if (!dateKey) return "noch keine Session";
+  const [year, month, day] = dateKey.split("-");
+  if (!year || !month || !day) return "noch keine Session";
+  return `${day}.${month}.${year}`;
+};
+
+const Avatar = ({ image, label, size = "md" }: { image: string; label: string; size?: "md" | "lg" }) => {
+  const sizeClassName = size === "lg" ? "h-14 w-14 rounded-3xl text-lg" : "h-12 w-12 rounded-2xl text-base";
+
   if (image) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={image}
         alt="Profilbild"
-        className="h-12 w-12 shrink-0 rounded-2xl object-cover ring-1 ring-violet-100"
+        className={`${sizeClassName} shrink-0 object-cover ring-1 ring-violet-100`}
       />
     );
   }
 
   return (
-    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-fuchsia-100 text-base font-black text-violet-800 ring-1 ring-violet-100">
+    <div className={`flex ${sizeClassName} shrink-0 items-center justify-center bg-gradient-to-br from-violet-100 to-fuchsia-100 font-black text-violet-800 ring-1 ring-violet-100`}>
       {getInitial(label)}
     </div>
   );
 };
+
+const SubjectBars = ({ profile }: { profile: PublicStudyProfile }) => {
+  const visibleSubjects = profile.thisWeekTopSubjects.length > 0
+    ? profile.thisWeekTopSubjects
+    : profile.topSubjects;
+  const maxMinutes = Math.max(...visibleSubjects.map((subject) => subject.doneMinutes), 1);
+
+  if (visibleSubjects.length === 0) {
+    return (
+      <p className="rounded-2xl bg-slate-50 p-3 text-xs font-semibold leading-5 text-slate-500 ring-1 ring-slate-200">
+        Noch keine erledigten Lernblöcke sichtbar.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {visibleSubjects.slice(0, 4).map((subject) => (
+        <div key={subject.subjectId} className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+          <div className="flex items-center justify-between gap-3 text-xs">
+            <p className="truncate font-black text-slate-700">{subject.subjectName}</p>
+            <p className="shrink-0 font-black text-slate-950">
+              {formatStudyMinutes(subject.doneMinutes)}
+            </p>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500"
+              style={{ width: `${Math.min((subject.doneMinutes / maxMinutes) * 100, 100)}%` }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const LeaderboardCard = ({ row, rank }: { row: CircleRow; rank: number }) => (
+  <div className="flex items-center gap-3 rounded-3xl bg-white p-4 ring-1 ring-slate-200">
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-sm font-black text-white">
+      #{rank}
+    </div>
+    <Avatar image={row.avatarDataUrl} label={row.displayName} />
+    <div className="min-w-0 flex-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="truncate text-sm font-black text-slate-950">{row.displayName}</p>
+        {row.isSelf && (
+          <span className="rounded-full bg-violet-50 px-2 py-1 text-[0.68rem] font-black uppercase tracking-[0.12em] text-violet-700 ring-1 ring-violet-100">
+            Du
+          </span>
+        )}
+      </div>
+      <p className="truncate text-xs font-semibold text-slate-500">
+        {row.degreeProgram || "Kein Studiengang sichtbar"}
+      </p>
+    </div>
+    <div className="text-right">
+      <p className="text-xs font-semibold text-slate-500">diese Woche</p>
+      <p className="text-base font-black text-slate-950">{formatStudyMinutes(row.thisWeekDoneMinutes)}</p>
+    </div>
+  </div>
+);
 
 export default function StudyFriendsPanel({
   user,
@@ -40,7 +116,9 @@ export default function StudyFriendsPanel({
   saveProfile,
 }: StudyFriendsPanelProps) {
   const [friendCodeInput, setFriendCodeInput] = useState("");
+  const [friendSearch, setFriendSearch] = useState("");
   const [isSavingSharing, setIsSavingSharing] = useState(false);
+  const [copyMessage, setCopyMessage] = useState("");
 
   const {
     canUseCloudSocial,
@@ -53,10 +131,25 @@ export default function StudyFriendsPanel({
     removeFriend,
   } = useStudyFriends({ user, profile, exams });
 
-  const topOwnSubjects = useMemo(
-    () => ownPublicProfile.topSubjects.slice(0, 3),
-    [ownPublicProfile.topSubjects],
-  );
+  const leaderboardRows = useMemo<CircleRow[]>(() => {
+    return [
+      { ...ownPublicProfile, isSelf: true },
+      ...friends,
+    ].sort((a, b) => {
+      const weekDiff = b.thisWeekDoneMinutes - a.thisWeekDoneMinutes;
+      if (weekDiff !== 0) return weekDiff;
+      return b.totalDoneMinutes - a.totalDoneMinutes;
+    });
+  }, [friends, ownPublicProfile]);
+
+  const filteredFriends = useMemo(() => {
+    const normalizedSearch = friendSearch.trim().toLowerCase();
+    if (!normalizedSearch) return friends;
+
+    return friends.filter((friend) =>
+      `${friend.displayName} ${friend.degreeProgram}`.toLowerCase().includes(normalizedSearch),
+    );
+  }, [friendSearch, friends]);
 
   const toggleSharing = async () => {
     setIsSavingSharing(true);
@@ -75,16 +168,26 @@ export default function StudyFriendsPanel({
     setFriendCodeInput("");
   };
 
+  const copyFriendCode = async () => {
+    setCopyMessage("");
+    try {
+      await navigator.clipboard.writeText(friendCode);
+      setCopyMessage("Code kopiert.");
+    } catch {
+      setCopyMessage("Kopieren nicht möglich — Code manuell markieren.");
+    }
+  };
+
   return (
     <section className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-sm font-bold text-violet-700">Study Circle</p>
-          <h2 className="mt-1 text-2xl font-black tracking-tight">
+          <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
             Freunde & Lernvergleich
           </h2>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-            Teile freiwillig deine Lernstatistik und füge Freunde per Code hinzu. Sichtbar werden nur Name, Studiengang, Profilbild und Lernminuten pro Fach.
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+            Füge Freunde per Code hinzu und vergleiche Lernzeit, Top-Fächer und Wochenfortschritt. Geteilt werden nur freiwillige Lernstatistiken — keine Noten, keine Module, keine privaten Notizen.
           </p>
         </div>
         <button
@@ -97,7 +200,7 @@ export default function StudyFriendsPanel({
           onClick={toggleSharing}
           disabled={!canUseCloudSocial || isSavingSharing}
         >
-          {profile.studySharingEnabled ? "Teilen aktiv" : "Teilen aktivieren"}
+          {profile.studySharingEnabled ? "Sharing aktiv" : "Sharing aktivieren"}
         </button>
       </div>
 
@@ -107,19 +210,22 @@ export default function StudyFriendsPanel({
         </div>
       )}
 
-      <div className="mt-5 grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
-        <div className="rounded-3xl bg-slate-950 p-4 text-white ring-1 ring-slate-900 sm:p-5">
+      <div className="mt-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+        <div className="rounded-[2rem] bg-slate-950 p-4 text-white ring-1 ring-slate-900 sm:p-5">
           <div className="flex items-center gap-3">
-            <Avatar image={profile.avatarDataUrl || user.photoURL || ""} label={ownPublicProfile.displayName} />
+            <Avatar image={profile.avatarDataUrl || user.photoURL || ""} label={ownPublicProfile.displayName} size="lg" />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-black">{ownPublicProfile.displayName}</p>
-              <p className="truncate text-xs font-semibold text-slate-300">
+              <p className="truncate text-base font-black">{ownPublicProfile.displayName}</p>
+              <p className="truncate text-sm font-semibold text-slate-300">
                 {ownPublicProfile.degreeProgram || "Studiengang nicht gesetzt"}
+              </p>
+              <p className="mt-1 text-xs font-bold text-emerald-200">
+                {profile.studySharingEnabled ? "öffentlich für eingeloggte GradeGlow-User sichtbar" : "privat — Sharing ist deaktiviert"}
               </p>
             </div>
           </div>
 
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
             <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
               <p className="text-xs text-slate-300">Diese Woche</p>
               <p className="mt-1 text-2xl font-black">
@@ -127,9 +233,15 @@ export default function StudyFriendsPanel({
               </p>
             </div>
             <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
-              <p className="text-xs text-slate-300">Gesamt gelernt</p>
+              <p className="text-xs text-slate-300">Gesamt</p>
               <p className="mt-1 text-2xl font-black">
                 {formatStudyMinutes(ownPublicProfile.totalDoneMinutes)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
+              <p className="text-xs text-slate-300">Streak</p>
+              <p className="mt-1 text-2xl font-black">
+                {ownPublicProfile.studyStreakDays} Tag(e)
               </p>
             </div>
           </div>
@@ -139,29 +251,23 @@ export default function StudyFriendsPanel({
               Dein Freundescode
             </p>
             <p className="mt-2 break-all text-sm font-black text-white">{friendCode}</p>
-            <p className="mt-2 text-xs leading-5 text-slate-400">
-              Nur teilen, wenn du möchtest, dass andere dich hinzufügen können. Ohne aktives Teilen findet man dein Profil nicht.
-            </p>
-          </div>
-
-          {topOwnSubjects.length > 0 && (
-            <div className="mt-4 space-y-2">
-              {topOwnSubjects.map((subject) => (
-                <div key={subject.subjectId} className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <p className="truncate font-black">{subject.subjectName}</p>
-                    <p className="shrink-0 font-black text-violet-100">
-                      {formatStudyMinutes(subject.doneMinutes)}
-                    </p>
-                  </div>
-                </div>
-              ))}
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                className="rounded-2xl bg-white px-4 py-2.5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-violet-50"
+                onClick={copyFriendCode}
+              >
+                Code kopieren
+              </button>
+              <p className="flex items-center text-xs font-semibold leading-5 text-slate-400">
+                {copyMessage || "Teile den Code nur mit Leuten, die dich hinzufügen dürfen."}
+              </p>
             </div>
-          )}
+          </div>
         </div>
 
-        <div className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200 sm:p-5">
-          <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+        <div className="rounded-[2rem] bg-slate-50 p-4 ring-1 ring-slate-200 sm:p-5">
+          <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
             <label className="block">
               <span className="mb-1.5 block text-sm font-bold text-slate-700">
                 Freundescode einfügen
@@ -183,99 +289,143 @@ export default function StudyFriendsPanel({
             </button>
           </div>
 
-          {message && (
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+              <p className="text-xs font-bold text-slate-500">Freunde</p>
+              <p className="mt-1 text-2xl font-black text-slate-950">{friends.length}</p>
+            </div>
+            <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+              <p className="text-xs font-bold text-slate-500">Circle diese Woche</p>
+              <p className="mt-1 text-2xl font-black text-slate-950">
+                {formatStudyMinutes(leaderboardRows.reduce((sum, row) => sum + row.thisWeekDoneMinutes, 0))}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+              <p className="text-xs font-bold text-slate-500">Dein Rang</p>
+              <p className="mt-1 text-2xl font-black text-slate-950">
+                #{Math.max(leaderboardRows.findIndex((row) => row.isSelf) + 1, 1)}
+              </p>
+            </div>
+          </div>
+
+          {(message || copyMessage) && (
             <p className="mt-3 rounded-2xl bg-white p-3 text-sm font-bold text-slate-600 ring-1 ring-slate-200">
-              {message}
+              {message || copyMessage}
             </p>
           )}
+        </div>
+      </div>
 
-          <div className="mt-5 space-y-3">
-            {friends.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-violet-200 bg-white p-6 text-center text-sm font-semibold leading-6 text-violet-700">
-                Noch keine Freunde hinzugefügt. Sobald jemand Study Circle aktiviert und dir den Code gibt, siehst du hier Lernzeit und Top-Fächer.
-              </div>
-            ) : (
-              friends.map((friend) => (
-                <div key={friend.uid} className="rounded-3xl bg-white p-4 ring-1 ring-slate-200">
-                  <div className="flex items-start gap-3">
-                    <Avatar image={friend.avatarDataUrl} label={friend.displayName} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-black text-slate-950">
-                            {friend.displayName}
-                          </p>
-                          <p className="truncate text-xs font-semibold text-slate-500">
-                            {friend.degreeProgram || "Kein Studiengang sichtbar"}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          className="self-start rounded-full bg-slate-50 px-3 py-1.5 text-xs font-black text-slate-500 ring-1 ring-slate-200 transition hover:bg-rose-50 hover:text-rose-700 hover:ring-rose-100 disabled:opacity-50"
-                          onClick={() => void removeFriend(friend.uid)}
-                          disabled={isBusy}
-                        >
-                          Entfernen
-                        </button>
+      <div className="mt-5 rounded-[2rem] bg-slate-950 p-4 text-white ring-1 ring-slate-900 sm:p-5">
+        <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+          <div>
+            <p className="text-sm font-bold text-fuchsia-200">Leaderboard</p>
+            <h3 className="text-xl font-black tracking-tight">Wer hat diese Woche gelernt?</h3>
+          </div>
+          <p className="text-sm font-semibold text-slate-400">
+            sortiert nach erledigter Lernzeit
+          </p>
+        </div>
+        <div className="grid gap-3 lg:grid-cols-2">
+          {leaderboardRows.map((row, index) => (
+            <LeaderboardCard key={`${row.uid}-${row.isSelf ? "self" : "friend"}`} row={row} rank={index + 1} />
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-[2rem] bg-white p-4 ring-1 ring-slate-200 sm:p-5">
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-sm font-bold text-violet-700">Freundesprofile</p>
+            <h3 className="text-xl font-black tracking-tight">Lernfokus deiner Freunde</h3>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Du siehst pro Person die Top-Fächer aus dieser Woche. Wenn diese Woche nichts da ist, zeigt GradeGlow die bisherigen Top-Fächer.
+            </p>
+          </div>
+          <label className="block w-full lg:max-w-sm">
+            <span className="sr-only">Freunde suchen</span>
+            <input
+              className="field-input bg-white"
+              placeholder="Freunde suchen…"
+              value={friendSearch}
+              onChange={(event) => setFriendSearch(event.target.value)}
+            />
+          </label>
+        </div>
+
+        {friends.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-violet-200 bg-violet-50/70 p-8 text-center text-sm font-semibold leading-6 text-violet-700">
+            Noch keine Freunde hinzugefügt. Sobald jemand Study Circle aktiviert und dir den Code gibt, siehst du hier Lernzeit und Top-Fächer.
+          </div>
+        ) : filteredFriends.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm font-semibold leading-6 text-slate-500">
+            Für diese Suche wurde kein Freund gefunden.
+          </div>
+        ) : (
+          <div className="grid gap-4 xl:grid-cols-2">
+            {filteredFriends.map((friend) => (
+              <article key={friend.uid} className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <div className="flex items-start gap-3">
+                  <Avatar image={friend.avatarDataUrl} label={friend.displayName} size="lg" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="truncate text-base font-black text-slate-950">
+                          {friend.displayName}
+                        </p>
+                        <p className="truncate text-xs font-semibold text-slate-500">
+                          {friend.degreeProgram || "Kein Studiengang sichtbar"}
+                        </p>
+                        <p className="mt-1 text-xs font-semibold text-slate-400">
+                          zuletzt gelernt: {formatDateLabel(friend.lastStudiedDateKey)}
+                        </p>
                       </div>
+                      <button
+                        type="button"
+                        className="self-start rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-500 ring-1 ring-slate-200 transition hover:bg-rose-50 hover:text-rose-700 hover:ring-rose-100 disabled:opacity-50"
+                        onClick={() => void removeFriend(friend.uid)}
+                        disabled={isBusy}
+                      >
+                        Entfernen
+                      </button>
+                    </div>
 
-                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                        <div className="rounded-2xl bg-violet-50 p-3 ring-1 ring-violet-100">
-                          <p className="text-xs font-semibold text-violet-600">Diese Woche</p>
-                          <p className="text-lg font-black text-violet-950">
-                            {formatStudyMinutes(friend.thisWeekDoneMinutes)}
-                          </p>
-                        </div>
-                        <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
-                          <p className="text-xs font-semibold text-slate-500">Gesamt</p>
-                          <p className="text-lg font-black text-slate-950">
-                            {formatStudyMinutes(friend.totalDoneMinutes)}
-                          </p>
-                        </div>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                      <div className="rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+                        <p className="text-xs font-semibold text-violet-600">Woche</p>
+                        <p className="text-lg font-black text-slate-950">
+                          {formatStudyMinutes(friend.thisWeekDoneMinutes)}
+                        </p>
                       </div>
+                      <div className="rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+                        <p className="text-xs font-semibold text-slate-500">Gesamt</p>
+                        <p className="text-lg font-black text-slate-950">
+                          {formatStudyMinutes(friend.totalDoneMinutes)}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-white p-3 ring-1 ring-slate-200">
+                        <p className="text-xs font-semibold text-slate-500">Streak</p>
+                        <p className="text-lg font-black text-slate-950">
+                          {friend.studyStreakDays} Tag(e)
+                        </p>
+                      </div>
+                    </div>
 
+                    <div className="mt-3">
                       {friend.isMissing ? (
-                        <p className="mt-3 rounded-2xl bg-amber-50 p-3 text-xs font-semibold leading-5 text-amber-800 ring-1 ring-amber-100">
-                          Dieses Profil ist aktuell nicht öffentlich geteilt.
+                        <p className="rounded-2xl bg-amber-50 p-3 text-xs font-semibold leading-5 text-amber-800 ring-1 ring-amber-100">
+                          Dieses Profil ist aktuell nicht öffentlich geteilt. Du kannst die Person in deiner Liste behalten oder entfernen.
                         </p>
-                      ) : friend.topSubjects.length > 0 ? (
-                        <div className="mt-3 space-y-2">
-                          {friend.topSubjects.slice(0, 3).map((subject) => (
-                            <div key={subject.subjectId} className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
-                              <div className="flex items-center justify-between gap-3 text-xs">
-                                <p className="truncate font-black text-slate-700">{subject.subjectName}</p>
-                                <p className="shrink-0 font-black text-slate-950">
-                                  {formatStudyMinutes(subject.doneMinutes)}
-                                </p>
-                              </div>
-                              <div className="mt-2 h-2 overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
-                                <div
-                                  className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500"
-                                  style={{
-                                    width: `${Math.min(
-                                      (subject.doneMinutes /
-                                        Math.max(friend.topSubjects[0]?.doneMinutes ?? 1, 1)) *
-                                        100,
-                                      100,
-                                    )}%`,
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
                       ) : (
-                        <p className="mt-3 text-xs font-semibold text-slate-400">
-                          Noch keine erledigten Lernblöcke sichtbar.
-                        </p>
+                        <SubjectBars profile={friend} />
                       )}
                     </div>
                   </div>
                 </div>
-              ))
-            )}
+              </article>
+            ))}
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

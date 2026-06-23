@@ -132,5 +132,8 @@ export type PublicStudyProfile = {
   totalDoneMinutes: number;
   thisWeekDoneMinutes: number;
   topSubjects: StudySubjectStat[];
+  thisWeekTopSubjects: StudySubjectStat[];
+  studyStreakDays: number;
+  lastStudiedDateKey: string;
   updatedAtIso: string;
 };

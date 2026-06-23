@@ -32,6 +32,23 @@ export type FriendListItem = PublicStudyProfile & {
   isMissing?: boolean;
 };
 
+export type StudyCircleDebugStatus = {
+  canUseCloudSocial: boolean;
+  sharingEnabled: boolean;
+  publicProfilePublished: boolean;
+  friendCodeIndexed: boolean;
+  rulesAccessOk: boolean;
+  isChecking: boolean;
+  friendCode: string;
+  detail: string;
+  checkedAtIso: string;
+};
+
+type FriendLookupResult = {
+  uid: string | null;
+  reason: "found" | "empty" | "not-found" | "code-without-uid";
+};
+
 const PUBLIC_PROFILES_COLLECTION = "publicStudyProfiles";
 const FRIEND_CODES_COLLECTION = "studyFriendCodes";
 const FRIENDS_COLLECTION = "friends";
@@ -50,6 +67,8 @@ export const normalizeStudyFriendCode = (value: string) =>
     .replace(/^friend[:\s]*/i, "")
     .replace(/\s+/g, "")
     .toUpperCase();
+
+const nowIso = () => new Date().toISOString();
 
 const getFriendErrorMessage = (error: unknown) => {
   if (error instanceof FirebaseError) {
@@ -70,8 +89,10 @@ const buildPublicProfile = (
   profile: GradeGlowProfile,
   exams: ExamPlanItem[],
 ): PublicStudyProfile => {
-  const topSubjects = getStudySubjectStats(exams).slice(0, 5);
-  const thisWeekTopSubjects = getThisWeekStudySubjectStats(exams).slice(0, 5);
+  const topSubjects = profile.shareStudySubjects ? getStudySubjectStats(exams).slice(0, 5) : [];
+  const thisWeekTopSubjects = profile.shareStudySubjects ? getThisWeekStudySubjectStats(exams).slice(0, 5) : [];
+  const shouldShareStudyTime = profile.shareStudyTime;
+  const shouldShareStreak = profile.shareStudyStreak;
 
   return {
     uid: user.uid,
@@ -79,13 +100,16 @@ const buildPublicProfile = (
     displayName: profile.displayName || user.displayName || "GradeGlow User",
     degreeProgram: profile.degreeProgram,
     avatarDataUrl: profile.avatarDataUrl,
-    totalDoneMinutes: getTotalDoneStudyMinutes(exams),
-    thisWeekDoneMinutes: getThisWeekDoneStudyMinutes(exams),
+    totalDoneMinutes: shouldShareStudyTime ? getTotalDoneStudyMinutes(exams) : 0,
+    thisWeekDoneMinutes: shouldShareStudyTime ? getThisWeekDoneStudyMinutes(exams) : 0,
     topSubjects,
     thisWeekTopSubjects,
-    studyStreakDays: getStudyStreakDays(exams),
-    lastStudiedDateKey: getLastDoneStudyDateKey(exams),
-    updatedAtIso: new Date().toISOString(),
+    studyStreakDays: shouldShareStreak ? getStudyStreakDays(exams) : 0,
+    lastStudiedDateKey: shouldShareStreak ? getLastDoneStudyDateKey(exams) : "",
+    shareStudyTime: shouldShareStudyTime,
+    shareStudySubjects: profile.shareStudySubjects,
+    shareStudyStreak: shouldShareStreak,
+    updatedAtIso: nowIso(),
   };
 };
 
@@ -122,6 +146,8 @@ const migrateSubjectStats = (rawValue: unknown): PublicStudyProfile["topSubjects
     .filter((item): item is PublicStudyProfile["topSubjects"][number] => Boolean(item));
 };
 
+const getShareFlag = (value: unknown) => value !== false;
+
 const migratePublicProfile = (
   uid: string,
   rawProfile: unknown,
@@ -130,6 +156,9 @@ const migratePublicProfile = (
   const record = rawProfile as Record<string, unknown>;
   const topSubjects = migrateSubjectStats(record.topSubjects);
   const thisWeekTopSubjects = migrateSubjectStats(record.thisWeekTopSubjects);
+  const shareStudyTime = getShareFlag(record.shareStudyTime);
+  const shareStudySubjects = getShareFlag(record.shareStudySubjects);
+  const shareStudyStreak = getShareFlag(record.shareStudyStreak);
 
   return {
     uid: typeof record.uid === "string" ? record.uid : uid,
@@ -147,21 +176,28 @@ const migratePublicProfile = (
         ? record.avatarDataUrl
         : "",
     totalDoneMinutes:
-      typeof record.totalDoneMinutes === "number" && Number.isFinite(record.totalDoneMinutes)
+      shareStudyTime && typeof record.totalDoneMinutes === "number" && Number.isFinite(record.totalDoneMinutes)
         ? record.totalDoneMinutes
         : 0,
     thisWeekDoneMinutes:
-      typeof record.thisWeekDoneMinutes === "number" && Number.isFinite(record.thisWeekDoneMinutes)
+      shareStudyTime && typeof record.thisWeekDoneMinutes === "number" && Number.isFinite(record.thisWeekDoneMinutes)
         ? record.thisWeekDoneMinutes
         : 0,
-    topSubjects,
-    thisWeekTopSubjects: thisWeekTopSubjects.length > 0 ? thisWeekTopSubjects : topSubjects,
+    topSubjects: shareStudySubjects ? topSubjects : [],
+    thisWeekTopSubjects: shareStudySubjects
+      ? thisWeekTopSubjects.length > 0
+        ? thisWeekTopSubjects
+        : topSubjects
+      : [],
     studyStreakDays:
-      typeof record.studyStreakDays === "number" && Number.isFinite(record.studyStreakDays)
+      shareStudyStreak && typeof record.studyStreakDays === "number" && Number.isFinite(record.studyStreakDays)
         ? Math.max(0, Math.round(record.studyStreakDays))
         : 0,
     lastStudiedDateKey:
-      typeof record.lastStudiedDateKey === "string" ? record.lastStudiedDateKey : "",
+      shareStudyStreak && typeof record.lastStudiedDateKey === "string" ? record.lastStudiedDateKey : "",
+    shareStudyTime,
+    shareStudySubjects,
+    shareStudyStreak,
     updatedAtIso: typeof record.updatedAtIso === "string" ? record.updatedAtIso : "",
   };
 };
@@ -178,6 +214,9 @@ const buildMissingFriend = (friendId: string): FriendListItem => ({
   thisWeekTopSubjects: [],
   studyStreakDays: 0,
   lastStudiedDateKey: "",
+  shareStudyTime: false,
+  shareStudySubjects: false,
+  shareStudyStreak: false,
   updatedAtIso: "",
   isMissing: true,
 });
@@ -202,6 +241,17 @@ export function useStudyFriends({ user, profile, exams, limits }: UseStudyFriend
   const [message, setMessage] = useState("");
   const [isBusy, setIsBusy] = useState(false);
   const [publishMessage, setPublishMessage] = useState("");
+  const [debugStatus, setDebugStatus] = useState<StudyCircleDebugStatus>(() => ({
+    canUseCloudSocial: false,
+    sharingEnabled: false,
+    publicProfilePublished: false,
+    friendCodeIndexed: false,
+    rulesAccessOk: false,
+    isChecking: false,
+    friendCode: "",
+    detail: "Study Circle wird vorbereitet.",
+    checkedAtIso: "",
+  }));
 
   const canUseCloudSocial =
     user.provider === "firebase" && isFirebaseConfigured && Boolean(db);
@@ -215,16 +265,54 @@ export function useStudyFriends({ user, profile, exams, limits }: UseStudyFriend
   );
 
   useEffect(() => {
-    if (!canUseCloudSocial || !db) return;
+    if (!canUseCloudSocial || !db) {
+      setPublishMessage("");
+      setDebugStatus({
+        canUseCloudSocial: false,
+        sharingEnabled: profile.studySharingEnabled,
+        publicProfilePublished: false,
+        friendCodeIndexed: false,
+        rulesAccessOk: false,
+        isChecking: false,
+        friendCode: ownFriendCode,
+        detail: "Cloud-Social ist nicht aktiv. Nutze einen Firebase-Login und prüfe die Firebase-Konfiguration.",
+        checkedAtIso: nowIso(),
+      });
+      return;
+    }
 
     const profileRef = doc(db, PUBLIC_PROFILES_COLLECTION, user.uid);
     const codeRef = doc(db, FRIEND_CODES_COLLECTION, ownFriendCode);
 
     if (!profile.studySharingEnabled) {
-      void Promise.allSettled([deleteDoc(profileRef), deleteDoc(codeRef)]).catch(() => undefined);
-      setPublishMessage("");
+      void Promise.allSettled([deleteDoc(profileRef), deleteDoc(codeRef)]).finally(() => {
+        setPublishMessage("");
+        setDebugStatus({
+          canUseCloudSocial: true,
+          sharingEnabled: false,
+          publicProfilePublished: false,
+          friendCodeIndexed: false,
+          rulesAccessOk: true,
+          isChecking: false,
+          friendCode: ownFriendCode,
+          detail: "Sharing ist aus. Dein öffentliches Profil und dein Code werden entfernt.",
+          checkedAtIso: nowIso(),
+        });
+      });
       return;
     }
+
+    let didCancel = false;
+
+    setDebugStatus((current) => ({
+      ...current,
+      canUseCloudSocial: true,
+      sharingEnabled: true,
+      isChecking: true,
+      friendCode: ownFriendCode,
+      detail: "Profil und Freundescode werden veröffentlicht und geprüft…",
+      checkedAtIso: nowIso(),
+    }));
 
     void Promise.all([
       setDoc(
@@ -233,7 +321,7 @@ export function useStudyFriends({ user, profile, exams, limits }: UseStudyFriend
           ...ownPublicProfile,
           ownerUid: user.uid,
           updatedAt: serverTimestamp(),
-          version: 3,
+          version: 4,
         },
         { merge: true },
       ),
@@ -246,20 +334,68 @@ export function useStudyFriends({ user, profile, exams, limits }: UseStudyFriend
           displayNameSnapshot: ownPublicProfile.displayName,
           ownerUid: user.uid,
           updatedAt: serverTimestamp(),
-          version: 1,
+          version: 2,
         },
         { merge: true },
       ),
     ])
-      .then(() => setPublishMessage("Study Circle Profil veröffentlicht."))
-      .catch((error: unknown) => {
-        if (error instanceof FirebaseError && error.code === "permission-denied") {
-          setPublishMessage("Study Circle Profil konnte nicht veröffentlicht werden. Bitte Firestore Rules deployen.");
-          return;
-        }
+      .then(async () => {
+        const [profileSnapshot, codeSnapshot] = await Promise.all([
+          getDoc(profileRef),
+          getDoc(codeRef),
+        ]);
+        if (didCancel) return;
 
-        setPublishMessage("Study Circle Profil konnte gerade nicht veröffentlicht werden.");
+        const codeData = codeSnapshot.exists() ? codeSnapshot.data() : null;
+        const friendCodeIndexed =
+          codeSnapshot.exists() &&
+          codeData?.uid === user.uid &&
+          codeData?.normalizedCode === ownFriendCode;
+        const publicProfilePublished = profileSnapshot.exists();
+        const allOk = publicProfilePublished && friendCodeIndexed;
+
+        setPublishMessage(allOk ? "Study Circle Profil veröffentlicht." : "Study Circle teilweise veröffentlicht — Status prüfen.");
+        setDebugStatus({
+          canUseCloudSocial: true,
+          sharingEnabled: true,
+          publicProfilePublished,
+          friendCodeIndexed,
+          rulesAccessOk: true,
+          isChecking: false,
+          friendCode: ownFriendCode,
+          detail: allOk
+            ? "Alles bereit. Andere können dich mit deinem Code hinzufügen."
+            : "Profil oder Code konnten gelesen, aber nicht vollständig bestätigt werden.",
+          checkedAtIso: nowIso(),
+        });
+      })
+      .catch((error: unknown) => {
+        if (didCancel) return;
+
+        const isPermissionError = error instanceof FirebaseError && error.code === "permission-denied";
+        setPublishMessage(
+          isPermissionError
+            ? "Study Circle Profil konnte nicht veröffentlicht werden. Bitte Firestore Rules deployen."
+            : "Study Circle Profil konnte gerade nicht veröffentlicht werden.",
+        );
+        setDebugStatus({
+          canUseCloudSocial: true,
+          sharingEnabled: true,
+          publicProfilePublished: false,
+          friendCodeIndexed: false,
+          rulesAccessOk: !isPermissionError,
+          isChecking: false,
+          friendCode: ownFriendCode,
+          detail: isPermissionError
+            ? "Firestore Rules blockieren Profil oder Code. Deploye die aktuellen Rules erneut."
+            : "Firebase war erreichbar, aber die Veröffentlichung konnte nicht abgeschlossen werden.",
+          checkedAtIso: nowIso(),
+        });
       });
+
+    return () => {
+      didCancel = true;
+    };
   }, [canUseCloudSocial, ownFriendCode, ownPublicProfile, profile.studySharingEnabled, user.uid]);
 
   useEffect(() => {
@@ -325,29 +461,31 @@ export function useStudyFriends({ user, profile, exams, limits }: UseStudyFriend
     };
   }, [canUseCloudSocial, friendIds]);
 
-  const resolveFriendId = async (friendCode: string) => {
-    if (!db) return null;
+  const resolveFriendId = async (friendCode: string): Promise<FriendLookupResult> => {
+    if (!db) return { uid: null, reason: "not-found" };
 
     const rawCode = friendCode.trim();
     const normalizedCode = normalizeStudyFriendCode(rawCode);
 
-    if (!rawCode) return null;
+    if (!rawCode) return { uid: null, reason: "empty" };
 
     const codeSnapshot = await getDoc(doc(db, FRIEND_CODES_COLLECTION, normalizedCode));
     if (codeSnapshot.exists()) {
       const uid = codeSnapshot.data().uid;
-      return typeof uid === "string" && uid.trim() ? uid.trim() : null;
+      return typeof uid === "string" && uid.trim()
+        ? { uid: uid.trim(), reason: "found" }
+        : { uid: null, reason: "code-without-uid" };
     }
 
     const directProfileSnapshot = await getDoc(doc(db, PUBLIC_PROFILES_COLLECTION, rawCode));
-    if (directProfileSnapshot.exists()) return rawCode;
+    if (directProfileSnapshot.exists()) return { uid: rawCode, reason: "found" };
 
     if (normalizedCode !== rawCode) {
       const normalizedProfileSnapshot = await getDoc(doc(db, PUBLIC_PROFILES_COLLECTION, normalizedCode));
-      if (normalizedProfileSnapshot.exists()) return normalizedCode;
+      if (normalizedProfileSnapshot.exists()) return { uid: normalizedCode, reason: "found" };
     }
 
-    return null;
+    return { uid: null, reason: "not-found" };
   };
 
   const addFriend = async (friendCode: string) => {
@@ -377,12 +515,19 @@ export function useStudyFriends({ user, profile, exams, limits }: UseStudyFriend
     setMessage("");
 
     try {
-      const friendId = await resolveFriendId(rawCode);
+      const lookup = await resolveFriendId(rawCode);
 
-      if (!friendId) {
-        setMessage("Kein Profil für diesen Code gefunden. Deine Freundin muss Study Sharing aktivieren und die neue Firestore Rules müssen deployed sein.");
+      if (!lookup.uid) {
+        if (lookup.reason === "code-without-uid") {
+          setMessage("Code-Dokument gefunden, aber ohne gültige UID. Sharing bei der anderen Person einmal aus- und wieder einschalten.");
+          return;
+        }
+
+        setMessage("Kein öffentliches Study-Circle-Profil für diesen Code gefunden. Prüfe: Sharing bei der anderen Person aktiv, neuer GG-Code kopiert und aktuelle Firestore Rules deployed.");
         return;
       }
+
+      const friendId = lookup.uid;
 
       if (friendId === user.uid) {
         setMessage("Das ist dein eigener Code.");
@@ -411,7 +556,7 @@ export function useStudyFriends({ user, profile, exams, limits }: UseStudyFriend
         friendCode: publicProfile.friendCode,
         displayNameSnapshot: publicProfile.displayName,
         addedAt: serverTimestamp(),
-        version: 3,
+        version: 4,
       });
       setMessage(`${publicProfile.displayName} hinzugefügt.`);
     } catch (error) {
@@ -443,6 +588,7 @@ export function useStudyFriends({ user, profile, exams, limits }: UseStudyFriend
     friends,
     friendCode: ownFriendCode,
     legacyFriendCode: user.uid,
+    debugStatus,
     publishMessage,
     message,
     isBusy,

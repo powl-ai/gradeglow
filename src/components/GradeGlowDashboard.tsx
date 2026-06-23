@@ -13,6 +13,8 @@ import OnboardingWizard from "./OnboardingWizard";
 import ModuleDetailModal from "./ModuleDetailModal";
 import { useGradeGlowModules } from "../hooks/useGradeGlowModules";
 import { useGradeGlowExams } from "../hooks/useGradeGlowExams";
+import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
+import { formatLimit, planLabels } from "../lib/gradeglowAccess";
 import {
   DEFAULT_TARGET_ECTS,
   useGradeGlowProfile,
@@ -160,6 +162,7 @@ export default function GradeGlowDashboard({
     isLoaded: areExamsLoaded,
     syncMessage: examsSyncMessage,
   } = useGradeGlowExams(user);
+  const { entitlement, limits } = useGradeGlowAccess(user);
 
   const [name, setName] = useState("");
   const [ects, setEcts] = useState("");
@@ -188,6 +191,7 @@ export default function GradeGlowDashboard({
   const [isInsightsOpen, setIsInsightsOpen] = useState(false);
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const [importMessage, setImportMessage] = useState("");
+  const [moduleLimitMessage, setModuleLimitMessage] = useState("");
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -200,6 +204,8 @@ export default function GradeGlowDashboard({
     profile.targetEcts > 0 ? profile.targetEcts : DEFAULT_TARGET_ECTS;
 
   const parseNumber = (value: string) => Number(value.replace(",", "."));
+
+  const isModuleLimitReached = Number.isFinite(limits.maxModules) && modules.length >= limits.maxModules;
 
   const formatGrade = (value: number) => value.toFixed(2).replace(".", ",");
 
@@ -319,6 +325,11 @@ export default function GradeGlowDashboard({
 
     if (!name.trim() || !ects || !semester) return;
 
+    if (isModuleLimitReached) {
+      setModuleLimitMessage(`Free-Limit erreicht: Du kannst im ${planLabels[entitlement.plan]} Plan aktuell maximal ${formatLimit(limits.maxModules, "Module")} anlegen.`);
+      return;
+    }
+
     const parsedEcts = parseNumber(ects);
     const parsedSemester = parseNumber(semester);
     const numericGrade = grade ? parseNumber(grade) : null;
@@ -350,6 +361,7 @@ export default function GradeGlowDashboard({
       targetGrade: null,
     };
 
+    setModuleLimitMessage("");
     setModules((currentModules) => [...currentModules, newModule]);
     setExpandedModules((currentExpanded) => ({
       ...currentExpanded,
@@ -1410,6 +1422,8 @@ export default function GradeGlowDashboard({
               setExams={setExams}
               isLoaded={areExamsLoaded}
               syncMessage={examsSyncMessage}
+              limits={limits}
+              planLabel={planLabels[entitlement.plan]}
             />
           </section>
         )}
@@ -1441,6 +1455,9 @@ export default function GradeGlowDashboard({
                     </h2>
                     <p className="mt-1 text-sm text-slate-500">
                       Pflicht: Name, ECTS und Semester. Note darf leer bleiben.
+                    </p>
+                    <p className="mt-2 text-xs font-black text-slate-400">
+                      Plan: {planLabels[entitlement.plan]} · Modullimit: {formatLimit(limits.maxModules)}
                     </p>
                   </div>
                   <span className="rounded-2xl bg-violet-50 px-4 py-2 text-2xl font-black text-violet-700 ring-1 ring-violet-100">
@@ -1526,14 +1543,18 @@ export default function GradeGlowDashboard({
                     </div>
 
                     <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="text-sm text-slate-500">
-                        Note &gt; 4,0 wird automatisch als „nicht bestanden“
-                        gewertet.
-                      </p>
+                      <div className="text-sm text-slate-500">
+                        <p>Note &gt; 4,0 wird automatisch als „nicht bestanden“ gewertet.</p>
+                        {(moduleLimitMessage || isModuleLimitReached) && (
+                          <p className="mt-2 rounded-2xl bg-amber-50 p-3 text-sm font-bold leading-6 text-amber-800 ring-1 ring-amber-100">
+                            {moduleLimitMessage || `Free-Limit erreicht: Upgrade/Premium ist vorbereitet. Aktuell sind maximal ${formatLimit(limits.maxModules, "Module")} möglich.`}
+                          </p>
+                        )}
+                      </div>
                       <button
                         type="submit"
                         className="rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 transition hover:-translate-y-0.5 disabled:opacity-50"
-                        disabled={!name.trim() || !ects || !semester}
+                        disabled={!name.trim() || !ects || !semester || isModuleLimitReached}
                       >
                         Modul speichern
                       </button>

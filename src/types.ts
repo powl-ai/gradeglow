@@ -45,6 +45,9 @@ export type GradeGlowProfile = {
   onboardingCompleted: boolean;
   avatarDataUrl: string;
   studySharingEnabled: boolean;
+  shareStudyTime: boolean;
+  shareStudySubjects: boolean;
+  shareStudyStreak: boolean;
   themeMode: ThemeMode;
   accentColor: AccentColor;
 };
@@ -158,5 +161,8 @@ export type PublicStudyProfile = {
   thisWeekTopSubjects: StudySubjectStat[];
   studyStreakDays: number;
   lastStudiedDateKey: string;
+  shareStudyTime: boolean;
+  shareStudySubjects: boolean;
+  shareStudyStreak: boolean;
   updatedAtIso: string;
 };

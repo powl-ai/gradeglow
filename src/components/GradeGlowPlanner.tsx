@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Dispatch, FormEvent, SetStateAction } from "react";
+import { formatLimit } from "../lib/gradeglowAccess";
 import type {
   ExamKind,
   ExamPlanItem,
@@ -10,6 +11,7 @@ import type {
   ModuleStatus,
   StudySessionItem,
   UniModule,
+  PlanLimits,
 } from "../types";
 
 type GradeGlowPlannerProps = {
@@ -18,6 +20,8 @@ type GradeGlowPlannerProps = {
   setExams: Dispatch<SetStateAction<ExamPlanItem[]>>;
   isLoaded: boolean;
   syncMessage: string;
+  limits: PlanLimits;
+  planLabel: string;
 };
 
 type CalendarMode = "month" | "week";
@@ -533,6 +537,8 @@ export default function GradeGlowPlanner({
   setExams,
   isLoaded,
   syncMessage,
+  limits,
+  planLabel,
 }: GradeGlowPlannerProps) {
   const [form, setForm] = useState(emptyForm);
   const [manualStudyForm, setManualStudyForm] = useState<StudyForm>(emptyStudyForm);
@@ -545,6 +551,7 @@ export default function GradeGlowPlanner({
   const [isExamFormOpen, setIsExamFormOpen] = useState(false);
   const [isManualStudyOpen, setIsManualStudyOpen] = useState(false);
   const [activeTimer, setActiveTimer] = useState<ActiveStudyTimer | null>(null);
+  const [examLimitMessage, setExamLimitMessage] = useState("");
   const [timerExamId, setTimerExamId] = useState("");
   const [timerSessionId, setTimerSessionId] = useState("free");
   const [timerNow, setTimerNow] = useState(() => Date.now());
@@ -683,6 +690,7 @@ export default function GradeGlowPlanner({
 
   const normalizedFormDate = normalizeDateInput(form.examDate);
   const normalizedFormTime = normalizeTimeInput(form.examTime);
+  const isExamLimitReached = Number.isFinite(limits.maxExams) && exams.length >= limits.maxExams;
   const parsedStudyStartDays = Math.max(1, Math.round(Number(form.studyStartDays.replace(",", ".")) || DEFAULT_STUDY_START_DAYS));
   const parsedTargetStudyMinutes = Math.max(0, Math.round((Number(form.targetStudyHours.replace(",", ".")) || 0) * 60));
   const parsedDailyStudyLimitMinutes = clampMinutes((Number(form.dailyStudyLimitHours.replace(",", ".")) || 5) * 60, DEFAULT_DAILY_STUDY_LIMIT_MINUTES, 30, 720);
@@ -703,6 +711,11 @@ export default function GradeGlowPlanner({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.title.trim() || !normalizedFormDate || isTimeInvalid) return;
+
+    if (isExamLimitReached) {
+      setExamLimitMessage(`Free-Limit erreicht: Du kannst im ${planLabel} Plan aktuell maximal ${formatLimit(limits.maxExams, "Prüfungen")} anlegen.`);
+      return;
+    }
 
     const selectedModule = modules.find((module) => module.id === form.moduleId);
     const baseExam: ExamPlanItem = {
@@ -731,6 +744,7 @@ export default function GradeGlowPlanner({
     });
     const exam = { ...baseExam, studySessions: createStudySessionsForExam(baseExam, moduleById, booked) };
 
+    setExamLimitMessage("");
     setExams((currentExams) => [...currentExams, exam]);
     setFocusedExamId(exam.id);
     setManualStudyForm((current) => ({ ...current, examId: exam.id }));
@@ -1071,6 +1085,7 @@ export default function GradeGlowPlanner({
           <div className="mb-5">
             <p className="text-sm font-bold text-violet-700">Termin eintragen</p>
             <h2 className="mt-1 text-2xl font-black tracking-tight">Prüfung oder Deadline</h2>
+            <p className="mt-2 text-xs font-black text-slate-400">Plan: {planLabel} · Prüfungslimit: {formatLimit(limits.maxExams)}</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <label className="block md:col-span-2"><span className="mb-1.5 block text-sm font-bold text-slate-700">Titel</span><input className="field-input" placeholder="z. B. Statistik Klausur" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} /></label>
@@ -1085,7 +1100,12 @@ export default function GradeGlowPlanner({
             <label className="block"><span className="mb-1.5 block text-sm font-bold text-slate-700">Länge pro Lerneinheit</span><input className="field-input" inputMode="numeric" value={form.sessionGoalMinutes} onChange={(event) => setForm((current) => ({ ...current, sessionGoalMinutes: event.target.value }))} /><span className="mt-1 block text-xs font-semibold text-slate-400">Minuten pro automatisch erzeugtem Block</span></label>
             <label className="block md:col-span-2"><span className="mb-1.5 block text-sm font-bold text-slate-700">Notizen</span><textarea className="field-input min-h-24 resize-y" placeholder="Stoff, Raum, Kapitel, offene Themen…" value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} /></label>
           </div>
-          <button type="submit" className="mt-5 rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 disabled:opacity-50" disabled={!form.title.trim() || !normalizedFormDate || isTimeInvalid}>Prüfung speichern & Lernplan erzeugen</button>
+          {(examLimitMessage || isExamLimitReached) && (
+            <p className="mt-5 rounded-2xl bg-amber-50 p-3 text-sm font-bold leading-6 text-amber-800 ring-1 ring-amber-100">
+              {examLimitMessage || `Free-Limit erreicht: Upgrade/Premium ist vorbereitet. Aktuell sind maximal ${formatLimit(limits.maxExams, "Prüfungen")} möglich.`}
+            </p>
+          )}
+          <button type="submit" className="mt-5 rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 disabled:opacity-50" disabled={!form.title.trim() || !normalizedFormDate || isTimeInvalid || isExamLimitReached}>Prüfung speichern & Lernplan erzeugen</button>
         </form>
       )}
 

@@ -65,6 +65,8 @@ const getAvatarDataUrl = (value: unknown) => {
   return trimmed.startsWith("data:image/") ? trimmed : "";
 };
 
+const getShareFlag = (value: unknown) => value !== false;
+
 const migrateProfile = (
   rawProfile: unknown,
   fallbackDisplayName: string
@@ -85,6 +87,9 @@ const migrateProfile = (
     onboardingCompleted: profileObject.onboardingCompleted === true,
     avatarDataUrl: getAvatarDataUrl(profileObject.avatarDataUrl),
     studySharingEnabled: profileObject.studySharingEnabled === true,
+    shareStudyTime: getShareFlag(profileObject.shareStudyTime),
+    shareStudySubjects: getShareFlag(profileObject.shareStudySubjects),
+    shareStudyStreak: getShareFlag(profileObject.shareStudyStreak),
     themeMode: getThemeMode(profileObject.themeMode),
     accentColor: getAccentColor(profileObject.accentColor),
   };
@@ -107,6 +112,9 @@ export function useGradeGlowProfile(user: AppUser) {
       onboardingCompleted: false,
       avatarDataUrl: "",
       studySharingEnabled: false,
+      shareStudyTime: true,
+      shareStudySubjects: true,
+      shareStudyStreak: true,
       themeMode: "system",
       accentColor: "violet",
     }),
@@ -214,7 +222,7 @@ export function useGradeGlowProfile(user: AppUser) {
             ...normalizedProfile,
             ownerUid: user.uid,
             updatedAt: serverTimestamp(),
-            version: 2,
+            version: 3,
           },
           { merge: true }
         );

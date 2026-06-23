@@ -322,6 +322,41 @@ const getStudyLoadLabel = (studyMinutes: number, exams: number) => {
   return { label: "max. 5 h", className: "bg-amber-50 text-amber-700" };
 };
 
+const getPriorityWeight = (priority: ExamPriority) => {
+  if (priority === "high") return 3;
+  if (priority === "normal") return 2;
+  return 1;
+};
+
+const getProgressClassName = (percentage: number) => {
+  if (percentage >= 90) return "bg-emerald-500";
+  if (percentage >= 50) return "bg-violet-500";
+  if (percentage > 0) return "bg-amber-500";
+  return "bg-slate-300";
+};
+
+const getExamProgress = (exam: ExamPlanItem, includeHiddenSessions = false) => {
+  const sessions = includeHiddenSessions
+    ? exam.studySessions
+    : exam.studySessions.filter((session) => !session.isHidden);
+  const totalSessions = sessions.length;
+  const doneSessions = sessions.filter((session) => session.isDone).length;
+  const plannedMinutes = sessions.reduce((sum, session) => sum + session.durationMinutes, 0);
+  const doneMinutes = sessions
+    .filter((session) => session.isDone)
+    .reduce((sum, session) => sum + session.durationMinutes, 0);
+  const percentage = plannedMinutes > 0 ? Math.round((doneMinutes / plannedMinutes) * 100) : 0;
+
+  return {
+    totalSessions,
+    doneSessions,
+    plannedMinutes,
+    doneMinutes,
+    remainingMinutes: Math.max(plannedMinutes - doneMinutes, 0),
+    percentage: Math.min(100, Math.max(0, percentage)),
+  };
+};
+
 const getRecommendedTotalMinutes = (exam: ExamPlanItem, module: UniModule | undefined) => {
   const daysUntil = Math.max(getDaysUntil(exam.examDate), 0);
   const grade = module ? getFinalGrade(module) : null;
@@ -464,6 +499,8 @@ export default function GradeGlowPlanner({
   const [calendarMode, setCalendarMode] = useState<CalendarMode>("month");
   const [calendarCursorDate, setCalendarCursorDate] = useState(() => startOfLocalDay(new Date()));
   const [showHiddenItems, setShowHiddenItems] = useState(false);
+  const [examFilterId, setExamFilterId] = useState("all");
+  const [moduleFilterId, setModuleFilterId] = useState("all");
   const [isExamFormOpen, setIsExamFormOpen] = useState(false);
   const [isManualStudyOpen, setIsManualStudyOpen] = useState(false);
 
@@ -480,33 +517,59 @@ export default function GradeGlowPlanner({
     [exams],
   );
 
-  const upcomingExams = useMemo(() => sortedExams.filter((exam) => exam.status !== "done"), [sortedExams]);
-  const visibleExams = useMemo(
-    () => sortedExams.filter((exam) => showHiddenItems || !exam.isHidden),
-    [showHiddenItems, sortedExams],
+  const modulesWithExams = useMemo(
+    () => sortedModules.filter((module) => sortedExams.some((exam) => exam.moduleId === module.id)),
+    [sortedExams, sortedModules],
   );
 
-  const focusedExam = sortedExams.find((exam) => exam.id === focusedExamId) ?? visibleExams.find((exam) => exam.status !== "done") ?? visibleExams[0];
+  const visibleExams = useMemo(
+    () =>
+      sortedExams.filter((exam) => {
+        if (!showHiddenItems && exam.isHidden) return false;
+        if (examFilterId !== "all" && exam.id !== examFilterId) return false;
+        if (moduleFilterId !== "all" && exam.moduleId !== moduleFilterId) return false;
+        return true;
+      }),
+    [examFilterId, moduleFilterId, showHiddenItems, sortedExams],
+  );
+
+  const upcomingExams = useMemo(() => visibleExams.filter((exam) => exam.status !== "done"), [visibleExams]);
+
+  const focusedExam =
+    visibleExams.find((exam) => exam.id === focusedExamId) ??
+    visibleExams.find((exam) => exam.status !== "done") ??
+    visibleExams[0] ??
+    null;
+
   useEffect(() => {
     if (!isLoaded || sortedExams.length === 0) return;
     const booked = new Map<string, number>();
+    const nextExamById = new Map(sortedExams.map((exam) => [exam.id, exam]));
     let changed = false;
 
-    const nextExams = sortedExams.map((exam) => {
+    const planningOrder = [...sortedExams].sort((a, b) => {
+      const priorityDiff = getPriorityWeight(b.priority) - getPriorityWeight(a.priority);
+      if (priorityDiff !== 0) return priorityDiff;
+      const dateDiff = a.examDate.localeCompare(b.examDate);
+      if (dateDiff !== 0) return dateDiff;
+      return a.examTime.localeCompare(b.examTime);
+    });
+
+    planningOrder.forEach((exam) => {
       exam.studySessions.forEach((session) => {
         if (session.isHidden || session.isDone) return;
         booked.set(session.dateKey, (booked.get(session.dateKey) ?? 0) + session.durationMinutes);
       });
 
       if (exam.studySessions.length > 0 || exam.status === "done" || getDaysUntil(exam.examDate) < 0) {
-        return exam;
+        return;
       }
 
       changed = true;
-      return { ...exam, studySessions: createStudySessionsForExam(exam, moduleById, booked) };
+      nextExamById.set(exam.id, { ...exam, studySessions: createStudySessionsForExam(exam, moduleById, booked) });
     });
 
-    if (changed) setExams(nextExams);
+    if (changed) setExams(sortedExams.map((exam) => nextExamById.get(exam.id) ?? exam));
   }, [isLoaded, moduleById, setExams, sortedExams]);
 
   const allStudySessions = useMemo(
@@ -543,14 +606,22 @@ export default function GradeGlowPlanner({
     return grouped;
   }, [visibleStudySessions]);
 
-  const nextExam = upcomingExams.find((exam) => getDaysUntil(exam.examDate) >= 0 && !exam.isHidden) ?? upcomingExams.find((exam) => getDaysUntil(exam.examDate) >= 0);
+  const nextExam = upcomingExams.find((exam) => getDaysUntil(exam.examDate) >= 0) ?? upcomingExams[0] ?? null;
   const todayKey = getDateKey(new Date());
   const todaySessions = studySessionsByDate.get(todayKey) ?? [];
   const todayStudyMinutes = todaySessions.reduce((sum, session) => sum + session.durationMinutes, 0);
-  const thisWeekSessions = buildCalendarDays(new Date(), "week").flatMap((date) => studySessionsByDate.get(getDateKey(date)) ?? []);
+  const thisWeekDays = buildCalendarDays(new Date(), "week");
+  const thisWeekSessions = thisWeekDays.flatMap((date) => studySessionsByDate.get(getDateKey(date)) ?? []);
   const thisWeekStudyMinutes = thisWeekSessions.reduce((sum, session) => sum + session.durationMinutes, 0);
-  const doneStudyMinutes = allStudySessions.filter((session) => session.isDone).reduce((sum, session) => sum + session.durationMinutes, 0);
+  const thisWeekDoneMinutes = thisWeekSessions
+    .filter((session) => session.isDone)
+    .reduce((sum, session) => sum + session.durationMinutes, 0);
+  const thisWeekRemainingMinutes = Math.max(thisWeekStudyMinutes - thisWeekDoneMinutes, 0);
+  const thisWeekProgress = thisWeekStudyMinutes > 0 ? Math.round((thisWeekDoneMinutes / thisWeekStudyMinutes) * 100) : 0;
+  const doneStudyMinutes = visibleStudySessions.filter((session) => session.isDone).reduce((sum, session) => sum + session.durationMinutes, 0);
   const hiddenCount = sortedExams.filter((exam) => exam.isHidden).length + allStudySessions.filter((session) => session.isHidden).length;
+  const activeFilterCount = [examFilterId !== "all", moduleFilterId !== "all"].filter(Boolean).length;
+  const focusedProgress = focusedExam ? getExamProgress(focusedExam, showHiddenItems) : null;
 
   const normalizedFormDate = normalizeDateInput(form.examDate);
   const normalizedFormTime = normalizeTimeInput(form.examTime);
@@ -561,6 +632,12 @@ export default function GradeGlowPlanner({
   const normalizedManualDate = normalizeDateInput(manualStudyForm.date);
   const normalizedManualTime = normalizeTimeInput(manualStudyForm.time);
   const parsedManualDuration = Math.max(15, Math.round(Number(manualStudyForm.duration.replace(",", ".")) || 90));
+
+  const resetCalendarFilters = () => {
+    setExamFilterId("all");
+    setModuleFilterId("all");
+    setFocusedExamId(null);
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -709,8 +786,8 @@ export default function GradeGlowPlanner({
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-4">
-          <div className="rounded-3xl bg-slate-950 p-4 text-white sm:col-span-1">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-3xl bg-slate-950 p-4 text-white">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Nächste Prüfung</p>
             <p className="mt-2 truncate text-xl font-black">{nextExam ? nextExam.title : "Noch offen"}</p>
             <p className="mt-1 text-sm text-slate-300">{nextExam ? `${formatDate(nextExam.examDate)} · ${getCountdownLabel(getDaysUntil(nextExam.examDate))}` : "Lege einen Termin an."}</p>
@@ -721,14 +798,22 @@ export default function GradeGlowPlanner({
             <p className="text-sm font-semibold text-violet-600">{todaySessions.length} Session(s)</p>
           </div>
           <div className="rounded-3xl bg-fuchsia-50 p-4 ring-1 ring-fuchsia-100">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-400">Diese Woche</p>
-            <p className="mt-2 text-3xl font-black text-fuchsia-700">{formatMinutes(thisWeekStudyMinutes)}</p>
-            <p className="text-sm font-semibold text-fuchsia-600">sichtbare Lernzeit</p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-400">Wochenziel</p>
+                <p className="mt-2 text-3xl font-black text-fuchsia-700">{formatMinutes(thisWeekStudyMinutes)}</p>
+              </div>
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-fuchsia-700 ring-1 ring-fuchsia-100">{thisWeekProgress}%</span>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-fuchsia-100">
+              <div className="h-full rounded-full bg-fuchsia-500" style={{ width: `${thisWeekProgress}%` }} />
+            </div>
+            <p className="mt-2 text-sm font-semibold text-fuchsia-600">{formatMinutes(thisWeekDoneMinutes)} erledigt · {formatMinutes(thisWeekRemainingMinutes)} offen</p>
           </div>
           <div className="rounded-3xl bg-emerald-50 p-4 ring-1 ring-emerald-100">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-500">Erledigt</p>
             <p className="mt-2 text-3xl font-black text-emerald-700">{formatMinutes(doneStudyMinutes)}</p>
-            <p className="text-sm font-semibold text-emerald-600">abgehakte Lernzeit</p>
+            <p className="text-sm font-semibold text-emerald-600">abgehakte Lernzeit{activeFilterCount > 0 ? " im Filter" : ""}</p>
           </div>
         </div>
 
@@ -742,6 +827,60 @@ export default function GradeGlowPlanner({
           <button type="button" className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200" onClick={() => setShowHiddenItems((show) => !show)}>
             {showHiddenItems ? "Versteckte ausblenden" : `Versteckte anzeigen (${hiddenCount})`}
           </button>
+        </div>
+
+        <div className="mt-4 rounded-3xl bg-slate-50 p-3 ring-1 ring-slate-200 sm:p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="grid flex-1 gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-black uppercase tracking-[0.16em] text-slate-400">Filter Prüfung</span>
+                <select
+                  className="field-input bg-white"
+                  value={examFilterId}
+                  onChange={(event) => {
+                    const nextExamId = event.target.value;
+                    setExamFilterId(nextExamId);
+                    if (nextExamId !== "all") setFocusedExamId(nextExamId);
+                  }}
+                >
+                  <option value="all">Alle sichtbaren Prüfungen</option>
+                  {sortedExams.map((exam) => (
+                    <option key={exam.id} value={exam.id}>
+                      {exam.title}{exam.moduleName ? ` · ${exam.moduleName}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-black uppercase tracking-[0.16em] text-slate-400">Filter Modul</span>
+                <select
+                  className="field-input bg-white"
+                  value={moduleFilterId}
+                  onChange={(event) => setModuleFilterId(event.target.value)}
+                >
+                  <option value="all">Alle Module</option>
+                  {modulesWithExams.map((module) => (
+                    <option key={module.id} value={module.id}>
+                      {module.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <span className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-500 ring-1 ring-slate-200">
+                {visibleExams.length} von {sortedExams.length} Termin(en)
+              </span>
+              <button
+                type="button"
+                className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200 disabled:opacity-40"
+                onClick={resetCalendarFilters}
+                disabled={activeFilterCount === 0}
+              >
+                Filter zurücksetzen
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -818,14 +957,32 @@ export default function GradeGlowPlanner({
             <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-black text-slate-500 ring-1 ring-slate-200">{syncMessage}</span>
           </div>
           <div className="mt-5 space-y-3">
-            {sortedExams.length === 0 ? <div className="rounded-3xl border border-dashed border-violet-200 bg-violet-50/70 p-6 text-center text-sm font-semibold text-violet-700">Noch keine Prüfungen geplant.</div> : sortedExams.map((exam) => {
+            {sortedExams.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-violet-200 bg-violet-50/70 p-6 text-center text-sm font-semibold text-violet-700">Noch keine Prüfungen geplant.</div>
+            ) : visibleExams.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm font-semibold text-slate-500">Für diesen Filter gibt es aktuell keine sichtbaren Prüfungen.</div>
+            ) : visibleExams.map((exam) => {
               const daysUntil = getDaysUntil(exam.examDate);
               const kind = examKindOptions.find((option) => option.value === exam.kind);
-              if (exam.isHidden && !showHiddenItems) return null;
-              const completedSessions = exam.studySessions.filter((session) => session.isDone).length;
+              const progress = getExamProgress(exam, showHiddenItems);
               return <article key={exam.id} className={`rounded-3xl p-4 ring-1 ${exam.isHidden ? "bg-slate-50 opacity-70 ring-slate-200" : "bg-slate-50 ring-slate-200"}`}>
                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                  <div className="min-w-0 flex-1"><div className="mb-2 flex flex-wrap gap-2"><span className={`rounded-full px-3 py-1 text-xs font-black ring-1 ${getPriorityClassName(exam.priority)}`}>{priorityOptions.find((option) => option.value === exam.priority)?.label}</span><span className={`rounded-full px-3 py-1 text-xs font-black ring-1 ${getStatusClassName(exam.status)}`}>{statusOptions.find((option) => option.value === exam.status)?.label}</span><span className={`rounded-full px-3 py-1 text-xs font-black ring-1 ${getCountdownClassName(daysUntil)}`}>{getCountdownLabel(daysUntil)}</span>{exam.isHidden && <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500 ring-1 ring-slate-200">ausgeblendet</span>}</div><h3 className="truncate text-lg font-black tracking-tight">{exam.title}</h3><p className="mt-1 text-sm font-semibold text-slate-500">{kind?.label ?? "Termin"} · {formatDate(exam.examDate)}{exam.examTime && ` · ${formatTime(exam.examTime)}`}{exam.moduleName && ` · ${exam.moduleName}`}</p><p className="mt-1 text-sm text-slate-500">Lernstart {exam.studyStartDays} Tage vorher · {completedSessions}/{exam.studySessions.length} Sessions erledigt</p>{exam.notes && <p className="mt-3 text-sm leading-6 text-slate-600">{exam.notes}</p>}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      <span className={`rounded-full px-3 py-1 text-xs font-black ring-1 ${getPriorityClassName(exam.priority)}`}>{priorityOptions.find((option) => option.value === exam.priority)?.label}</span>
+                      <span className={`rounded-full px-3 py-1 text-xs font-black ring-1 ${getStatusClassName(exam.status)}`}>{statusOptions.find((option) => option.value === exam.status)?.label}</span>
+                      <span className={`rounded-full px-3 py-1 text-xs font-black ring-1 ${getCountdownClassName(daysUntil)}`}>{getCountdownLabel(daysUntil)}</span>
+                      {exam.isHidden && <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500 ring-1 ring-slate-200">ausgeblendet</span>}
+                    </div>
+                    <h3 className="truncate text-lg font-black tracking-tight">{exam.title}</h3>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">{kind?.label ?? "Termin"} · {formatDate(exam.examDate)}{exam.examTime && ` · ${formatTime(exam.examTime)}`}{exam.moduleName && ` · ${exam.moduleName}`}</p>
+                    <p className="mt-1 text-sm text-slate-500">Lernstart {exam.studyStartDays} Tage vorher · {progress.doneSessions}/{progress.totalSessions} Sessions · {formatMinutes(progress.remainingMinutes)} offen</p>
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
+                      <div className={`h-full rounded-full ${getProgressClassName(progress.percentage)}`} style={{ width: `${progress.percentage}%` }} />
+                    </div>
+                    <p className="mt-1 text-xs font-black text-slate-400">{progress.percentage}% Lernfortschritt</p>
+                    {exam.notes && <p className="mt-3 text-sm leading-6 text-slate-600">{exam.notes}</p>}
+                  </div>
                   <div className="flex flex-wrap gap-2 sm:justify-end"><select className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100" value={exam.status} onChange={(event) => updateExamStatus(exam.id, event.target.value as ExamStatus)}>{statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><button type="button" className="rounded-2xl bg-white px-3 py-2 text-sm font-black text-violet-700 ring-1 ring-violet-100" onClick={() => { setFocusedExamId(exam.id); setCalendarCursorDate(toDate(exam.examDate) ?? new Date()); }}>Details</button><button type="button" className="rounded-2xl bg-white px-3 py-2 text-sm font-black text-slate-600 ring-1 ring-slate-200" onClick={() => updateExam(exam.id, (current) => ({ ...current, isHidden: !current.isHidden }))}>{exam.isHidden ? "Einblenden" : "Ausblenden"}</button><button type="button" className="rounded-2xl bg-white px-3 py-2 text-sm font-black text-rose-600 ring-1 ring-rose-100" onClick={() => deleteExam(exam.id)}>Löschen</button></div>
                 </div>
               </article>;
@@ -837,7 +994,27 @@ export default function GradeGlowPlanner({
           <div className="relative p-5 sm:p-6"><div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-fuchsia-500/25 blur-3xl" /><div className="absolute -bottom-28 left-10 h-64 w-64 rounded-full bg-violet-500/25 blur-3xl" />
             <div className="relative"><p className="text-sm font-bold text-fuchsia-200">Lernplan-Fokus</p><h2 className="mt-1 text-2xl font-black tracking-tight">Prüfung im Detail</h2><p className="mt-2 text-sm leading-6 text-slate-300">Hier kannst du Lernblöcke abhaken, verschieben, verstecken und Notizen ergänzen.</p>
               {!focusedExam ? <div className="mt-6 rounded-3xl bg-white/10 p-6 text-center text-sm font-semibold text-slate-300 ring-1 ring-white/10">Speichere eine Prüfung, dann erscheint hier dein Plan.</div> : <>
-                <div className="mt-5 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-400">Aktiver Fokus</p><h3 className="mt-2 text-xl font-black">{focusedExam.title}</h3><p className="mt-1 text-sm text-slate-300">{formatDate(focusedExam.examDate)} · {formatTime(focusedExam.examTime)} · {getCountdownLabel(getDaysUntil(focusedExam.examDate))}</p><p className="mt-2 text-sm font-semibold text-fuchsia-100">{getStudyPhase(getDaysUntil(focusedExam.examDate))}</p></div><button type="button" className="rounded-2xl bg-white/10 px-3 py-2 text-sm font-black text-fuchsia-100 ring-1 ring-white/10" onClick={() => regenerateExamPlan(focusedExam.id)}>Plan neu generieren</button></div><div className="mt-4 grid gap-2 sm:grid-cols-3"><div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><p className="text-xs text-slate-400">geplante Lernzeit</p><p className="mt-1 text-lg font-black">{formatMinutes(focusedPlan.reduce((sum, session) => sum + session.durationMinutes, 0))}</p></div><div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><p className="text-xs text-slate-400">Sessions</p><p className="mt-1 text-lg font-black">{focusedPlan.length}</p></div><label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><span className="text-xs text-slate-400">Start Tage vorher</span><input className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-2 py-1 text-lg font-black text-white outline-none" inputMode="numeric" value={focusedExam.studyStartDays} onChange={(event) => { const value = Math.max(1, Math.round(Number(event.target.value) || DEFAULT_STUDY_START_DAYS)); updateExam(focusedExam.id, (exam) => ({ ...exam, studyStartDays: value })); }} /></label></div></div>
+                <div className="mt-5 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.25em] text-slate-400">Aktiver Fokus</p>
+                      <h3 className="mt-2 text-xl font-black">{focusedExam.title}</h3>
+                      <p className="mt-1 text-sm text-slate-300">{formatDate(focusedExam.examDate)} · {formatTime(focusedExam.examTime)} · {getCountdownLabel(getDaysUntil(focusedExam.examDate))}</p>
+                      <p className="mt-2 text-sm font-semibold text-fuchsia-100">{getStudyPhase(getDaysUntil(focusedExam.examDate))}</p>
+                    </div>
+                    <button type="button" className="rounded-2xl bg-white/10 px-3 py-2 text-sm font-black text-fuchsia-100 ring-1 ring-white/10" onClick={() => regenerateExamPlan(focusedExam.id)}>Plan neu generieren</button>
+                  </div>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-4">
+                    <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><p className="text-xs text-slate-400">geplante Lernzeit</p><p className="mt-1 text-lg font-black">{focusedProgress ? formatMinutes(focusedProgress.plannedMinutes) : "0 min"}</p></div>
+                    <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><p className="text-xs text-slate-400">erledigt</p><p className="mt-1 text-lg font-black">{focusedProgress ? formatMinutes(focusedProgress.doneMinutes) : "0 min"}</p></div>
+                    <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><p className="text-xs text-slate-400">offen</p><p className="mt-1 text-lg font-black">{focusedProgress ? formatMinutes(focusedProgress.remainingMinutes) : "0 min"}</p></div>
+                    <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><span className="text-xs text-slate-400">Start Tage vorher</span><input className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-2 py-1 text-lg font-black text-white outline-none" inputMode="numeric" value={focusedExam.studyStartDays} onChange={(event) => { const value = Math.max(1, Math.round(Number(event.target.value) || DEFAULT_STUDY_START_DAYS)); updateExam(focusedExam.id, (exam) => ({ ...exam, studyStartDays: value })); }} /></label>
+                  </div>
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10 ring-1 ring-white/10">
+                    <div className="h-full rounded-full bg-emerald-400" style={{ width: `${focusedProgress?.percentage ?? 0}%` }} />
+                  </div>
+                  <p className="mt-2 text-xs font-black text-slate-400">{focusedProgress?.percentage ?? 0}% Fortschritt · {focusedProgress?.doneSessions ?? 0}/{focusedProgress?.totalSessions ?? 0} Sessions erledigt</p>
+                </div>
                 <div className="mt-4 space-y-3">{focusedPlan.length === 0 ? <p className="rounded-3xl bg-white/10 p-4 text-sm leading-6 text-slate-300 ring-1 ring-white/10">Für diese Prüfung ist aktuell kein Lernblock geplant. Erzeuge einen Plan neu oder füge manuell eine Einheit hinzu.</p> : focusedPlan.map((session) => <div key={session.id} className={`rounded-3xl p-4 ring-1 ${session.isDone ? "bg-emerald-500/15 ring-emerald-300/20" : "bg-white/10 ring-white/10"}`}><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><label className="flex min-w-0 flex-1 items-start gap-3"><input type="checkbox" className="mt-1 h-5 w-5 accent-emerald-400" checked={session.isDone} onChange={() => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, isDone: !current.isDone }))} /><span className="min-w-0"><span className="block font-black">{session.title}</span><span className="mt-1 block text-sm leading-6 text-slate-300">{session.focus || "Eigener Lernblock"}</span></span></label><div className="flex flex-wrap gap-2"><button type="button" className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-black text-fuchsia-100 ring-1 ring-white/10" onClick={() => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, isHidden: !current.isHidden }))}>{session.isHidden ? "Einblenden" : "Ausblenden"}</button><button type="button" className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-black text-rose-100 ring-1 ring-white/10" onClick={() => deleteStudySession(focusedExam.id, session.id)}>Löschen</button></div></div><div className="mt-3 grid gap-2 sm:grid-cols-4"><input className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-slate-400" value={formatDateInput(session.dateKey)} onChange={(event) => { const dateKey = normalizeDateInput(event.target.value); if (dateKey) updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, dateKey })); }} placeholder="TT.MM.JJJJ" /><input className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-slate-400" value={session.time} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, time: normalizeTimeInput(event.target.value) || event.target.value }))} placeholder="16:00" /><input className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-slate-400" inputMode="numeric" value={session.durationMinutes} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, durationMinutes: Math.max(15, Math.round(Number(event.target.value) || current.durationMinutes)) }))} /><input className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-slate-400" value={session.title} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, title: event.target.value }))} placeholder="Titel" /></div><textarea className="mt-2 w-full rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-400" value={session.notes} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, notes: event.target.value }))} placeholder="Notizen zu dieser Lerneinheit…" /></div>)}</div>
               </>}
             </div>

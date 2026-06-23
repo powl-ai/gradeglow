@@ -956,58 +956,123 @@ export default function GradeGlowDashboard({
 
       {isNavigationOpen && (
         <div
-          className="fixed inset-0 z-50 bg-slate-950/45 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex justify-end bg-slate-950/45 p-3 backdrop-blur-sm sm:p-4"
           onClick={() => setIsNavigationOpen(false)}
         >
           <nav
-            className="max-h-[calc(100vh-2rem)] w-full max-w-sm overflow-y-auto rounded-[2rem] bg-white p-4 shadow-2xl shadow-slate-950/25 ring-1 ring-violet-100"
+            className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-md flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl shadow-slate-950/25 ring-1 ring-violet-100 sm:max-h-[calc(100vh-2rem)]"
             onClick={(event) => event.stopPropagation()}
-            aria-label="GradeGlow Navigation"
+            aria-label="GradeGlow Menü"
           >
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-bold text-violet-700">Navigation</p>
-                <h2 className="text-2xl font-black tracking-tight">
-                  GradeGlow Bereiche
-                </h2>
+            <div className="border-b border-violet-100 p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-violet-700">Menü</p>
+                  <h2 className="text-2xl font-black tracking-tight">
+                    Bereiche & Profil
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-lg font-black text-slate-600 ring-1 ring-slate-200 transition hover:bg-violet-50 hover:text-violet-700"
+                  onClick={() => setIsNavigationOpen(false)}
+                  aria-label="Menü schließen"
+                >
+                  ×
+                </button>
               </div>
-              <button
-                type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-50 text-lg font-black text-slate-600 ring-1 ring-slate-200"
-                onClick={() => setIsNavigationOpen(false)}
-                aria-label="Navigation schließen"
-              >
-                ×
-              </button>
+
+              <div className="mt-4 rounded-3xl bg-slate-950 p-4 text-white ring-1 ring-slate-900">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10">
+                    {userInitial}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-black">{userLabel}</p>
+                    <p className="truncate text-xs font-semibold text-slate-300">
+                      {degreeProgramLabel}
+                    </p>
+                    <p className="truncate text-xs text-slate-400">
+                      {user.email ?? "Lokaler Account"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                  <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
+                    <p className="text-xs text-slate-300">Schnitt</p>
+                    <p className="text-xl font-black">
+                      {analytics.average > 0 ? formatGrade(analytics.average) : "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
+                    <p className="text-xs text-slate-300">Fortschritt</p>
+                    <p className="text-xl font-black">
+                      {Math.min(analytics.progress, 100).toFixed(0)}%
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${getSyncStyle()}`}>
+                    {syncMessage}
+                  </span>
+                  <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-violet-50 ring-1 ring-white/15">
+                    {dataModel === "firestore-module-docs" ? "Cloud-Sync" : "Lokal"}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div className="grid gap-2">
-              {dashboardNavItems.map((item) => {
-                const isActive = item.id === page;
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+              <div className="grid gap-2">
+                {dashboardNavItems.map((item) => {
+                  const isActive = item.id === page;
 
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className={`rounded-2xl p-4 text-left ring-1 transition hover:-translate-y-0.5 ${
-                      isActive
-                        ? "bg-violet-700 text-white ring-violet-600 shadow-lg shadow-violet-200"
-                        : "bg-slate-50 text-slate-950 ring-slate-200 hover:bg-violet-50 hover:ring-violet-100"
-                    }`}
-                    onClick={() => setIsNavigationOpen(false)}
-                  >
-                    <span className="flex items-center gap-2 text-sm font-black">
-                      <span>{item.emoji}</span>
-                      <span>{item.label}</span>
-                    </span>
-                    <span
-                      className={`mt-1 block text-xs font-semibold leading-5 ${isActive ? "text-violet-100" : "text-slate-500"}`}
+                  return (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      className={`rounded-2xl p-4 text-left ring-1 transition hover:-translate-y-0.5 ${
+                        isActive
+                          ? "bg-violet-700 text-white ring-violet-600 shadow-lg shadow-violet-200"
+                          : "bg-slate-50 text-slate-950 ring-slate-200 hover:bg-violet-50 hover:ring-violet-100"
+                      }`}
+                      onClick={() => setIsNavigationOpen(false)}
                     >
-                      {item.description}
-                    </span>
-                  </Link>
-                );
-              })}
+                      <span className="flex items-center gap-2 text-sm font-black">
+                        <span>{item.emoji}</span>
+                        <span>{item.label}</span>
+                      </span>
+                      <span
+                        className={`mt-1 block text-xs font-semibold leading-5 ${isActive ? "text-violet-100" : "text-slate-500"}`}
+                      >
+                        {item.description}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 border-t border-violet-100 p-4 sm:p-5">
+              <Link
+                href="/settings"
+                className="rounded-2xl bg-slate-50 px-3 py-3 text-center text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50 hover:text-violet-700"
+                onClick={() => setIsNavigationOpen(false)}
+              >
+                Profil
+              </Link>
+              <button
+                type="button"
+                className="rounded-2xl bg-slate-950 px-3 py-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-800"
+                onClick={() => {
+                  setIsNavigationOpen(false);
+                  void onLogout();
+                }}
+              >
+                Logout
+              </button>
             </div>
           </nav>
         </div>
@@ -1021,35 +1086,37 @@ export default function GradeGlowDashboard({
 
             <div className="relative flex flex-col gap-7 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
-                <div className="mb-5 flex flex-wrap items-center gap-3">
+                <div className="mb-5 flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-wrap items-center gap-3">
+                    <GradeGlowLogo size="md" tone="light" />
+
+                    <div
+                      className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${getSyncStyle()}`}
+                    >
+                      {syncMessage}
+                    </div>
+
+                    <div className="hidden rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-violet-50 ring-1 ring-white/15 sm:block">
+                      {dataModel === "firestore-module-docs"
+                        ? "Modul-Dokumente"
+                        : "Lokales Array"}
+                    </div>
+
+                    {!isLoaded && (
+                      <div className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white/80 ring-1 ring-white/10">
+                        Lädt…
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     type="button"
-                    className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-xl font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-xl font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15"
                     onClick={() => setIsNavigationOpen(true)}
-                    aria-label="Navigation öffnen"
+                    aria-label="Menü öffnen"
                   >
                     ☰
                   </button>
-
-                  <GradeGlowLogo size="md" tone="light" />
-
-                  <div
-                    className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${getSyncStyle()}`}
-                  >
-                    {syncMessage}
-                  </div>
-
-                  <div className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-violet-50 ring-1 ring-white/15">
-                    {dataModel === "firestore-module-docs"
-                      ? "Modul-Dokumente"
-                      : "Lokales Array"}
-                  </div>
-
-                  {!isLoaded && (
-                    <div className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white/80 ring-1 ring-white/10">
-                      Lädt…
-                    </div>
-                  )}
                 </div>
 
                 <p className="text-sm font-bold uppercase tracking-[0.35em] text-fuchsia-200/80">
@@ -1059,12 +1126,12 @@ export default function GradeGlowDashboard({
                   {activeNavItem.label}
                 </h1>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-                  {activeNavItem.description}. Wechsel links oben über das Menü
+                  {activeNavItem.description}. Wechsel oben rechts über das Menü
                   in die anderen Bereiche.
                 </p>
               </div>
 
-              <div className="flex w-full min-w-0 flex-col gap-3 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur sm:min-w-80 lg:w-auto">
+              <div className="hidden w-full min-w-0 flex-col gap-3 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur sm:min-w-80 lg:flex lg:w-auto">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10">
                     {userInitial}
@@ -1116,26 +1183,6 @@ export default function GradeGlowDashboard({
             </div>
           </div>
         </header>
-
-        <nav
-          className="no-scrollbar flex max-w-full gap-2 overflow-x-auto rounded-3xl bg-white/75 p-2 shadow-sm ring-1 ring-violet-100 backdrop-blur"
-          aria-label="GradeGlow Seiten"
-        >
-          {dashboardNavItems.map((item) => (
-            <Link
-              key={item.id}
-              href={item.href}
-              className={`shrink-0 whitespace-nowrap rounded-2xl px-4 py-3 text-sm font-black transition ${
-                item.id === page
-                  ? "bg-slate-950 text-white shadow-lg shadow-violet-100"
-                  : "text-slate-600 hover:bg-violet-50 hover:text-violet-700"
-              }`}
-            >
-              <span className="mr-2">{item.emoji}</span>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
 
         {page === "overview" && (
           <>

@@ -1,5 +1,6 @@
 "use client";
 
+import { FirebaseError } from "firebase/app";
 import { useEffect, useMemo, useState } from "react";
 import {
   collection,
@@ -23,21 +24,46 @@ import type {
   AppUser,
   ExamPlanItem,
   GradeGlowProfile,
+  PlanLimits,
   PublicStudyProfile,
 } from "../types";
-
-type UseStudyFriendsArgs = {
-  user: AppUser;
-  profile: GradeGlowProfile;
-  exams: ExamPlanItem[];
-};
 
 export type FriendListItem = PublicStudyProfile & {
   isMissing?: boolean;
 };
 
 const PUBLIC_PROFILES_COLLECTION = "publicStudyProfiles";
+const FRIEND_CODES_COLLECTION = "studyFriendCodes";
 const FRIENDS_COLLECTION = "friends";
+
+export const buildStudyFriendCode = (uid: string) => {
+  const compactUid = uid.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  const prefix = compactUid.slice(0, 4).padEnd(4, "G");
+  const suffix = compactUid.slice(-4).padStart(4, "0");
+  return `GG-${prefix}-${suffix}`;
+};
+
+export const normalizeStudyFriendCode = (value: string) =>
+  value
+    .trim()
+    .replace(/^code[:\s]*/i, "")
+    .replace(/^friend[:\s]*/i, "")
+    .replace(/\s+/g, "")
+    .toUpperCase();
+
+const getFriendErrorMessage = (error: unknown) => {
+  if (error instanceof FirebaseError) {
+    if (error.code === "permission-denied") {
+      return "Keine Berechtigung. Bitte Firestore Rules deployen und danach erneut versuchen.";
+    }
+
+    if (error.code === "unavailable") {
+      return "Firebase ist gerade nicht erreichbar. Bitte kurz später erneut versuchen.";
+    }
+  }
+
+  return "Freund konnte nicht hinzugefügt werden. Prüfe Code, Sharing und Firebase Rules.";
+};
 
 const buildPublicProfile = (
   user: AppUser,
@@ -49,6 +75,7 @@ const buildPublicProfile = (
 
   return {
     uid: user.uid,
+    friendCode: buildStudyFriendCode(user.uid),
     displayName: profile.displayName || user.displayName || "GradeGlow User",
     degreeProgram: profile.degreeProgram,
     avatarDataUrl: profile.avatarDataUrl,
@@ -106,6 +133,10 @@ const migratePublicProfile = (
 
   return {
     uid: typeof record.uid === "string" ? record.uid : uid,
+    friendCode:
+      typeof record.friendCode === "string" && record.friendCode.trim()
+        ? record.friendCode.trim()
+        : buildStudyFriendCode(uid),
     displayName:
       typeof record.displayName === "string" && record.displayName.trim()
         ? record.displayName.trim()
@@ -137,6 +168,7 @@ const migratePublicProfile = (
 
 const buildMissingFriend = (friendId: string): FriendListItem => ({
   uid: friendId,
+  friendCode: buildStudyFriendCode(friendId),
   displayName: "Profil nicht geteilt",
   degreeProgram: "Diese Person hat Study Circle deaktiviert.",
   avatarDataUrl: "",
@@ -157,14 +189,25 @@ const sortFriends = (friends: FriendListItem[]) =>
     return b.totalDoneMinutes - a.totalDoneMinutes;
   });
 
-export function useStudyFriends({ user, profile, exams }: UseStudyFriendsArgs) {
+type UseStudyFriendsArgs = {
+  user: AppUser;
+  profile: GradeGlowProfile;
+  exams: ExamPlanItem[];
+  limits?: PlanLimits;
+};
+
+export function useStudyFriends({ user, profile, exams, limits }: UseStudyFriendsArgs) {
   const [friends, setFriends] = useState<FriendListItem[]>([]);
   const [friendIds, setFriendIds] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const [isBusy, setIsBusy] = useState(false);
+  const [publishMessage, setPublishMessage] = useState("");
 
   const canUseCloudSocial =
     user.provider === "firebase" && isFirebaseConfigured && Boolean(db);
+
+  const ownFriendCode = useMemo(() => buildStudyFriendCode(user.uid), [user.uid]);
+  const maxFriends = limits?.maxFriends ?? Number.POSITIVE_INFINITY;
 
   const ownPublicProfile = useMemo(
     () => buildPublicProfile(user, profile, exams),
@@ -175,23 +218,49 @@ export function useStudyFriends({ user, profile, exams }: UseStudyFriendsArgs) {
     if (!canUseCloudSocial || !db) return;
 
     const profileRef = doc(db, PUBLIC_PROFILES_COLLECTION, user.uid);
+    const codeRef = doc(db, FRIEND_CODES_COLLECTION, ownFriendCode);
 
     if (!profile.studySharingEnabled) {
-      void deleteDoc(profileRef).catch(() => undefined);
+      void Promise.allSettled([deleteDoc(profileRef), deleteDoc(codeRef)]).catch(() => undefined);
+      setPublishMessage("");
       return;
     }
 
-    void setDoc(
-      profileRef,
-      {
-        ...ownPublicProfile,
-        ownerUid: user.uid,
-        updatedAt: serverTimestamp(),
-        version: 2,
-      },
-      { merge: true },
-    ).catch(() => undefined);
-  }, [canUseCloudSocial, ownPublicProfile, profile.studySharingEnabled, user.uid]);
+    void Promise.all([
+      setDoc(
+        profileRef,
+        {
+          ...ownPublicProfile,
+          ownerUid: user.uid,
+          updatedAt: serverTimestamp(),
+          version: 3,
+        },
+        { merge: true },
+      ),
+      setDoc(
+        codeRef,
+        {
+          uid: user.uid,
+          friendCode: ownFriendCode,
+          normalizedCode: ownFriendCode,
+          displayNameSnapshot: ownPublicProfile.displayName,
+          ownerUid: user.uid,
+          updatedAt: serverTimestamp(),
+          version: 1,
+        },
+        { merge: true },
+      ),
+    ])
+      .then(() => setPublishMessage("Study Circle Profil veröffentlicht."))
+      .catch((error: unknown) => {
+        if (error instanceof FirebaseError && error.code === "permission-denied") {
+          setPublishMessage("Study Circle Profil konnte nicht veröffentlicht werden. Bitte Firestore Rules deployen.");
+          return;
+        }
+
+        setPublishMessage("Study Circle Profil konnte gerade nicht veröffentlicht werden.");
+      });
+  }, [canUseCloudSocial, ownFriendCode, ownPublicProfile, profile.studySharingEnabled, user.uid]);
 
   useEffect(() => {
     if (!canUseCloudSocial || !db) {
@@ -209,7 +278,12 @@ export function useStudyFriends({ user, profile, exams }: UseStudyFriendsArgs) {
           .filter((id) => id && id !== user.uid);
         setFriendIds(ids);
       },
-      () => {
+      (error) => {
+        if (error instanceof FirebaseError && error.code === "permission-denied") {
+          setMessage("Freundeliste konnte nicht geladen werden. Bitte neue Firestore Rules deployen.");
+          return;
+        }
+
         setMessage("Freundeliste konnte nicht geladen werden.");
       },
     );
@@ -251,25 +325,51 @@ export function useStudyFriends({ user, profile, exams }: UseStudyFriendsArgs) {
     };
   }, [canUseCloudSocial, friendIds]);
 
+  const resolveFriendId = async (friendCode: string) => {
+    if (!db) return null;
+
+    const rawCode = friendCode.trim();
+    const normalizedCode = normalizeStudyFriendCode(rawCode);
+
+    if (!rawCode) return null;
+
+    const codeSnapshot = await getDoc(doc(db, FRIEND_CODES_COLLECTION, normalizedCode));
+    if (codeSnapshot.exists()) {
+      const uid = codeSnapshot.data().uid;
+      return typeof uid === "string" && uid.trim() ? uid.trim() : null;
+    }
+
+    const directProfileSnapshot = await getDoc(doc(db, PUBLIC_PROFILES_COLLECTION, rawCode));
+    if (directProfileSnapshot.exists()) return rawCode;
+
+    if (normalizedCode !== rawCode) {
+      const normalizedProfileSnapshot = await getDoc(doc(db, PUBLIC_PROFILES_COLLECTION, normalizedCode));
+      if (normalizedProfileSnapshot.exists()) return normalizedCode;
+    }
+
+    return null;
+  };
+
   const addFriend = async (friendCode: string) => {
     if (!canUseCloudSocial || !db) {
       setMessage("Study Circle funktioniert aktuell nur mit Firebase-Login.");
       return;
     }
 
-    const friendId = friendCode.trim();
-    if (!friendId) {
+    const rawCode = friendCode.trim();
+    const normalizedCode = normalizeStudyFriendCode(rawCode);
+    if (!rawCode) {
       setMessage("Füge zuerst einen Freundescode ein.");
       return;
     }
 
-    if (friendId === user.uid) {
+    if (rawCode === user.uid || normalizedCode === ownFriendCode) {
       setMessage("Das ist dein eigener Code.");
       return;
     }
 
-    if (friendIds.includes(friendId)) {
-      setMessage("Diese Person ist schon in deinem Study Circle.");
+    if (Number.isFinite(maxFriends) && friendIds.length >= maxFriends) {
+      setMessage(`Free-Limit erreicht: Du kannst aktuell maximal ${maxFriends} Freunde hinzufügen. Premium ist vorbereitet und kann manuell freigeschaltet werden.`);
       return;
     }
 
@@ -277,22 +377,45 @@ export function useStudyFriends({ user, profile, exams }: UseStudyFriendsArgs) {
     setMessage("");
 
     try {
+      const friendId = await resolveFriendId(rawCode);
+
+      if (!friendId) {
+        setMessage("Kein Profil für diesen Code gefunden. Deine Freundin muss Study Sharing aktivieren und die neue Firestore Rules müssen deployed sein.");
+        return;
+      }
+
+      if (friendId === user.uid) {
+        setMessage("Das ist dein eigener Code.");
+        return;
+      }
+
+      if (friendIds.includes(friendId)) {
+        setMessage("Diese Person ist schon in deinem Study Circle.");
+        return;
+      }
+
       const profileSnapshot = await getDoc(doc(db, PUBLIC_PROFILES_COLLECTION, friendId));
       if (!profileSnapshot.exists()) {
-        setMessage("Kein öffentliches Study-Circle-Profil für diesen Code gefunden.");
+        setMessage("Code gefunden, aber das Study-Circle-Profil ist nicht öffentlich. Die andere Person muss Sharing aktivieren.");
         return;
       }
 
       const publicProfile = migratePublicProfile(friendId, profileSnapshot.data());
+      if (!publicProfile) {
+        setMessage("Profil gefunden, aber Datenformat ist ungültig. Bitte Sharing bei der anderen Person einmal deaktivieren und wieder aktivieren.");
+        return;
+      }
+
       await setDoc(doc(db, "users", user.uid, FRIENDS_COLLECTION, friendId), {
         uid: friendId,
-        displayNameSnapshot: publicProfile?.displayName ?? "GradeGlow User",
+        friendCode: publicProfile.friendCode,
+        displayNameSnapshot: publicProfile.displayName,
         addedAt: serverTimestamp(),
-        version: 2,
+        version: 3,
       });
-      setMessage("Freund hinzugefügt.");
-    } catch {
-      setMessage("Freund konnte nicht hinzugefügt werden.");
+      setMessage(`${publicProfile.displayName} hinzugefügt.`);
+    } catch (error) {
+      setMessage(getFriendErrorMessage(error));
     } finally {
       setIsBusy(false);
     }
@@ -318,7 +441,9 @@ export function useStudyFriends({ user, profile, exams }: UseStudyFriendsArgs) {
     canUseCloudSocial,
     ownPublicProfile,
     friends,
-    friendCode: user.uid,
+    friendCode: ownFriendCode,
+    legacyFriendCode: user.uid,
+    publishMessage,
     message,
     isBusy,
     addFriend,

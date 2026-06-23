@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { formatStudyMinutes } from "../lib/studyStats";
+import { formatLimit, planLabels } from "../lib/gradeglowAccess";
+import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { useStudyFriends } from "../hooks/useStudyFriends";
 import type { AppUser, ExamPlanItem, GradeGlowProfile, PublicStudyProfile } from "../types";
 
@@ -120,16 +122,20 @@ export default function StudyFriendsPanel({
   const [isSavingSharing, setIsSavingSharing] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
 
+  const { entitlement, limits, accessSyncMessage } = useGradeGlowAccess(user);
+
   const {
     canUseCloudSocial,
     ownPublicProfile,
     friends,
     friendCode,
+    legacyFriendCode,
+    publishMessage,
     message,
     isBusy,
     addFriend,
     removeFriend,
-  } = useStudyFriends({ user, profile, exams });
+  } = useStudyFriends({ user, profile, exams, limits });
 
   const leaderboardRows = useMemo<CircleRow[]>(() => {
     return [
@@ -190,18 +196,23 @@ export default function StudyFriendsPanel({
             Füge Freunde per Code hinzu und vergleiche Lernzeit, Top-Fächer und Wochenfortschritt. Geteilt werden nur freiwillige Lernstatistiken — keine Noten, keine Module, keine privaten Notizen.
           </p>
         </div>
-        <button
-          type="button"
-          className={`rounded-2xl px-4 py-3 text-sm font-black ring-1 transition hover:-translate-y-0.5 disabled:opacity-50 ${
-            profile.studySharingEnabled
-              ? "bg-emerald-50 text-emerald-700 ring-emerald-100 hover:bg-emerald-100"
-              : "bg-slate-950 text-white ring-slate-900 hover:bg-violet-800"
-          }`}
-          onClick={toggleSharing}
-          disabled={!canUseCloudSocial || isSavingSharing}
-        >
-          {profile.studySharingEnabled ? "Sharing aktiv" : "Sharing aktivieren"}
-        </button>
+        <div className="flex flex-col gap-2 sm:items-end">
+          <span className="rounded-full bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-700 ring-1 ring-violet-100">
+            {planLabels[entitlement.plan]} · {accessSyncMessage}
+          </span>
+          <button
+            type="button"
+            className={`rounded-2xl px-4 py-3 text-sm font-black ring-1 transition hover:-translate-y-0.5 disabled:opacity-50 ${
+              profile.studySharingEnabled
+                ? "bg-emerald-50 text-emerald-700 ring-emerald-100 hover:bg-emerald-100"
+                : "bg-slate-950 text-white ring-slate-900 hover:bg-violet-800"
+            }`}
+            onClick={toggleSharing}
+            disabled={!canUseCloudSocial || isSavingSharing}
+          >
+            {profile.studySharingEnabled ? "Sharing aktiv" : "Sharing aktivieren"}
+          </button>
+        </div>
       </div>
 
       {!canUseCloudSocial && (
@@ -250,7 +261,10 @@ export default function StudyFriendsPanel({
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
               Dein Freundescode
             </p>
-            <p className="mt-2 break-all text-sm font-black text-white">{friendCode}</p>
+            <p className="mt-2 text-lg font-black tracking-wide text-white">{friendCode}</p>
+            <p className="mt-1 break-all text-[0.7rem] font-semibold leading-5 text-slate-500">
+              Legacy-UID: {legacyFriendCode}
+            </p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
@@ -260,7 +274,7 @@ export default function StudyFriendsPanel({
                 Code kopieren
               </button>
               <p className="flex items-center text-xs font-semibold leading-5 text-slate-400">
-                {copyMessage || "Teile den Code nur mit Leuten, die dich hinzufügen dürfen."}
+                {copyMessage || publishMessage || "Teile den Code nur mit Leuten, die dich hinzufügen dürfen."}
               </p>
             </div>
           </div>
@@ -293,6 +307,7 @@ export default function StudyFriendsPanel({
             <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
               <p className="text-xs font-bold text-slate-500">Freunde</p>
               <p className="mt-1 text-2xl font-black text-slate-950">{friends.length}</p>
+              <p className="mt-1 text-[0.68rem] font-bold text-slate-400">Limit: {formatLimit(limits.maxFriends)}</p>
             </div>
             <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
               <p className="text-xs font-bold text-slate-500">Circle diese Woche</p>
@@ -308,9 +323,9 @@ export default function StudyFriendsPanel({
             </div>
           </div>
 
-          {(message || copyMessage) && (
+          {(message || copyMessage || publishMessage) && (
             <p className="mt-3 rounded-2xl bg-white p-3 text-sm font-bold text-slate-600 ring-1 ring-slate-200">
-              {message || copyMessage}
+              {message || copyMessage || publishMessage}
             </p>
           )}
         </div>

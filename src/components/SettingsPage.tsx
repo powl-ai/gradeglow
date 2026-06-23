@@ -8,6 +8,8 @@ import { deleteUser, updateProfile } from "firebase/auth";
 import { collection, deleteDoc, doc, getDocs, writeBatch } from "firebase/firestore";
 import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { DEFAULT_TARGET_ECTS, useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
+import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
+import { formatLimit, planDescriptions, planLabels } from "../lib/gradeglowAccess";
 import { getUserModulesStorageKey } from "../lib/gradeglowModules";
 import { getUserExamsStorageKey } from "../lib/gradeglowExams";
 import type { AccentColor, AppUser, GradeGlowProfile, StartMode, ThemeMode } from "../types";
@@ -130,6 +132,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     profileSyncStatus,
     saveProfile,
   } = useGradeGlowProfile(user);
+  const { entitlement, limits, accessSyncMessage } = useGradeGlowAccess(user);
 
   const [displayName, setDisplayName] = useState("");
   const [university, setUniversity] = useState("");
@@ -602,6 +605,46 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-violet-700">Plan & Premium</p>
+                  <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">
+                    {planLabels[entitlement.plan]} Plan
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    {planDescriptions[entitlement.plan]}
+                  </p>
+                </div>
+                <span className="self-start rounded-full bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-700 ring-1 ring-violet-100">
+                  {accessSyncMessage}
+                </span>
+              </div>
+
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+                  <p className="text-xs font-bold text-slate-500">Freunde</p>
+                  <p className="mt-1 text-sm font-black text-slate-950">{formatLimit(limits.maxFriends)}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+                  <p className="text-xs font-bold text-slate-500">Prüfungen</p>
+                  <p className="mt-1 text-sm font-black text-slate-950">{formatLimit(limits.maxExams)}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+                  <p className="text-xs font-bold text-slate-500">Module</p>
+                  <p className="mt-1 text-sm font-black text-slate-950">{formatLimit(limits.maxModules)}</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+                  <p className="text-xs font-bold text-slate-500">Advanced Stats</p>
+                  <p className="mt-1 text-sm font-black text-slate-950">{limits.advancedStats ? "aktiv" : "Free-Basis"}</p>
+                </div>
+              </div>
+
+              <p className="mt-4 rounded-2xl bg-slate-50 p-3 text-xs font-semibold leading-5 text-slate-500 ring-1 ring-slate-200">
+                Manuelle Freischaltung läuft später über Firebase Console im Dokument <span className="font-black text-slate-700">entitlements/{user.uid}</span>. User können dieses Dokument nur lesen, nicht selbst schreiben.
+              </p>
             </div>
 
             <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">

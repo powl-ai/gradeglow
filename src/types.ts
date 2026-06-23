@@ -12,6 +12,28 @@ export type ThemeMode = "system" | "light" | "dark";
 
 export type AccentColor = "violet" | "pink" | "blue" | "emerald" | "amber";
 
+export type UserPlan = "free" | "premium" | "lifetime" | "admin";
+
+export type GradeGlowEntitlement = {
+  plan: UserPlan;
+  storedPlan: UserPlan;
+  premiumUntil: string;
+  premiumSource: string;
+  note: string;
+  updatedAtIso: string;
+  isManuallyGranted: boolean;
+};
+
+export type PlanLimits = {
+  maxFriends: number;
+  maxModules: number;
+  maxExams: number;
+  advancedStats: boolean;
+  premiumThemes: boolean;
+  exportBackup: boolean;
+  adsFree: boolean;
+};
+
 export type GradeGlowProfile = {
   displayName: string;
   university: string;
@@ -126,6 +148,7 @@ export type StudySubjectStat = {
 
 export type PublicStudyProfile = {
   uid: string;
+  friendCode: string;
   displayName: string;
   degreeProgram: string;
   avatarDataUrl: string;

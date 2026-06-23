@@ -1118,37 +1118,37 @@ export default function GradeGlowDashboard({
 
             <div className="relative flex flex-col gap-7 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
-                <div className="mb-5 flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 flex-wrap items-center gap-3">
-                    <GradeGlowLogo size="md" tone="light" />
-
-                    <div
-                      className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${getSyncStyle()}`}
-                    >
-                      {syncMessage}
-                    </div>
-
-                    <div className="hidden rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-violet-50 ring-1 ring-white/15 sm:block">
-                      {dataModel === "firestore-module-docs"
-                        ? "Modul-Dokumente"
-                        : "Lokales Array"}
-                    </div>
-
-                    {!isLoaded && (
-                      <div className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white/80 ring-1 ring-white/10">
-                        Lädt…
-                      </div>
-                    )}
-                  </div>
-
+                <div className="mb-5 flex min-w-0 flex-wrap items-center gap-3">
                   <button
                     type="button"
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-xl font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15"
+                    className="group relative shrink-0 rounded-2xl transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-fuchsia-200/70"
                     onClick={() => setIsNavigationOpen(true)}
                     aria-label="Menü öffnen"
+                    title="Menü öffnen"
                   >
-                    ☰
+                    <GradeGlowLogo size="md" tone="light" />
+                    <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[0.68rem] font-black leading-none text-slate-950 shadow-md ring-1 ring-white/50 transition group-hover:scale-105">
+                      ☰
+                    </span>
                   </button>
+
+                  <div
+                    className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${getSyncStyle()}`}
+                  >
+                    {syncMessage}
+                  </div>
+
+                  <div className="hidden rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-violet-50 ring-1 ring-white/15 sm:block">
+                    {dataModel === "firestore-module-docs"
+                      ? "Modul-Dokumente"
+                      : "Lokales Array"}
+                  </div>
+
+                  {!isLoaded && (
+                    <div className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white/80 ring-1 ring-white/10">
+                      Lädt…
+                    </div>
+                  )}
                 </div>
 
                 <p className="text-sm font-bold uppercase tracking-[0.35em] text-fuchsia-200/80">
@@ -1159,7 +1159,7 @@ export default function GradeGlowDashboard({
                 </h1>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
                   {activeNavItem.description}. Wechsel über die Quick-Rail oder
-                  oben rechts über das Menü in die anderen Bereiche.
+                  über das Logo-Menü links oben in die anderen Bereiche.
                 </p>
               </div>
 

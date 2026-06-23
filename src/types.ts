@@ -10,7 +10,7 @@ export type StartMode = "manual" | "stupo" | "template" | "demo";
 
 export type ThemeMode = "system" | "light" | "dark";
 
-export type AccentColor = "violet" | "pink" | "blue" | "emerald" | "amber";
+export type AccentColor = "violet" | "pink" | "blue" | "emerald" | "amber" | "cyan" | "rose";
 
 export type UserPlan = "free" | "premium" | "lifetime" | "admin";
 
@@ -54,6 +54,13 @@ export type GradeGlowProfile = {
   studyReminderNotificationsEnabled: boolean;
   friendActivityNotificationsEnabled: boolean;
   studyReminderTime: string;
+  lastStudyDateKey: string;
+  lastStudyCompletedAtIso: string;
+  currentStudyStreakDays: number;
+  maxStudyStreakDays: number;
+  purchasedCosmeticIds: string[];
+  activeAvatarFrameId: string;
+  activeProfileBannerId: string;
   themeMode: ThemeMode;
   accentColor: AccentColor;
 };
@@ -108,6 +115,8 @@ export type StudySessionItem = {
   isDone: boolean;
   isHidden: boolean;
   isManual: boolean;
+  startedAtIso?: string;
+  completedAtIso?: string;
 };
 
 export type ExamPlanItem = {

@@ -18,7 +18,7 @@ export const DEFAULT_TARGET_ECTS = 180;
 
 const validStartModes: StartMode[] = ["manual", "stupo", "template", "demo"];
 const validThemeModes: ThemeMode[] = ["system", "light", "dark"];
-const validAccentColors: AccentColor[] = ["violet", "pink", "blue", "emerald", "amber"];
+const validAccentColors: AccentColor[] = ["violet", "pink", "blue", "emerald", "amber", "cyan", "rose"];
 
 const parseTargetEcts = (value: unknown) => {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
@@ -68,6 +68,12 @@ const getAvatarDataUrl = (value: unknown) => {
 const getShareFlag = (value: unknown) => value !== false;
 const getBooleanValue = (value: unknown, fallback = false) =>
   typeof value === "boolean" ? value : fallback;
+
+const getStringArrayValue = (value: unknown) =>
+  Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim())
+    : [];
+
 const getPositiveNumberValue = (value: unknown, fallback = 0) => {
   if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, Math.round(value));
   if (typeof value === "string") {
@@ -112,6 +118,13 @@ const migrateProfile = (
     studyReminderNotificationsEnabled: getBooleanValue(profileObject.studyReminderNotificationsEnabled),
     friendActivityNotificationsEnabled: getBooleanValue(profileObject.friendActivityNotificationsEnabled),
     studyReminderTime: getReminderTime(profileObject.studyReminderTime),
+    lastStudyDateKey: getStringValue(profileObject.lastStudyDateKey),
+    lastStudyCompletedAtIso: getStringValue(profileObject.lastStudyCompletedAtIso),
+    currentStudyStreakDays: getPositiveNumberValue(profileObject.currentStudyStreakDays),
+    maxStudyStreakDays: getPositiveNumberValue(profileObject.maxStudyStreakDays),
+    purchasedCosmeticIds: getStringArrayValue(profileObject.purchasedCosmeticIds),
+    activeAvatarFrameId: getStringValue(profileObject.activeAvatarFrameId),
+    activeProfileBannerId: getStringValue(profileObject.activeProfileBannerId),
     themeMode: getThemeMode(profileObject.themeMode),
     accentColor: getAccentColor(profileObject.accentColor),
   };
@@ -143,6 +156,13 @@ export function useGradeGlowProfile(user: AppUser) {
       studyReminderNotificationsEnabled: false,
       friendActivityNotificationsEnabled: false,
       studyReminderTime: "19:00",
+      lastStudyDateKey: "",
+      lastStudyCompletedAtIso: "",
+      currentStudyStreakDays: 0,
+      maxStudyStreakDays: 0,
+      purchasedCosmeticIds: [],
+      activeAvatarFrameId: "",
+      activeProfileBannerId: "",
       themeMode: "system",
       accentColor: "violet",
     }),
@@ -250,7 +270,7 @@ export function useGradeGlowProfile(user: AppUser) {
             ...normalizedProfile,
             ownerUid: user.uid,
             updatedAt: serverTimestamp(),
-            version: 4,
+            version: 5,
           },
           { merge: true }
         );

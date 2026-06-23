@@ -55,7 +55,7 @@ const migrateStudySessions = (rawSessions: unknown, examId: string): StudySessio
   if (!Array.isArray(rawSessions)) return [];
 
   return rawSessions
-    .map((rawSession) => {
+    .map((rawSession): StudySessionItem | null => {
       if (typeof rawSession !== "object" || rawSession === null) return null;
       const record = rawSession as Record<string, unknown>;
       const dateKey = asString(record.dateKey).trim();
@@ -73,6 +73,8 @@ const migrateStudySessions = (rawSessions: unknown, examId: string): StudySessio
         isDone: record.isDone === true,
         isHidden: record.isHidden === true,
         isManual: record.isManual === true,
+        startedAtIso: asString(record.startedAtIso).trim() || undefined,
+        completedAtIso: asString(record.completedAtIso).trim() || undefined,
       } satisfies StudySessionItem;
     })
     .filter((session): session is StudySessionItem => Boolean(session));

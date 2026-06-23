@@ -10,6 +10,7 @@ import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { DEFAULT_TARGET_ECTS, useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { formatLimit, planDescriptions, planLabels } from "../lib/gradeglowAccess";
+import { STREAK_BADGES, getAvatarFrameWrapperClassName, getProfileBannerClassName } from "../lib/glowRewards";
 import { getUserModulesStorageKey } from "../lib/gradeglowModules";
 import { getUserExamsStorageKey } from "../lib/gradeglowExams";
 import type { AccentColor, AppUser, GradeGlowProfile, StartMode, ThemeMode } from "../types";
@@ -33,12 +34,14 @@ const themeModeLabels: { value: ThemeMode; label: string; description: string }[
   { value: "dark", label: "Dark", description: "dunkle App" },
 ];
 
-const accentColorLabels: { value: AccentColor; label: string; dotClassName: string }[] = [
+const accentColorLabels: { value: AccentColor; label: string; dotClassName: string; unlockId?: string }[] = [
   { value: "violet", label: "Violett", dotClassName: "bg-violet-500" },
   { value: "pink", label: "Pink", dotClassName: "bg-pink-500" },
   { value: "blue", label: "Blau", dotClassName: "bg-blue-500" },
   { value: "emerald", label: "Emerald", dotClassName: "bg-emerald-500" },
   { value: "amber", label: "Amber", dotClassName: "bg-amber-500" },
+  { value: "cyan", label: "Cyan", dotClassName: "bg-cyan-500", unlockId: "accent-cyan" },
+  { value: "rose", label: "Rose", dotClassName: "bg-rose-500", unlockId: "accent-rose" },
 ];
 
 const getThemeClassName = (themeMode: ThemeMode) => {
@@ -349,8 +352,10 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   const userLabel = profile.displayName || user.displayName || user.email || "GradeGlow User";
   const userInitial = userLabel.trim().charAt(0).toUpperCase() || "G";
   const avatarSource = avatarDataUrl || profile.avatarDataUrl || user.photoURL || "";
-  const renderAvatar = (className: string, fallback = userInitial) =>
-    avatarSource ? (
+  const avatarFrameWrapperClassName = getAvatarFrameWrapperClassName(profile.activeAvatarFrameId);
+  const profileBannerClassName = getProfileBannerClassName(profile.activeProfileBannerId);
+  const renderAvatar = (className: string, fallback = userInitial) => {
+    const avatar = avatarSource ? (
       <div
         className={`${className} bg-cover bg-center`}
         style={{ backgroundImage: `url(${avatarSource})` }}
@@ -360,6 +365,13 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     ) : (
       <div className={className}>{fallback}</div>
     );
+
+    return avatarFrameWrapperClassName ? (
+      <div className={`${avatarFrameWrapperClassName} shrink-0 rounded-[1.7rem]`}>
+        {avatar}
+      </div>
+    ) : avatar;
+  };
 
   return (
     <main className={`gg-themed ${themeClassName} min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950`} data-accent={accentColor} style={themeStyle}>
@@ -394,7 +406,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                 </p>
               </div>
 
-              <div className="flex w-full min-w-0 flex-col gap-3 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur sm:min-w-80 lg:w-auto">
+              <div className={`flex w-full min-w-0 flex-col gap-3 rounded-3xl p-4 ring-1 ring-white/10 backdrop-blur sm:min-w-80 lg:w-auto ${profileBannerClassName === "bg-slate-950" ? "bg-white/10" : profileBannerClassName}`}>
                 <div className="flex items-center gap-3">
                   {renderAvatar("flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10")}
                   <div className="min-w-0 flex-1">
@@ -548,17 +560,23 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                 <div>
                   <span className="mb-2 block text-sm font-bold text-slate-700">Akzentfarbe</span>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {accentColorLabels.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={`flex items-center gap-2 rounded-2xl px-3 py-3 text-sm font-black ring-1 transition hover:-translate-y-0.5 ${accentColor === option.value ? "bg-slate-950 text-white ring-slate-900" : "bg-white text-slate-700 ring-slate-200 hover:bg-violet-50"}`}
-                        onClick={() => setAccentColor(option.value)}
-                      >
-                        <span className={`h-4 w-4 shrink-0 rounded-full ${option.dotClassName}`} />
-                        <span>{option.label}</span>
-                      </button>
-                    ))}
+                    {accentColorLabels.map((option) => {
+                      const isLocked = Boolean(option.unlockId && !profile.purchasedCosmeticIds.includes(option.unlockId) && accentColor !== option.value);
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={`flex items-center gap-2 rounded-2xl px-3 py-3 text-sm font-black ring-1 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${accentColor === option.value ? "bg-slate-950 text-white ring-slate-900" : "bg-white text-slate-700 ring-slate-200 hover:bg-violet-50"}`}
+                          onClick={() => setAccentColor(option.value)}
+                          disabled={isLocked}
+                          title={isLocked ? "Im Glow Shop freischalten" : option.label}
+                        >
+                          <span className={`h-4 w-4 shrink-0 rounded-full ${option.dotClassName}`} />
+                          <span>{option.label}</span>
+                          {isLocked && <span className="text-[0.6rem] font-black text-slate-400">Shop</span>}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -586,7 +604,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
             <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
               <p className="text-sm font-bold text-violet-700">Vorschau</p>
               <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">So erscheint es in GradeGlow</h2>
-              <div className="mt-5 rounded-3xl bg-slate-950 p-5 text-white shadow-lg shadow-violet-950/15">
+              <div className={`mt-5 rounded-3xl p-5 text-white shadow-lg shadow-violet-950/15 ${profileBannerClassName}`}>
                 <div className="flex items-center gap-3">
                   {renderAvatar("flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10", (displayName.trim() || "G").charAt(0).toUpperCase())}
                   <div className="min-w-0 flex-1">
@@ -604,6 +622,22 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                     <p className="mt-1 text-sm font-black">{startModeLabels[preferredStartMode]}</p>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+              <p className="text-sm font-bold text-violet-700">Streak-Abzeichen</p>
+              <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Max-Streak: {profile.maxStudyStreakDays} Tage</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">Diese Abzeichen richten sich nach deinem besten Lernstreak und gehen nicht verloren, wenn du später einen Tag verpasst.</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {STREAK_BADGES.map((badge) => {
+                  const unlocked = profile.maxStudyStreakDays >= badge.threshold;
+                  return (
+                    <span key={badge.id} className={`rounded-2xl px-3 py-2 text-xs font-black ring-1 ${unlocked ? "bg-violet-700 text-white ring-violet-600" : "bg-slate-50 text-slate-400 ring-slate-200"}`} title={badge.description}>
+                      {badge.emoji} {badge.label}
+                    </span>
+                  );
+                })}
               </div>
             </div>
 

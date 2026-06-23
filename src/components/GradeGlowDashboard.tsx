@@ -17,6 +17,7 @@ import { useGradeGlowModules } from "../hooks/useGradeGlowModules";
 import { useGradeGlowExams } from "../hooks/useGradeGlowExams";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { formatLimit, planLabels } from "../lib/gradeglowAccess";
+import { getAvatarFrameWrapperClassName, getProfileBannerClassName } from "../lib/glowRewards";
 import {
   DEFAULT_TARGET_ECTS,
   useGradeGlowProfile,
@@ -944,6 +945,8 @@ export default function GradeGlowDashboard({
     profile.displayName || user.displayName || user.email || "GradeGlow User";
   const userInitial = userLabel.trim().charAt(0).toUpperCase() || "G";
   const avatarSource = profile.avatarDataUrl || user.photoURL || "";
+  const avatarFrameWrapperClassName = getAvatarFrameWrapperClassName(profile.activeAvatarFrameId);
+  const profileBannerClassName = getProfileBannerClassName(profile.activeProfileBannerId);
   const degreeProgramLabel =
     profile.degreeProgram || "Studiengang noch nicht gesetzt";
   const activeNavItem =
@@ -954,8 +957,8 @@ export default function GradeGlowDashboard({
       : null;
   const isInsightsVisible = page === "insights" || isInsightsOpen;
   const isBackupVisible = page === "backup" || isToolsOpen;
-  const renderAvatar = (className: string) =>
-    avatarSource ? (
+  const renderAvatar = (className: string) => {
+    const avatar = avatarSource ? (
       <div
         className={`${className} bg-cover bg-center`}
         style={{ backgroundImage: `url(${avatarSource})` }}
@@ -965,6 +968,13 @@ export default function GradeGlowDashboard({
     ) : (
       <div className={className}>{userInitial}</div>
     );
+
+    return avatarFrameWrapperClassName ? (
+      <div className={`${avatarFrameWrapperClassName} shrink-0 rounded-[1.35rem]`}>
+        {avatar}
+      </div>
+    ) : avatar;
+  };
 
   if (isProfileLoaded && !profile.onboardingCompleted) {
     if (!isLoaded || !areExamsLoaded) {
@@ -1030,7 +1040,7 @@ export default function GradeGlowDashboard({
                 </button>
               </div>
 
-              <div className="mt-4 rounded-3xl bg-slate-950 p-4 text-white ring-1 ring-slate-900">
+              <div className={`mt-4 rounded-3xl p-4 text-white ring-1 ring-slate-900 ${profileBannerClassName}`}>
                 <div className="flex items-center gap-3">
                   {renderAvatar("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10")}
                   <div className="min-w-0 flex-1">
@@ -1177,7 +1187,7 @@ export default function GradeGlowDashboard({
                 </p>
               </div>
 
-              <div className="hidden w-full min-w-0 flex-col gap-3 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur sm:min-w-80 lg:flex lg:w-auto">
+              <div className={`hidden w-full min-w-0 flex-col gap-3 rounded-3xl p-4 ring-1 ring-white/10 backdrop-blur sm:min-w-80 lg:flex lg:w-auto ${profileBannerClassName === "bg-slate-950" ? "bg-white/10" : profileBannerClassName}`}>
                 <div className="flex items-center gap-3">
                   {renderAvatar("flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10")}
                   <div className="min-w-0 flex-1">
@@ -1801,7 +1811,52 @@ export default function GradeGlowDashboard({
                               >
                                 {!isEditing ? (
                                   <>
-                                    <div className="p-4 sm:p-5">
+                                    <button
+                                      type="button"
+                                      className="flex w-full flex-col gap-3 p-4 text-left transition hover:bg-violet-50/60 sm:p-5 lg:flex-row lg:items-center lg:justify-between"
+                                      onClick={() => toggleAssessments(module.id)}
+                                      aria-expanded={Boolean(expandedModules[module.id])}
+                                    >
+                                      <div className="min-w-0 flex-1">
+                                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                                          <span className={`rounded-full px-3 py-1 text-xs font-black ${getStatusStyle(effectiveStatus)}`}>
+                                            {getStatusLabel(effectiveStatus)}
+                                          </span>
+                                          {module.assessments.length > 0 && (
+                                            <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700 ring-1 ring-violet-100">
+                                              {module.assessments.length} Leistung(en)
+                                            </span>
+                                          )}
+                                          {(module.attemptCount ?? 0) > 0 && (
+                                            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700 ring-1 ring-amber-100">
+                                              Versuch {module.attemptCount}/{module.maxAttempts ?? 3}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <h4 className="truncate text-lg font-black tracking-tight sm:text-xl">{module.name}</h4>
+                                      </div>
+
+                                      <div className="grid w-full grid-cols-4 gap-2 text-center lg:w-auto lg:min-w-[24rem]">
+                                        <div className="rounded-2xl bg-slate-50 p-2 ring-1 ring-slate-100">
+                                          <p className="text-[0.65rem] font-bold uppercase tracking-wide text-slate-400">Sem.</p>
+                                          <p className="mt-0.5 text-sm font-black">S{module.semester}</p>
+                                        </div>
+                                        <div className="rounded-2xl bg-slate-50 p-2 ring-1 ring-slate-100">
+                                          <p className="text-[0.65rem] font-bold uppercase tracking-wide text-slate-400">ECTS</p>
+                                          <p className="mt-0.5 text-sm font-black">{formatCompactNumber(module.ects)}</p>
+                                        </div>
+                                        <div className="rounded-2xl bg-slate-50 p-2 ring-1 ring-slate-100">
+                                          <p className="text-[0.65rem] font-bold uppercase tracking-wide text-slate-400">Schnitt</p>
+                                          <p className="mt-0.5 text-sm font-black">{finalGrade !== null ? formatGrade(finalGrade) : "—"}</p>
+                                        </div>
+                                        <div className="rounded-2xl bg-white p-2 text-lg font-black text-slate-500 ring-1 ring-slate-200">
+                                          {expandedModules[module.id] ? "−" : "+"}
+                                        </div>
+                                      </div>
+                                    </button>
+
+                                    {expandedModules[module.id] && (
+                                      <div className="border-t border-slate-100 p-4 sm:p-5">
                                       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                                         <div className="min-w-0 flex-1">
                                           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -1988,7 +2043,8 @@ export default function GradeGlowDashboard({
                                             : "+"}
                                         </span>
                                       </button>
-                                    </div>
+                                      </div>
+                                    )}
 
                                     {expandedModules[module.id] && (
                                       <div className="border-t border-slate-100 bg-slate-50/70 p-4 sm:p-5">

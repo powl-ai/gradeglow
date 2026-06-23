@@ -12,6 +12,8 @@ import {
   getNextStudyReminderAt,
   getPageThemePreviewClassName,
   getProfileBannerClassName,
+  STUDY_SESSION_REWARD_MINUTES,
+  STUDY_SESSION_REWARD_POINTS_PER_STEP,
   normalizePurchasedCosmetics,
   ownsCosmetic,
 } from "../lib/glowRewards";
@@ -282,6 +284,7 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile, limits, 
               <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
                 <p className="text-xs text-white/70">Session Rewards</p>
                 <p className="mt-1 text-2xl font-black">{profile.totalStudySessionRewards}</p>
+                <p className="mt-1 text-[0.68rem] font-bold text-white/60">{STUDY_SESSION_REWARD_POINTS_PER_STEP} GP pro {STUDY_SESSION_REWARD_MINUTES} min</p>
               </div>
               <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
                 <p className="text-xs text-white/70">Daily Login</p>

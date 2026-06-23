@@ -19,7 +19,7 @@ import {
 import type { AppUser, ExamPlanItem, SyncStatus } from "../types";
 
 const EXAM_COLLECTION_NAME = "exams";
-const SAVE_DEBOUNCE_MS = 600;
+const SAVE_DEBOUNCE_MS = 350;
 
 const serializeExams = (exams: ExamPlanItem[]) => JSON.stringify(exams);
 const serializeExam = (exam: ExamPlanItem) => JSON.stringify(exam);
@@ -107,10 +107,10 @@ export function useGradeGlowExams(user: AppUser): UseGradeGlowExamsResult {
 
     return () => {
       unsubscribe();
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-        saveTimeoutRef.current = null;
-      }
+      // Wichtig: pending Cloud-Saves nicht abbrechen. Sonst können manuell
+      // angelegte Lerneinheiten beim Seitenwechsel lokal Punkte vergeben,
+      // aber nie in Firestore landen und später durch den alten Cloud-Stand
+      // überschrieben werden. Der Timeout darf nach dem Unmount committen.
     };
   }, [shouldUseCloudSync, storageKey, user.uid]);
 

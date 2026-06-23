@@ -81,7 +81,7 @@ export default function PlanUsagePanel({ plan, limits, modulesCount, examsCount,
                 </span>
               </div>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
-                <div className={`h-full rounded-full ${getUsageClassName(state)}`} style={{ width: `${percent}%` }} />
+                <div className={`h-full rounded-full ${state === "blocked" ? getUsageClassName(state) : "gg-plan-usage-fill"}`} style={{ width: `${percent}%` }} />
               </div>
             </div>
           );

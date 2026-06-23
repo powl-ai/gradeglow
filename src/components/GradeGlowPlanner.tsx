@@ -610,6 +610,8 @@ export default function GradeGlowPlanner({
   }, [activeTimer]);
 
   useEffect(() => {
+    if (!hasRestoredTimer) return;
+
     try {
       if (!activeTimer) {
         localStorage.removeItem(ACTIVE_TIMER_STORAGE_KEY);
@@ -619,7 +621,7 @@ export default function GradeGlowPlanner({
     } catch {
       // localStorage can be unavailable in private mode; the timer still works in memory.
     }
-  }, [activeTimer]);
+  }, [activeTimer, hasRestoredTimer]);
 
   useEffect(() => {
     rewardedSessionIdsRef.current = new Set(normalizeRewardedStudySessionIds(profile.rewardedStudySessionIds));
@@ -1206,7 +1208,7 @@ export default function GradeGlowPlanner({
               <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-fuchsia-700 ring-1 ring-fuchsia-100">{thisWeekProgress}%</span>
             </div>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-fuchsia-100">
-              <div className="h-full rounded-full bg-fuchsia-500" style={{ width: `${thisWeekProgress}%` }} />
+              <div className="h-full rounded-full gg-chart-fill" style={{ width: `${thisWeekProgress}%` }} />
             </div>
             <p className="mt-2 text-sm font-semibold text-fuchsia-600">{formatMinutes(thisWeekDoneMinutes)} erledigt · {formatMinutes(thisWeekRemainingMinutes)} offen</p>
           </div>
@@ -1628,7 +1630,7 @@ export default function GradeGlowPlanner({
                     <p className="mt-1 text-sm font-semibold text-slate-500">{kind?.label ?? "Termin"} · {formatDate(exam.examDate)}{exam.examTime && ` · ${formatTime(exam.examTime)}`}{exam.moduleName && ` · ${exam.moduleName}`}</p>
                     <p className="mt-1 text-sm text-slate-500">Lernstart {exam.studyStartDays} Tage vorher · {progress.doneSessions}/{progress.totalSessions} Sessions · {formatMinutes(progress.remainingMinutes)} offen</p>
                     <div className="mt-3 h-2 overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
-                      <div className={`h-full rounded-full ${getProgressClassName(progress.percentage)}`} style={{ width: `${progress.percentage}%` }} />
+                      <div className={`h-full rounded-full ${progress.percentage > 0 ? "gg-chart-fill" : getProgressClassName(progress.percentage)}`} style={{ width: `${progress.percentage}%` }} />
                     </div>
                     <p className="mt-1 text-xs font-black text-slate-400">{progress.percentage}% Lernfortschritt</p>
                     {exam.notes && <p className="mt-3 text-sm leading-6 text-slate-600">{exam.notes}</p>}
@@ -1667,7 +1669,7 @@ export default function GradeGlowPlanner({
                     <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><span className="text-xs text-slate-400">Einheit min</span><input className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-2 py-1 text-lg font-black text-white outline-none" inputMode="numeric" value={getExamSessionGoal(focusedExam)} onChange={(event) => { const value = clampMinutes(Number(event.target.value) || DEFAULT_SESSION_GOAL_MINUTES, DEFAULT_SESSION_GOAL_MINUTES, 15, getExamDailyLimit(focusedExam)); updateExam(focusedExam.id, (exam) => ({ ...exam, sessionGoalMinutes: value })); }} /></label>
                   </div>
                   <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10 ring-1 ring-white/10">
-                    <div className="h-full rounded-full bg-emerald-400" style={{ width: `${focusedProgress?.percentage ?? 0}%` }} />
+                    <div className="h-full rounded-full gg-chart-fill" style={{ width: `${focusedProgress?.percentage ?? 0}%` }} />
                   </div>
                   <p className="mt-2 text-xs font-black text-slate-400">{focusedProgress?.percentage ?? 0}% Fortschritt · {focusedProgress?.doneSessions ?? 0}/{focusedProgress?.totalSessions ?? 0} Sessions erledigt</p>
                 </div>

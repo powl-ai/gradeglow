@@ -45,10 +45,10 @@ export const GLOW_COSMETICS: GlowCosmeticItem[] = [
   {
     id: "theme-night-library",
     kind: "pageTheme",
-    title: "Night Library Theme",
-    description: "Premium: färbt die komplette App dunkel, ruhig und library-like ein.",
+    title: "Rose Bloom Theme",
+    description: "Premium: färbt die komplette App weich, rosé und deutlich anders als Dark Mode ein.",
     cost: 220,
-    previewClassName: "from-slate-950 via-indigo-950 to-violet-900",
+    previewClassName: "from-rose-100 via-pink-200 to-fuchsia-300",
     pageThemeId: "theme-night-library",
     premiumOnly: true,
   },
@@ -81,10 +81,10 @@ export const GLOW_COSMETICS: GlowCosmeticItem[] = [
   {
     id: "banner-night",
     kind: "profileBanner",
-    title: "Night Library",
-    description: "Dunkler Profilbanner mit Glow-Effekt.",
+    title: "Rose Bloom",
+    description: "Rosaner Profilbanner mit weichem Glow-Effekt.",
     cost: 140,
-    previewClassName: "from-slate-950 via-indigo-950 to-violet-900",
+    previewClassName: "from-rose-200 via-pink-300 to-fuchsia-400",
   },
   {
     id: "banner-sunrise",
@@ -107,7 +107,8 @@ export const STREAK_BADGES: StreakBadge[] = [
 export const normalizePurchasedCosmetics = (ids: string[]) => Array.from(new Set(ids.filter(Boolean)));
 
 export const STUDY_SESSION_REWARD_MINUTES = 10;
-export const STUDY_SESSION_REWARD_BASE_POINTS = 8;
+export const STUDY_SESSION_REWARD_POINTS_PER_STEP = 1;
+export const STUDY_SESSION_REWARD_MAX_POINTS = 30;
 
 export const normalizeRewardedStudySessionIds = (ids: string[]) =>
   Array.from(new Set(ids.filter(Boolean)));
@@ -115,7 +116,10 @@ export const normalizeRewardedStudySessionIds = (ids: string[]) =>
 export const getStudySessionRewardPoints = (durationMinutes: number) => {
   const safeDuration = Math.max(0, Math.round(Number(durationMinutes) || 0));
   if (safeDuration < STUDY_SESSION_REWARD_MINUTES) return 0;
-  return Math.min(40, STUDY_SESSION_REWARD_BASE_POINTS + Math.floor(safeDuration / 20) * 4);
+  return Math.min(
+    STUDY_SESSION_REWARD_MAX_POINTS,
+    Math.floor(safeDuration / STUDY_SESSION_REWARD_MINUTES) * STUDY_SESSION_REWARD_POINTS_PER_STEP,
+  );
 };
 
 export const ownsCosmetic = (profile: GradeGlowProfile, cosmeticId: string) =>
@@ -146,7 +150,7 @@ export const getAvatarFrameWrapperClassName = (frameId: string) => {
 export const getProfileBannerClassName = (bannerId: string) => {
   switch (bannerId) {
     case "banner-night":
-      return "bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900";
+      return "bg-gradient-to-br from-rose-200 via-pink-300 to-fuchsia-400 text-slate-950";
     case "banner-sunrise":
       return "bg-gradient-to-br from-orange-200 via-pink-300 to-violet-400 text-slate-950";
     default:
@@ -158,7 +162,7 @@ export const getProfileBannerClassName = (bannerId: string) => {
 export const getPageThemePreviewClassName = (themeId: string) => {
   switch (themeId) {
     case "theme-night-library":
-      return "bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 text-white";
+      return "bg-gradient-to-br from-rose-100 via-pink-200 to-fuchsia-300 text-slate-950";
     case "theme-study-sunrise":
       return "bg-gradient-to-br from-orange-100 via-pink-200 to-violet-300 text-slate-950";
     default:

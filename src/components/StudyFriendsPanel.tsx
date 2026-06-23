@@ -99,7 +99,7 @@ const SubjectBars = ({ profile }: { profile: PublicStudyProfile }) => {
           </div>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500"
+              className="h-full rounded-full gg-chart-fill"
               style={{ width: `${Math.min((subject.doneMinutes / maxMinutes) * 100, 100)}%` }}
             />
           </div>

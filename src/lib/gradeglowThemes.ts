@@ -19,9 +19,9 @@ export const PAGE_THEMES: GradeGlowPageTheme[] = [
   },
   {
     id: "theme-night-library",
-    title: "Night Library",
-    description: "Dunkle Library-Farben für die gesamte App, inklusive Karten und Diagramme.",
-    previewClassName: "from-slate-950 via-indigo-950 to-violet-900",
+    title: "Rose Bloom",
+    description: "Rosanes Premium-Theme für die gesamte App, inklusive Karten, Buttons und Diagramme.",
+    previewClassName: "from-rose-100 via-pink-200 to-fuchsia-300",
     isPremium: true,
   },
   {

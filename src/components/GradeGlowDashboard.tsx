@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, CSSProperties, FormEvent } from "react";
 import GlowRewardsPanel from "./GlowRewardsPanel";
 import GradeGlowInsights from "./GradeGlowInsights";
@@ -153,6 +153,48 @@ const emptyAssessmentInput: AssessmentInput = {
   grade: "",
 };
 
+const ACTIVE_TIMER_STORAGE_KEY = "gradeglow-active-study-timer-v1";
+
+type StoredActiveStudyTimer = {
+  examId: string;
+  sessionId: string | null;
+  title: string;
+  startedAt: number;
+  mode: "stopwatch" | "focus" | "pomodoro";
+  goalMinutes: number;
+};
+
+const readStoredActiveStudyTimer = (): StoredActiveStudyTimer | null => {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const rawTimer = window.localStorage.getItem(ACTIVE_TIMER_STORAGE_KEY);
+    if (!rawTimer) return null;
+    const parsed = JSON.parse(rawTimer) as Partial<StoredActiveStudyTimer>;
+    if (!parsed.examId || typeof parsed.startedAt !== "number" || !Number.isFinite(parsed.startedAt)) return null;
+    return {
+      examId: String(parsed.examId),
+      sessionId: typeof parsed.sessionId === "string" ? parsed.sessionId : null,
+      title: typeof parsed.title === "string" && parsed.title.trim() ? parsed.title : "Lernsession",
+      startedAt: parsed.startedAt,
+      mode: parsed.mode === "stopwatch" || parsed.mode === "pomodoro" || parsed.mode === "focus" ? parsed.mode : "focus",
+      goalMinutes: Math.max(1, Math.round(Number(parsed.goalMinutes) || 90)),
+    };
+  } catch {
+    return null;
+  }
+};
+
+const formatCompactDuration = (seconds: number) => {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const rest = safeSeconds % 60;
+  if (hours > 0) return `${hours}:${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+  return `${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+};
+
+
 export default function GradeGlowDashboard({
   user,
   onLogout,
@@ -198,12 +240,35 @@ export default function GradeGlowDashboard({
   const [moduleLimitMessage, setModuleLimitMessage] = useState("");
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
 
+
+  const [globalTimer, setGlobalTimer] = useState<StoredActiveStudyTimer | null>(null);
+  const [globalTimerNow, setGlobalTimerNow] = useState(() => Date.now());
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const { profile, isProfileLoaded, saveProfile } = useGradeGlowProfile(user);
   const themeClassName = getThemeClassName(profile.themeMode);
   const effectivePageThemeId = getEffectivePageThemeId(profile.activePageThemeId, limits.premiumThemes);
   const themeStyle = getThemeStyle(profile.accentColor, effectivePageThemeId);
+
+  useEffect(() => {
+    const syncTimer = () => {
+      setGlobalTimer(readStoredActiveStudyTimer());
+      setGlobalTimerNow(Date.now());
+    };
+
+    syncTimer();
+    const interval = window.setInterval(syncTimer, 1000);
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === ACTIVE_TIMER_STORAGE_KEY) syncTimer();
+    };
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
 
   const totalTargetEcts =
     profile.targetEcts > 0 ? profile.targetEcts : DEFAULT_TARGET_ECTS;
@@ -953,6 +1018,10 @@ export default function GradeGlowDashboard({
     profile.degreeProgram || "Studiengang noch nicht gesetzt";
   const activeNavItem =
     dashboardNavItems.find((item) => item.id === page) ?? dashboardNavItems[0];
+  const globalTimerExam = globalTimer ? exams.find((exam) => exam.id === globalTimer.examId) ?? null : null;
+  const globalTimerElapsedSeconds = globalTimer ? Math.max(0, Math.floor((globalTimerNow - globalTimer.startedAt) / 1000)) : 0;
+  const globalTimerModeLabel = globalTimer?.mode === "pomodoro" ? "Pomodoro" : globalTimer?.mode === "stopwatch" ? "Stoppuhr" : "Fokus-Timer";
+
   const selectedModule =
     selectedModuleId !== null
       ? modules.find((module) => module.id === selectedModuleId) ?? null
@@ -1240,6 +1309,23 @@ export default function GradeGlowDashboard({
           </div>
         </header>
 
+        {globalTimer && page !== "exams" && (
+          <section className="rounded-3xl bg-slate-950 p-4 text-white shadow-xl shadow-violet-950/10 ring-1 ring-white/10 sm:p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-fuchsia-200">Lernsession läuft weiter</p>
+                <h2 className="mt-1 text-lg font-black">{globalTimer.title || globalTimerExam?.title || "Lernsession"}</h2>
+                <p className="mt-1 text-sm font-semibold text-slate-300">
+                  {globalTimerModeLabel} · {formatCompactDuration(globalTimerElapsedSeconds)} aktiv{globalTimerExam ? ` · ${globalTimerExam.title}` : ""}
+                </p>
+              </div>
+              <Link href="/exams" className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-black text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-50">
+                Timer öffnen
+              </Link>
+            </div>
+          </section>
+        )}
+
         <nav
           className="sticky top-[calc(env(safe-area-inset-top,0px)+0.5rem)] z-30 -mx-3 overflow-x-auto px-3 pb-1 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
           aria-label="GradeGlow Schnellnavigation"
@@ -1379,7 +1465,7 @@ export default function GradeGlowDashboard({
 
               <div className="h-4 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 transition-all duration-500"
+                  className="h-full rounded-full gg-overview-progress transition-all duration-500"
                   style={{ width: `${Math.min(analytics.progress, 100)}%` }}
                 />
               </div>
@@ -1940,7 +2026,7 @@ export default function GradeGlowDashboard({
                                               </div>
                                               <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                                                 <div
-                                                  className={`h-full rounded-full ${totalAssessmentWeight > 100 ? "bg-rose-500" : "bg-violet-600"}`}
+                                                  className={`h-full rounded-full ${totalAssessmentWeight > 100 ? "bg-rose-500" : "gg-module-progress"}`}
                                                   style={{
                                                     width: `${weightProgress}%`,
                                                   }}

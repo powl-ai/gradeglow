@@ -611,7 +611,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                   </div>
                   {!limits.premiumThemes && (
                     <p className="mt-2 rounded-2xl bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800 ring-1 ring-amber-100">
-                      Night Library und Study Sunrise als komplette App-Themes sind Premium. Free kann weiterhin Akzentfarben und Profilkosmetik nutzen.
+                      Rose Bloom und Study Sunrise als komplette App-Themes sind Premium. Free kann weiterhin Akzentfarben und Profilkosmetik nutzen.
                     </p>
                   )}
                 </div>

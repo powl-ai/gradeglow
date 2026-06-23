@@ -388,7 +388,7 @@ export default function ModuleDetailModal({
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                       <div
-                        className={`h-full rounded-full ${totalAssessmentWeight > 100 ? "bg-rose-500" : "bg-violet-600"}`}
+                        className={`h-full rounded-full ${totalAssessmentWeight > 100 ? "bg-rose-500" : "gg-module-progress"}`}
                         style={{ width: `${Math.min(totalAssessmentWeight, 100)}%` }}
                       />
                     </div>

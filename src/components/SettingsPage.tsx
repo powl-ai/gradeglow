@@ -87,6 +87,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeletingData, setIsDeletingData] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isRestartingOnboarding, setIsRestartingOnboarding] = useState(false);
 
   useEffect(() => {
     if (!isProfileLoaded) return;
@@ -231,6 +232,20 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
       );
     } finally {
       setIsDeletingAccount(false);
+    }
+  };
+
+  const restartOnboarding = async () => {
+    setFormMessage("");
+    setIsRestartingOnboarding(true);
+
+    try {
+      await saveProfile({ ...profile, onboardingCompleted: false });
+      window.location.href = "/";
+    } catch {
+      setFormMessage("Onboarding konnte nicht neu gestartet werden.");
+    } finally {
+      setIsRestartingOnboarding(false);
     }
   };
 
@@ -398,6 +413,22 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+              <p className="text-sm font-bold text-violet-700">Setup</p>
+              <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Onboarding erneut starten</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-500">
+                Starte den Einrichtungsassistenten nochmal, ohne Module, Prüfungen oder Accountdaten zu löschen. Praktisch, wenn du Demo-Daten testen oder den Startweg neu wählen willst.
+              </p>
+              <button
+                type="button"
+                className="mt-4 w-full rounded-2xl bg-violet-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-violet-100 transition hover:-translate-y-0.5 hover:bg-violet-800 disabled:opacity-50"
+                onClick={restartOnboarding}
+                disabled={isRestartingOnboarding || !isProfileLoaded}
+              >
+                {isRestartingOnboarding ? "Starte…" : "Onboarding erneut starten"}
+              </button>
             </div>
 
             <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-rose-100 backdrop-blur sm:p-6">

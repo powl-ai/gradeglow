@@ -11,6 +11,7 @@ import StudyPlanningPanel from "./StudyPlanningPanel";
 import OnboardingWizard from "./OnboardingWizard";
 import ModuleDetailModal from "./ModuleDetailModal";
 import { useGradeGlowModules } from "../hooks/useGradeGlowModules";
+import { useGradeGlowExams } from "../hooks/useGradeGlowExams";
 import {
   DEFAULT_TARGET_ECTS,
   useGradeGlowProfile,
@@ -133,6 +134,12 @@ export default function GradeGlowDashboard({
 }: GradeGlowDashboardProps) {
   const { modules, setModules, isLoaded, syncStatus, syncMessage, dataModel } =
     useGradeGlowModules(user);
+  const {
+    exams,
+    setExams,
+    isLoaded: areExamsLoaded,
+    syncMessage: examsSyncMessage,
+  } = useGradeGlowExams(user);
 
   const [name, setName] = useState("");
   const [ects, setEcts] = useState("");
@@ -912,7 +919,31 @@ export default function GradeGlowDashboard({
   const isBackupVisible = page === "backup" || isToolsOpen;
 
   if (isProfileLoaded && !profile.onboardingCompleted) {
-    return <OnboardingWizard profile={profile} saveProfile={saveProfile} />;
+    if (!isLoaded || !areExamsLoaded) {
+      return (
+        <main className="flex min-h-screen items-center justify-center bg-[#fbf7ff] px-4 text-slate-950">
+          <div className="rounded-[2rem] bg-white/90 p-6 text-center shadow-sm ring-1 ring-violet-100">
+            <p className="text-sm font-bold text-violet-700">GradeGlow Setup</p>
+            <h1 className="mt-2 text-2xl font-black tracking-tight">Daten werden vorbereitet…</h1>
+            <p className="mt-2 text-sm font-semibold text-slate-500">
+              Module und Prüfungen werden geladen, damit beim Demo-Start nichts überschrieben wird.
+            </p>
+          </div>
+        </main>
+      );
+    }
+
+    return (
+      <OnboardingWizard
+        user={user}
+        profile={profile}
+        modules={modules}
+        exams={exams}
+        saveProfile={saveProfile}
+        setModules={setModules}
+        setExams={setExams}
+      />
+    );
   }
 
   return (
@@ -1250,7 +1281,13 @@ export default function GradeGlowDashboard({
 
         {page === "exams" && (
           <section id="exams" className="scroll-mt-6">
-            <GradeGlowPlanner user={user} modules={modules} />
+            <GradeGlowPlanner
+              modules={modules}
+              exams={exams}
+              setExams={setExams}
+              isLoaded={areExamsLoaded}
+              syncMessage={examsSyncMessage}
+            />
           </section>
         )}
 
@@ -2232,8 +2269,9 @@ export default function GradeGlowDashboard({
 
         {selectedModule && (
           <ModuleDetailModal
-            user={user}
             module={selectedModule}
+            exams={exams}
+            examsLoaded={areExamsLoaded}
             onClose={() => setSelectedModuleId(null)}
             onDelete={() => deleteModule(selectedModule.id)}
             onStartEdit={() => {

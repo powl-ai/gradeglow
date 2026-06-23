@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useGradeGlowExams } from "../hooks/useGradeGlowExams";
-import type { AppUser, ExamPlanItem, ModuleStatus, UniModule } from "../types";
+import type { ExamPlanItem, ModuleStatus, UniModule } from "../types";
 
 type ModuleDetailModalProps = {
-  user: AppUser;
   module: UniModule;
+  exams: ExamPlanItem[];
+  examsLoaded: boolean;
   onClose: () => void;
   onDelete: () => void;
   onStartEdit: () => void;
@@ -206,14 +206,14 @@ const getRequirementText = ({
 };
 
 export default function ModuleDetailModal({
-  user,
   module,
+  exams,
+  examsLoaded,
   onClose,
   onDelete,
   onStartEdit,
   onUpdateModule,
 }: ModuleDetailModalProps) {
-  const { exams, isLoaded: examsLoaded } = useGradeGlowExams(user);
   const [notesInput, setNotesInput] = useState(module.notes);
   const [targetGradeInput, setTargetGradeInput] = useState(
     module.targetGrade !== null ? String(module.targetGrade).replace(".", ",") : "",

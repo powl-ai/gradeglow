@@ -1,15 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { useMemo, useState } from "react";
-import type { FormEvent } from "react";
-import type { GradeGlowProfile, StartMode } from "../types";
+import type { Dispatch, FormEvent, SetStateAction } from "react";
+import type { AppUser, ExamPlanItem, GradeGlowProfile, StartMode, UniModule } from "../types";
 import { DEFAULT_TARGET_ECTS } from "../hooks/useGradeGlowProfile";
 import GradeGlowLogo from "./GradeGlowLogo";
+import { createDemoGradeGlowData, DEMO_EXAM_MARKER, DEMO_SOURCE } from "../lib/demoData";
+import { db, isFirebaseConfigured } from "../lib/firebase";
 
 type OnboardingWizardProps = {
+  user: AppUser;
   profile: GradeGlowProfile;
+  modules: UniModule[];
+  exams: ExamPlanItem[];
   saveProfile: (profile: GradeGlowProfile) => Promise<void>;
+  setModules: Dispatch<SetStateAction<UniModule[]>>;
+  setExams: Dispatch<SetStateAction<ExamPlanItem[]>>;
 };
 
 const startOptions: {
@@ -42,8 +50,8 @@ const startOptions: {
   },
   {
     id: "demo",
-    title: "Erstmal Demo ansehen",
-    description: "Ohne Druck durch die App klicken und später starten.",
+    title: "Demo-Daten anlegen",
+    description: "Erstellt Beispielmodule, Prüfungen und Lerneinheiten zum Testen.",
     href: "/",
     emoji: "✨",
   },
@@ -53,7 +61,15 @@ const ectsPresets = [180, 210, 120, 90];
 
 const parseNumber = (value: string) => Number(value.replace(",", "."));
 
-export default function OnboardingWizard({ profile, saveProfile }: OnboardingWizardProps) {
+export default function OnboardingWizard({
+  user,
+  profile,
+  modules,
+  exams,
+  saveProfile,
+  setModules,
+  setExams,
+}: OnboardingWizardProps) {
   const [step, setStep] = useState(1);
   const [displayName, setDisplayName] = useState(profile.displayName);
   const [university, setUniversity] = useState(profile.university);
@@ -89,6 +105,66 @@ export default function OnboardingWizard({ profile, saveProfile }: OnboardingWiz
     };
   };
 
+  const seedDemoData = async () => {
+    const demoData = createDemoGradeGlowData();
+    const nextModules = [
+      ...modules.filter((module) => module.stupoSource !== DEMO_SOURCE),
+      ...demoData.modules,
+    ];
+    const nextExams = [
+      ...exams.filter((exam) => !exam.notes.includes(DEMO_EXAM_MARKER)),
+      ...demoData.exams,
+    ];
+
+    setModules(nextModules);
+    setExams(nextExams);
+
+    if (user.provider !== "firebase" || !isFirebaseConfigured || !db) return;
+
+    const firestore = db;
+    const batch = writeBatch(firestore);
+    const modulesCollectionRef = collection(firestore, "users", user.uid, "modules");
+    const examsCollectionRef = collection(firestore, "users", user.uid, "exams");
+
+    modules
+      .filter((module) => module.stupoSource === DEMO_SOURCE)
+      .forEach((module) => batch.delete(doc(modulesCollectionRef, module.id)));
+
+    exams
+      .filter((exam) => exam.notes.includes(DEMO_EXAM_MARKER))
+      .forEach((exam) => batch.delete(doc(examsCollectionRef, exam.id)));
+
+    demoData.modules.forEach((module) => {
+      batch.set(
+        doc(modulesCollectionRef, module.id),
+        {
+          ...module,
+          ownerUid: user.uid,
+          version: 2,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    });
+
+    demoData.exams.forEach((exam) => {
+      batch.set(
+        doc(examsCollectionRef, exam.id),
+        {
+          ...exam,
+          ownerUid: user.uid,
+          version: 1,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    });
+
+    await batch.commit();
+  };
+
   const finishOnboarding = async (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     setMessage("");
@@ -108,6 +184,10 @@ export default function OnboardingWizard({ profile, saveProfile }: OnboardingWiz
 
     setIsSaving(true);
     try {
+      if (preferredStartMode === "demo") {
+        await seedDemoData();
+      }
+
       await saveProfile(buildProfile(true));
       window.location.href = selectedOption.href;
     } catch {
@@ -121,6 +201,7 @@ export default function OnboardingWizard({ profile, saveProfile }: OnboardingWiz
     setIsSaving(true);
     try {
       await saveProfile({ ...buildProfile(true), preferredStartMode: "manual" });
+      window.location.href = "/modules";
     } finally {
       setIsSaving(false);
     }
@@ -224,7 +305,7 @@ export default function OnboardingWizard({ profile, saveProfile }: OnboardingWiz
                 <p className="text-sm font-bold text-violet-700">Startweg</p>
                 <h2 className="mt-1 text-2xl font-black tracking-tight">Wie willst du starten?</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  GradeGlow schickt dich danach direkt an die passende Stelle.
+                  GradeGlow schickt dich danach direkt an die passende Stelle. Beim Demo-Start werden vorhandene Demo-Daten ersetzt, deine echten Daten bleiben erhalten.
                 </p>
               </div>
 

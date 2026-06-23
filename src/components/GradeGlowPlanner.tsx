@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
-import { useGradeGlowExams } from "../hooks/useGradeGlowExams";
+import type { Dispatch, FormEvent, SetStateAction } from "react";
 import type {
-  AppUser,
   ExamKind,
   ExamPlanItem,
   ExamPriority,
@@ -15,8 +13,11 @@ import type {
 } from "../types";
 
 type GradeGlowPlannerProps = {
-  user: AppUser;
   modules: UniModule[];
+  exams: ExamPlanItem[];
+  setExams: Dispatch<SetStateAction<ExamPlanItem[]>>;
+  isLoaded: boolean;
+  syncMessage: string;
 };
 
 type CalendarMode = "month" | "week";
@@ -450,8 +451,13 @@ const sortSessions = (sessions: StudySessionItem[]) =>
     return a.time.localeCompare(b.time);
   });
 
-export default function GradeGlowPlanner({ user, modules }: GradeGlowPlannerProps) {
-  const { exams, setExams, isLoaded, syncMessage } = useGradeGlowExams(user);
+export default function GradeGlowPlanner({
+  modules,
+  exams,
+  setExams,
+  isLoaded,
+  syncMessage,
+}: GradeGlowPlannerProps) {
   const [form, setForm] = useState(emptyForm);
   const [manualStudyForm, setManualStudyForm] = useState<StudyForm>(emptyStudyForm);
   const [focusedExamId, setFocusedExamId] = useState<string | null>(null);

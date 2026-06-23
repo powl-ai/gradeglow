@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../lib/firebase";
-import type { AppUser, GradeGlowProfile } from "../types";
+import type { AppUser, GradeGlowProfile, StartMode } from "../types";
 
 export type ProfileSyncStatus =
   | "local"
@@ -15,6 +15,8 @@ export type ProfileSyncStatus =
 
 const PROFILE_STORAGE_KEY = "gradeglow-profile-v1";
 export const DEFAULT_TARGET_ECTS = 180;
+
+const validStartModes: StartMode[] = ["manual", "stupo", "template", "demo"];
 
 const parseTargetEcts = (value: unknown) => {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
@@ -29,9 +31,25 @@ const parseTargetEcts = (value: unknown) => {
   return DEFAULT_TARGET_ECTS;
 };
 
+const parseSemester = (value: unknown) => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(1, Math.round(value));
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(",", "."));
+    if (Number.isFinite(parsed)) return Math.max(1, Math.round(parsed));
+  }
+
+  return 1;
+};
+
 const getStringValue = (value: unknown) => {
   return typeof value === "string" ? value.trim() : "";
 };
+
+const getStartMode = (value: unknown): StartMode =>
+  validStartModes.includes(value as StartMode) ? (value as StartMode) : "manual";
 
 const migrateProfile = (
   rawProfile: unknown,
@@ -44,8 +62,13 @@ const migrateProfile = (
 
   return {
     displayName: getStringValue(profileObject.displayName) || fallbackDisplayName,
+    university: getStringValue(profileObject.university),
     degreeProgram: getStringValue(profileObject.degreeProgram),
+    degreeType: getStringValue(profileObject.degreeType) || "Bachelor",
+    currentSemester: parseSemester(profileObject.currentSemester),
     targetEcts: parseTargetEcts(profileObject.targetEcts),
+    preferredStartMode: getStartMode(profileObject.preferredStartMode),
+    onboardingCompleted: profileObject.onboardingCompleted === true,
   };
 };
 
@@ -57,8 +80,13 @@ export function useGradeGlowProfile(user: AppUser) {
   const defaultProfile = useMemo<GradeGlowProfile>(
     () => ({
       displayName: fallbackDisplayName,
+      university: "",
       degreeProgram: "",
+      degreeType: "Bachelor",
+      currentSemester: 1,
       targetEcts: DEFAULT_TARGET_ECTS,
+      preferredStartMode: "manual",
+      onboardingCompleted: false,
     }),
     [fallbackDisplayName]
   );
@@ -164,7 +192,7 @@ export function useGradeGlowProfile(user: AppUser) {
             ...normalizedProfile,
             ownerUid: user.uid,
             updatedAt: serverTimestamp(),
-            version: 1,
+            version: 2,
           },
           { merge: true }
         );

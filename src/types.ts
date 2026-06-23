@@ -6,10 +6,17 @@ export type AppUser = {
   provider: "local" | "firebase";
 };
 
+export type StartMode = "manual" | "stupo" | "template" | "demo";
+
 export type GradeGlowProfile = {
   displayName: string;
+  university: string;
   degreeProgram: string;
+  degreeType: string;
+  currentSemester: number;
   targetEcts: number;
+  preferredStartMode: StartMode;
+  onboardingCompleted: boolean;
 };
 
 export type ModuleStatus = "passed" | "ungraded" | "open" | "failed";
@@ -48,6 +55,20 @@ export type ExamStatus = "planned" | "learning" | "done";
 
 export type ExamPriority = "low" | "normal" | "high";
 
+export type StudySessionItem = {
+  id: string;
+  examId: string;
+  title: string;
+  dateKey: string;
+  time: string;
+  durationMinutes: number;
+  focus: string;
+  notes: string;
+  isDone: boolean;
+  isHidden: boolean;
+  isManual: boolean;
+};
+
 export type ExamPlanItem = {
   id: string;
   title: string;
@@ -59,6 +80,9 @@ export type ExamPlanItem = {
   status: ExamStatus;
   priority: ExamPriority;
   notes: string;
+  studyStartDays: number;
+  isHidden: boolean;
+  studySessions: StudySessionItem[];
 };
 
 export type BackupFile = {

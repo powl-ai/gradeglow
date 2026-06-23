@@ -196,3 +196,15 @@ Nach dem Deployment im Bereich `/exams` prüfen:
 - Prüfungsseite ist nicht mehr doppelt eingeklappt, sondern zeigt Kalender und Details direkter.
 - Mobile/PWA-Kalenderzellen sind kompakter und gegen horizontalen Overflow abgesichert.
 - Service Worker Cache-Version: `gradeglow-v13`.
+
+## Nach Update Onboarding/Lernblöcke
+
+Nach dem Deployment bitte besonders testen:
+
+1. Neuer Account → Onboarding-Wizard erscheint.
+2. Bestehender Account → falls kein Onboarding-Flag gesetzt ist, einmal Setup abschließen oder überspringen.
+3. `/exams` → Prüfung erstellen, Lernstart-Tage ändern, Plan neu generieren.
+4. Lerneinheit verschieben, abhaken, Notiz ergänzen und ausblenden.
+5. `/settings` → Daten & Account Bereich sichtbar. Löschung nur nach Bestätigung `LÖSCHEN`.
+6. PWA nach Deployment einmal vollständig schließen, weil der Service Worker jetzt `gradeglow-v14` nutzt.
+

@@ -8,6 +8,7 @@ import GradeGlowLogo from "./GradeGlowLogo";
 import GradeGlowPlanner from "./GradeGlowPlanner";
 import PwaInstallCard from "./PwaInstallCard";
 import StudyPlanningPanel from "./StudyPlanningPanel";
+import OnboardingWizard from "./OnboardingWizard";
 import { useGradeGlowModules } from "../hooks/useGradeGlowModules";
 import {
   DEFAULT_TARGET_ECTS,
@@ -162,7 +163,8 @@ export default function GradeGlowDashboard({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const { profile } = useGradeGlowProfile(user);
+  const { profile, isProfileLoaded, saveProfile } = useGradeGlowProfile(user);
+
   const totalTargetEcts =
     profile.targetEcts > 0 ? profile.targetEcts : DEFAULT_TARGET_ECTS;
 
@@ -882,6 +884,10 @@ export default function GradeGlowDashboard({
     dashboardNavItems.find((item) => item.id === page) ?? dashboardNavItems[0];
   const isInsightsVisible = page === "insights" || isInsightsOpen;
   const isBackupVisible = page === "backup" || isToolsOpen;
+
+  if (isProfileLoaded && !profile.onboardingCompleted) {
+    return <OnboardingWizard profile={profile} saveProfile={saveProfile} />;
+  }
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950">

@@ -1,4 +1,10 @@
-import type { ExamKind, ExamPlanItem, ExamPriority, ExamStatus } from "../types";
+import type {
+  ExamKind,
+  ExamPlanItem,
+  ExamPriority,
+  ExamStatus,
+  StudySessionItem,
+} from "../types";
 
 const LOCAL_EXAMS_KEY_PREFIX = "gradeglow-exams-v1";
 
@@ -17,6 +23,23 @@ const validExamPriorities: ExamPriority[] = ["low", "normal", "high"];
 const asString = (value: unknown, fallback = "") =>
   typeof value === "string" ? value : fallback;
 
+const asNumber = (value: unknown, fallback: number) => {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(",", "."));
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+};
+
+const createId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
 const asExamKind = (value: unknown): ExamKind =>
   validExamKinds.includes(value as ExamKind) ? (value as ExamKind) : "exam";
 
@@ -27,6 +50,33 @@ const asExamPriority = (value: unknown): ExamPriority =>
   validExamPriorities.includes(value as ExamPriority)
     ? (value as ExamPriority)
     : "normal";
+
+const migrateStudySessions = (rawSessions: unknown, examId: string): StudySessionItem[] => {
+  if (!Array.isArray(rawSessions)) return [];
+
+  return rawSessions
+    .map((rawSession) => {
+      if (typeof rawSession !== "object" || rawSession === null) return null;
+      const record = rawSession as Record<string, unknown>;
+      const dateKey = asString(record.dateKey).trim();
+      if (!dateKey) return null;
+
+      return {
+        id: asString(record.id, createId()),
+        examId: asString(record.examId, examId) || examId,
+        title: asString(record.title, "Lerneinheit").trim() || "Lerneinheit",
+        dateKey,
+        time: asString(record.time).trim(),
+        durationMinutes: Math.max(15, Math.round(asNumber(record.durationMinutes, 90))),
+        focus: asString(record.focus).trim(),
+        notes: asString(record.notes).trim(),
+        isDone: record.isDone === true,
+        isHidden: record.isHidden === true,
+        isManual: record.isManual === true,
+      } satisfies StudySessionItem;
+    })
+    .filter((session): session is StudySessionItem => Boolean(session));
+};
 
 export const getUserExamsStorageKey = (uid: string) =>
   `${LOCAL_EXAMS_KEY_PREFIX}-${uid}`;
@@ -39,7 +89,7 @@ export const migrateExams = (rawExams: unknown): ExamPlanItem[] => {
       if (typeof rawExam !== "object" || rawExam === null) return null;
 
       const record = rawExam as Record<string, unknown>;
-      const id = asString(record.id, crypto.randomUUID());
+      const id = asString(record.id, createId());
       const title = asString(record.title).trim();
       const examDate = asString(record.examDate).trim();
 
@@ -56,6 +106,9 @@ export const migrateExams = (rawExams: unknown): ExamPlanItem[] => {
         status: asExamStatus(record.status),
         priority: asExamPriority(record.priority),
         notes: asString(record.notes).trim(),
+        studyStartDays: Math.max(1, Math.round(asNumber(record.studyStartDays, 21))),
+        isHidden: record.isHidden === true,
+        studySessions: migrateStudySessions(record.studySessions, id),
       } satisfies ExamPlanItem;
     })
     .filter((exam): exam is ExamPlanItem => Boolean(exam));

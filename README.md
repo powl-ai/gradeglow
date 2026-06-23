@@ -138,3 +138,12 @@ Der Bereich `/exams` enthält jetzt zusätzlich einen Monats-/Wochenkalender. Pr
 - Prüfungsseite ist nicht mehr doppelt eingeklappt, sondern zeigt Kalender und Details direkter.
 - Mobile/PWA-Kalenderzellen sind kompakter und gegen horizontalen Overflow abgesichert.
 - Service Worker Cache-Version: `gradeglow-v13`.
+
+## Update: Onboarding, Lernblöcke und Datenlöschung
+
+- Neue Accounts sehen jetzt zuerst einen Onboarding-Wizard mit Name, Hochschule, Studiengang, Abschluss, Semester, Ziel-ECTS und Startweg.
+- Im Prüfungsplaner können Lernblöcke jetzt manuell ergänzt, verschoben, abgehakt, ausgeblendet und mit Notizen versehen werden.
+- Pro Prüfung kann eingestellt werden, wie viele Tage vor der Prüfung der Lernplan starten soll.
+- Automatisch generierte Lernblöcke beachten weiterhin ein Tageslimit von maximal 5 Stunden.
+- In den Einstellungen gibt es jetzt einen Bereich „Daten & Account“ zum Löschen von App-Daten oder des Accounts.
+

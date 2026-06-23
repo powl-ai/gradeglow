@@ -85,6 +85,9 @@ export type ExamPlanItem = {
   priority: ExamPriority;
   notes: string;
   studyStartDays: number;
+  targetStudyMinutes: number;
+  dailyStudyLimitMinutes: number;
+  sessionGoalMinutes: number;
   isHidden: boolean;
   studySessions: StudySessionItem[];
 };

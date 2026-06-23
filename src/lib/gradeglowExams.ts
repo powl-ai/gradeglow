@@ -107,6 +107,9 @@ export const migrateExams = (rawExams: unknown): ExamPlanItem[] => {
         priority: asExamPriority(record.priority),
         notes: asString(record.notes).trim(),
         studyStartDays: Math.max(1, Math.round(asNumber(record.studyStartDays, 21))),
+        targetStudyMinutes: Math.max(0, Math.round(asNumber(record.targetStudyMinutes, 0))),
+        dailyStudyLimitMinutes: Math.max(30, Math.round(asNumber(record.dailyStudyLimitMinutes, 300))),
+        sessionGoalMinutes: Math.max(15, Math.round(asNumber(record.sessionGoalMinutes, 90))),
         isHidden: record.isHidden === true,
         studySessions: migrateStudySessions(record.studySessions, id),
       } satisfies ExamPlanItem;

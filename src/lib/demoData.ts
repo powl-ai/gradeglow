@@ -170,6 +170,9 @@ export const createDemoGradeGlowData = () => {
       priority: "high",
       notes: `${DEMO_EXAM_MARKER} Fokus: Reihen, Matrizen, komplexe Zahlen und alte Klausuren.`,
       studyStartDays: 21,
+      targetStudyMinutes: 1800,
+      dailyStudyLimitMinutes: 240,
+      sessionGoalMinutes: 120,
       isHidden: false,
       studySessions: [
         createStudySession({
@@ -208,6 +211,9 @@ export const createDemoGradeGlowData = () => {
       priority: "normal",
       notes: `${DEMO_EXAM_MARKER} Demo-Prüfung mit Lernplan und Notizen.`,
       studyStartDays: 14,
+      targetStudyMinutes: 720,
+      dailyStudyLimitMinutes: 180,
+      sessionGoalMinutes: 90,
       isHidden: false,
       studySessions: [
         createStudySession({

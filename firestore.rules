@@ -10,8 +10,17 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    match /users/{userId}/friends/{friendId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     match /users/{userId}/gradeglow/{documentId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /publicStudyProfiles/{profileId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null && request.auth.uid == profileId;
     }
   }
 }

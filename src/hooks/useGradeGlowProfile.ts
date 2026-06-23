@@ -51,6 +51,12 @@ const getStringValue = (value: unknown) => {
 const getStartMode = (value: unknown): StartMode =>
   validStartModes.includes(value as StartMode) ? (value as StartMode) : "manual";
 
+const getAvatarDataUrl = (value: unknown) => {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  return trimmed.startsWith("data:image/") ? trimmed : "";
+};
+
 const migrateProfile = (
   rawProfile: unknown,
   fallbackDisplayName: string
@@ -69,6 +75,8 @@ const migrateProfile = (
     targetEcts: parseTargetEcts(profileObject.targetEcts),
     preferredStartMode: getStartMode(profileObject.preferredStartMode),
     onboardingCompleted: profileObject.onboardingCompleted === true,
+    avatarDataUrl: getAvatarDataUrl(profileObject.avatarDataUrl),
+    studySharingEnabled: profileObject.studySharingEnabled === true,
   };
 };
 
@@ -87,6 +95,8 @@ export function useGradeGlowProfile(user: AppUser) {
       targetEcts: DEFAULT_TARGET_ECTS,
       preferredStartMode: "manual",
       onboardingCompleted: false,
+      avatarDataUrl: "",
+      studySharingEnabled: false,
     }),
     [fallbackDisplayName]
   );

@@ -17,6 +17,8 @@ export type GradeGlowProfile = {
   targetEcts: number;
   preferredStartMode: StartMode;
   onboardingCompleted: boolean;
+  avatarDataUrl: string;
+  studySharingEnabled: boolean;
 };
 
 export type ModuleStatus = "passed" | "ungraded" | "open" | "failed";
@@ -101,3 +103,25 @@ export type SyncStatus =
   | "cloud-saving"
   | "cloud-saved"
   | "cloud-error";
+
+
+export type StudySubjectStat = {
+  subjectId: string;
+  subjectName: string;
+  moduleId: string | null;
+  plannedMinutes: number;
+  doneMinutes: number;
+  sessionCount: number;
+  lastStudiedAt: string;
+};
+
+export type PublicStudyProfile = {
+  uid: string;
+  displayName: string;
+  degreeProgram: string;
+  avatarDataUrl: string;
+  totalDoneMinutes: number;
+  thisWeekDoneMinutes: number;
+  topSubjects: StudySubjectStat[];
+  updatedAtIso: string;
+};

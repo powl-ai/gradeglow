@@ -1,10 +1,16 @@
 "use client";
 
-import type { ModuleStatus, UniModule } from "../types";
+import StudyFriendsPanel from "./StudyFriendsPanel";
+import { formatStudyMinutes, getStudySubjectStats } from "../lib/studyStats";
+import type { AppUser, ExamPlanItem, GradeGlowProfile, ModuleStatus, UniModule } from "../types";
 
 type GradeGlowInsightsProps = {
+  user: AppUser;
   modules: UniModule[];
+  exams: ExamPlanItem[];
+  profile: GradeGlowProfile;
   totalTargetEcts: number;
+  saveProfile: (nextProfile: GradeGlowProfile) => Promise<void>;
 };
 
 const statusConfig: Record<ModuleStatus, { label: string; barClassName: string; dotClassName: string }> = {
@@ -66,7 +72,14 @@ const getEffectiveStatus = (module: UniModule): ModuleStatus => {
   return module.status;
 };
 
-export default function GradeGlowInsights({ modules, totalTargetEcts }: GradeGlowInsightsProps) {
+export default function GradeGlowInsights({
+  user,
+  modules,
+  exams,
+  profile,
+  totalTargetEcts,
+  saveProfile,
+}: GradeGlowInsightsProps) {
   const statusRows = (["passed", "ungraded", "open", "failed"] as ModuleStatus[]).map(
     (status) => {
       const matchingModules = modules.filter((module) => getEffectiveStatus(module) === status);
@@ -122,9 +135,13 @@ export default function GradeGlowInsights({ modules, totalTargetEcts }: GradeGlo
 
   const maxSemesterEcts = Math.max(...semesterRows.map((row) => row.ects), 1);
   const averageRows = semesterRows.filter((row) => row.average > 0);
+  const studyRows = getStudySubjectStats(exams);
+  const maxStudyMinutes = Math.max(...studyRows.map((row) => row.doneMinutes), 1);
+  const totalDoneStudyMinutes = studyRows.reduce((sum, row) => sum + row.doneMinutes, 0);
 
   return (
-    <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+    <section className="space-y-6">
+      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
       <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
@@ -222,6 +239,98 @@ export default function GradeGlowInsights({ modules, totalTargetEcts }: GradeGlo
           </div>
         )}
       </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
+        <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-bold text-violet-700">Lernstatistik</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight">Gelernt pro Fach</h2>
+              <p className="mt-1 text-sm text-slate-500">Aus abgehakten Lerneinheiten im Prüfungskalender berechnet.</p>
+            </div>
+            <span className="rounded-2xl bg-violet-50 px-3 py-2 text-xl ring-1 ring-violet-100">⏱️</span>
+          </div>
+
+          {studyRows.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-violet-200 bg-violet-50/70 p-8 text-center text-sm font-semibold text-violet-700">
+              Sobald du Lerneinheiten im Prüfungskalender abhakt, zeigt GradeGlow hier, wofür du wirklich gelernt hast.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-3xl bg-slate-950 p-5 text-white">
+                <p className="text-sm text-slate-300">Gesamt erledigte Lernzeit</p>
+                <p className="mt-2 text-4xl font-black tracking-tight">
+                  {formatStudyMinutes(totalDoneStudyMinutes)}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                  Nur erledigte, nicht ausgeblendete Lernblöcke zählen in diese Statistik.
+                </p>
+              </div>
+
+              {studyRows.map((row) => {
+                const percentage = Math.min((row.doneMinutes / maxStudyMinutes) * 100, 100);
+                const completion = row.plannedMinutes > 0 ? Math.round((row.doneMinutes / row.plannedMinutes) * 100) : 0;
+
+                return (
+                  <div key={row.subjectId} className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="truncate font-black text-slate-950">{row.subjectName}</p>
+                        <p className="text-xs font-semibold text-slate-500">
+                          {row.sessionCount} erledigte Session(s) · {completion}% vom sichtbaren Plan
+                        </p>
+                      </div>
+                      <p className="shrink-0 text-lg font-black text-violet-700">
+                        {formatStudyMinutes(row.doneMinutes)}
+                      </p>
+                    </div>
+                    <div className="h-3 overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 transition-all duration-500"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 text-xs font-semibold text-slate-400">
+                      Geplant sichtbar: {formatStudyMinutes(row.plannedMinutes)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-3xl bg-slate-950 p-5 text-white shadow-sm ring-1 ring-slate-900 sm:p-6">
+          <p className="text-sm font-bold text-fuchsia-200">Premium-Insight</p>
+          <h2 className="mt-1 text-2xl font-black tracking-tight">Fokus-Verteilung</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            Nutze die Fachstatistik als ehrlichen Gegencheck: Nicht nur was geplant war zählt, sondern was wirklich abgehakt wurde.
+          </p>
+          <div className="mt-5 space-y-3">
+            {studyRows.slice(0, 4).map((row, index) => (
+              <div key={row.subjectId} className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <p className="truncate font-black">#{index + 1} {row.subjectName}</p>
+                  <p className="shrink-0 font-black text-violet-100">{formatStudyMinutes(row.doneMinutes)}</p>
+                </div>
+              </div>
+            ))}
+            {studyRows.length === 0 && (
+              <div className="rounded-2xl bg-white/10 p-4 text-sm font-semibold leading-6 text-slate-300 ring-1 ring-white/10">
+                Hacke deine ersten Lerneinheiten ab, dann entsteht hier deine persönliche Top-Fächer-Liste.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <StudyFriendsPanel
+        user={user}
+        profile={profile}
+        exams={exams}
+        saveProfile={saveProfile}
+      />
     </section>
   );
 }

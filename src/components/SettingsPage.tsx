@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import GradeGlowLogo from "./GradeGlowLogo";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { deleteUser, updateProfile } from "firebase/auth";
 import { collection, deleteDoc, doc, getDocs, writeBatch } from "firebase/firestore";
 import { auth, db, isFirebaseConfigured } from "../lib/firebase";
@@ -27,6 +27,7 @@ const startModeLabels: Record<StartMode, string> = {
 const LOCAL_USERS_KEY = "gradeglow-local-users-v1";
 const LOCAL_SESSION_KEY = "gradeglow-local-session-v1";
 const PROFILE_STORAGE_KEY = "gradeglow-profile-v1";
+const MAX_AVATAR_SIZE = 320;
 
 const parseNumber = (value: string) => Number(value.replace(",", "."));
 const formatNumber = (value: number) => String(value).replace(".", ",");
@@ -58,6 +59,39 @@ const removeLocalUser = (uid: string) => {
   }
 };
 
+const resizeAvatarFile = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    if (!file.type.startsWith("image/")) {
+      reject(new Error("unsupported-file"));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("read-error"));
+    reader.onload = () => {
+      const image = new window.Image();
+      image.onerror = () => reject(new Error("image-error"));
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        const scale = Math.min(1, MAX_AVATAR_SIZE / Math.max(image.width, image.height));
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+
+        const context = canvas.getContext("2d");
+        if (!context) {
+          reject(new Error("canvas-error"));
+          return;
+        }
+
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      image.src = String(reader.result);
+    };
+
+    reader.readAsDataURL(file);
+  });
+
 const clearLocalGradeGlowData = (uid: string) => {
   localStorage.removeItem(getUserModulesStorageKey(uid));
   localStorage.removeItem(getUserExamsStorageKey(uid));
@@ -81,6 +115,8 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   const [currentSemester, setCurrentSemester] = useState("1");
   const [targetEcts, setTargetEcts] = useState(String(DEFAULT_TARGET_ECTS));
   const [preferredStartMode, setPreferredStartMode] = useState<StartMode>("manual");
+  const [avatarDataUrl, setAvatarDataUrl] = useState("");
+  const [avatarMessage, setAvatarMessage] = useState("");
   const [formMessage, setFormMessage] = useState("");
   const [dangerMessage, setDangerMessage] = useState("");
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
@@ -88,6 +124,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   const [isDeletingData, setIsDeletingData] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isRestartingOnboarding, setIsRestartingOnboarding] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!isProfileLoaded) return;
@@ -99,6 +136,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     setCurrentSemester(formatNumber(profile.currentSemester || 1));
     setTargetEcts(formatNumber(profile.targetEcts));
     setPreferredStartMode(profile.preferredStartMode || "manual");
+    setAvatarDataUrl(profile.avatarDataUrl || "");
   }, [isProfileLoaded, profile]);
 
   const syncStyle = useMemo(() => {
@@ -130,8 +168,9 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
       targetEcts: Number.isFinite(parsedTargetEcts) ? parsedTargetEcts : profile.targetEcts,
       preferredStartMode,
       onboardingCompleted: true,
+      avatarDataUrl,
     };
-  }, [currentSemester, degreeProgram, degreeType, displayName, preferredStartMode, profile, targetEcts, university]);
+  }, [avatarDataUrl, currentSemester, degreeProgram, degreeType, displayName, preferredStartMode, profile, targetEcts, university]);
 
   const hasChanges = useMemo(() => {
     return JSON.stringify(nextProfile) !== JSON.stringify({ ...profile, onboardingCompleted: true });
@@ -191,6 +230,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
         await deleteCollectionDocs(["users", user.uid, "exams"]);
         await deleteDoc(doc(db, "users", user.uid, "gradeglow", "settings")).catch(() => undefined);
         await deleteDoc(doc(db, "users", user.uid, "gradeglow", "dashboard")).catch(() => undefined);
+        await deleteDoc(doc(db, "publicStudyProfiles", user.uid)).catch(() => undefined);
       }
 
       clearLocalGradeGlowData(user.uid);
@@ -218,6 +258,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
         await deleteCollectionDocs(["users", user.uid, "exams"]);
         await deleteDoc(doc(db!, "users", user.uid, "gradeglow", "settings")).catch(() => undefined);
         await deleteDoc(doc(db!, "users", user.uid, "gradeglow", "dashboard")).catch(() => undefined);
+        await deleteDoc(doc(db!, "publicStudyProfiles", user.uid)).catch(() => undefined);
         clearLocalGradeGlowData(user.uid);
         await deleteUser(auth.currentUser);
         return;
@@ -232,6 +273,28 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
       );
     } finally {
       setIsDeletingAccount(false);
+    }
+  };
+
+  const handleAvatarUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setAvatarMessage("");
+
+    try {
+      if (file.size > 5 * 1024 * 1024) {
+        setAvatarMessage("Bild ist zu groß. Bitte maximal 5 MB hochladen.");
+        return;
+      }
+
+      const nextAvatar = await resizeAvatarFile(file);
+      setAvatarDataUrl(nextAvatar);
+      setAvatarMessage("Profilbild vorbereitet. Speichern nicht vergessen.");
+    } catch {
+      setAvatarMessage("Profilbild konnte nicht gelesen werden.");
+    } finally {
+      event.target.value = "";
     }
   };
 
@@ -251,6 +314,18 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
 
   const userLabel = profile.displayName || user.displayName || user.email || "GradeGlow User";
   const userInitial = userLabel.trim().charAt(0).toUpperCase() || "G";
+  const avatarSource = avatarDataUrl || profile.avatarDataUrl || user.photoURL || "";
+  const renderAvatar = (className: string, fallback = userInitial) =>
+    avatarSource ? (
+      <div
+        className={`${className} bg-cover bg-center`}
+        style={{ backgroundImage: `url(${avatarSource})` }}
+        aria-label="Profilbild"
+        role="img"
+      />
+    ) : (
+      <div className={className}>{fallback}</div>
+    );
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950">
@@ -287,9 +362,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
 
               <div className="flex w-full min-w-0 flex-col gap-3 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur sm:min-w-80 lg:w-auto">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10">
-                    {userInitial}
-                  </div>
+                  {renderAvatar("flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10")}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold">{userLabel}</p>
                     <p className="truncate text-xs text-slate-300">{user.email ?? "Lokaler Account"}</p>
@@ -328,6 +401,50 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
               <p className="text-sm font-bold text-violet-700">Profil & Onboarding</p>
               <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Basisdaten bearbeiten</h2>
               <p className="mt-1 text-sm text-slate-500">Diese Daten werden pro Account gespeichert und auf Dashboard, StuPo-Assistent und Kalender verwendet.</p>
+            </div>
+
+            <div className="mb-6 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-4">
+                  {renderAvatar("flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-100 to-fuchsia-100 text-xl font-black text-violet-800 ring-1 ring-violet-100", (displayName.trim() || "G").charAt(0).toUpperCase())}
+                  <div>
+                    <p className="text-sm font-black text-slate-950">Profilbild</p>
+                    <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+                      Wird verkleinert und in deinem Profil gespeichert. Perfekt für Study Circle und Dashboard.
+                    </p>
+                    {avatarMessage && <p className="mt-2 text-xs font-bold text-violet-700">{avatarMessage}</p>}
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
+                  <button
+                    type="button"
+                    className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50 hover:text-violet-700"
+                    onClick={() => avatarInputRef.current?.click()}
+                  >
+                    Bild hochladen
+                  </button>
+                  {avatarDataUrl && (
+                    <button
+                      type="button"
+                      className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-700 ring-1 ring-rose-100 transition hover:-translate-y-0.5 hover:bg-rose-100"
+                      onClick={() => {
+                        setAvatarDataUrl("");
+                        setAvatarMessage("Profilbild entfernt. Speichern nicht vergessen.");
+                      }}
+                    >
+                      Entfernen
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -394,9 +511,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
               <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">So erscheint es in GradeGlow</h2>
               <div className="mt-5 rounded-3xl bg-slate-950 p-5 text-white shadow-lg shadow-violet-950/15">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10">
-                    {(displayName.trim() || "G").charAt(0).toUpperCase()}
-                  </div>
+                  {renderAvatar("flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10", (displayName.trim() || "G").charAt(0).toUpperCase())}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold">{displayName.trim() || "GradeGlow User"}</p>
                     <p className="truncate text-xs text-slate-300">{degreeProgram.trim() || "Studiengang noch nicht gesetzt"}</p>

@@ -907,6 +907,7 @@ export default function GradeGlowDashboard({
   const userLabel =
     profile.displayName || user.displayName || user.email || "GradeGlow User";
   const userInitial = userLabel.trim().charAt(0).toUpperCase() || "G";
+  const avatarSource = profile.avatarDataUrl || user.photoURL || "";
   const degreeProgramLabel =
     profile.degreeProgram || "Studiengang noch nicht gesetzt";
   const activeNavItem =
@@ -917,6 +918,17 @@ export default function GradeGlowDashboard({
       : null;
   const isInsightsVisible = page === "insights" || isInsightsOpen;
   const isBackupVisible = page === "backup" || isToolsOpen;
+  const renderAvatar = (className: string) =>
+    avatarSource ? (
+      <div
+        className={`${className} bg-cover bg-center`}
+        style={{ backgroundImage: `url(${avatarSource})` }}
+        aria-label="Profilbild"
+        role="img"
+      />
+    ) : (
+      <div className={className}>{userInitial}</div>
+    );
 
   if (isProfileLoaded && !profile.onboardingCompleted) {
     if (!isLoaded || !areExamsLoaded) {
@@ -984,9 +996,7 @@ export default function GradeGlowDashboard({
 
               <div className="mt-4 rounded-3xl bg-slate-950 p-4 text-white ring-1 ring-slate-900">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10">
-                    {userInitial}
-                  </div>
+                  {renderAvatar("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10")}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-black">{userLabel}</p>
                     <p className="truncate text-xs font-semibold text-slate-300">
@@ -1126,16 +1136,14 @@ export default function GradeGlowDashboard({
                   {activeNavItem.label}
                 </h1>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-                  {activeNavItem.description}. Wechsel oben rechts über das Menü
-                  in die anderen Bereiche.
+                  {activeNavItem.description}. Wechsel über die Quick-Rail oder
+                  oben rechts über das Menü in die anderen Bereiche.
                 </p>
               </div>
 
               <div className="hidden w-full min-w-0 flex-col gap-3 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur sm:min-w-80 lg:flex lg:w-auto">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10">
-                    {userInitial}
-                  </div>
+                  {renderAvatar("flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-lg font-black ring-1 ring-white/10")}
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold">{userLabel}</p>
                     <p className="truncate text-xs text-slate-300">
@@ -1183,6 +1191,40 @@ export default function GradeGlowDashboard({
             </div>
           </div>
         </header>
+
+        <nav
+          className="sticky top-[calc(env(safe-area-inset-top,0px)+0.5rem)] z-30 -mx-3 overflow-x-auto px-3 pb-1 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+          aria-label="GradeGlow Schnellnavigation"
+        >
+          <div className="flex w-max min-w-full items-center gap-2 rounded-[1.6rem] border border-white/70 bg-white/75 p-2 shadow-lg shadow-violet-100/60 backdrop-blur-xl">
+            {dashboardNavItems.map((item) => {
+              const isActive = item.id === page;
+
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className={`flex shrink-0 items-center gap-2 rounded-2xl px-3 py-2 text-sm font-black ring-1 transition hover:-translate-y-0.5 sm:px-4 ${
+                    isActive
+                      ? "bg-slate-950 text-white ring-slate-900 shadow-md shadow-violet-100"
+                      : "bg-white/80 text-slate-600 ring-slate-200 hover:bg-violet-50 hover:text-violet-700 hover:ring-violet-100"
+                  }`}
+                >
+                  <span className="text-base">{item.emoji}</span>
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+
+            <Link
+              href="/settings"
+              className="flex shrink-0 items-center gap-2 rounded-2xl bg-white/80 px-3 py-2 text-sm font-black text-slate-600 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50 hover:text-violet-700 hover:ring-violet-100 sm:px-4"
+            >
+              <span className="text-base">👤</span>
+              <span>Profil</span>
+            </Link>
+          </div>
+        </nav>
 
         {page === "overview" && (
           <>
@@ -1318,8 +1360,12 @@ export default function GradeGlowDashboard({
             {isInsightsVisible && (
               <div className="border-t border-slate-100 p-5 sm:p-6">
                 <GradeGlowInsights
+                  user={user}
                   modules={modules}
+                  exams={exams}
+                  profile={profile}
                   totalTargetEcts={totalTargetEcts}
+                  saveProfile={saveProfile}
                 />
               </div>
             )}

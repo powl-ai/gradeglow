@@ -88,10 +88,10 @@ export default function InfoPage() {
             <h2 className="mt-1 text-2xl font-black tracking-tight">Verantwortlich für GradeGlow</h2>
             <div className="mt-5 space-y-4 text-sm leading-6 text-slate-600">
               <div className="rounded-2xl bg-violet-50 p-4 ring-1 ring-violet-100">
-                <p className="font-black text-slate-900">[Dein vollständiger Name]</p>
-                <p>[Straße und Hausnummer]</p>
-                <p>[PLZ und Ort]</p>
-                <p>[Land]</p>
+                <p className="font-black text-slate-900">[Paul Matti Vock]</p>
+                <p>[Binzstraße 61A]</p>
+                <p>[13189 Berlin]</p>
+                <p>[Deutschland]</p>
               </div>
 
               <div>

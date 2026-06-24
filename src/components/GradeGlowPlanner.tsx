@@ -1667,6 +1667,57 @@ export default function GradeGlowPlanner({
                               </button>
                             </div>
                           </div>
+                          <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                            <label className="block">
+                              <span className="mb-1 block text-[0.65rem] font-black uppercase tracking-[0.14em] text-slate-400">Datum</span>
+                              <input
+                                type="date"
+                                className="w-full rounded-2xl border border-white/70 bg-white/85 px-3 py-2 text-sm font-bold text-slate-800 outline-none ring-1 ring-slate-100"
+                                value={session.dateKey}
+                                onChange={(event) => {
+                                  if (!event.target.value) return;
+                                  updateStudySession(session.examId, session.id, (current) => ({ ...current, dateKey: event.target.value }));
+                                  setSelectedCalendarDayKey(event.target.value);
+                                }}
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="mb-1 block text-[0.65rem] font-black uppercase tracking-[0.14em] text-slate-400">Uhrzeit</span>
+                              <input
+                                type="time"
+                                className="w-full rounded-2xl border border-white/70 bg-white/85 px-3 py-2 text-sm font-bold text-slate-800 outline-none ring-1 ring-slate-100"
+                                value={normalizeTimeInput(session.time) || ""}
+                                onChange={(event) => updateStudySession(session.examId, session.id, (current) => ({ ...current, time: event.target.value }))}
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="mb-1 block text-[0.65rem] font-black uppercase tracking-[0.14em] text-slate-400">Dauer</span>
+                              <input
+                                type="number"
+                                min={1}
+                                className="w-full rounded-2xl border border-white/70 bg-white/85 px-3 py-2 text-sm font-bold text-slate-800 outline-none ring-1 ring-slate-100"
+                                value={session.durationMinutes}
+                                onChange={(event) => {
+                                  const minutes = Math.max(1, Math.round(Number(event.target.value) || session.durationMinutes));
+                                  updateStudySession(session.examId, session.id, (current) => ({ ...current, durationMinutes: minutes }));
+                                }}
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="mb-1 block text-[0.65rem] font-black uppercase tracking-[0.14em] text-slate-400">Titel</span>
+                              <input
+                                className="w-full rounded-2xl border border-white/70 bg-white/85 px-3 py-2 text-sm font-bold text-slate-800 outline-none ring-1 ring-slate-100"
+                                value={session.title}
+                                onChange={(event) => updateStudySession(session.examId, session.id, (current) => ({ ...current, title: event.target.value }))}
+                              />
+                            </label>
+                          </div>
+                          <textarea
+                            className="mt-2 w-full rounded-2xl border border-white/70 bg-white/85 px-3 py-2 text-sm font-semibold text-slate-700 outline-none ring-1 ring-slate-100 placeholder:text-slate-400"
+                            value={session.notes}
+                            onChange={(event) => updateStudySession(session.examId, session.id, (current) => ({ ...current, notes: event.target.value }))}
+                            placeholder="Notizen zu diesem Lernblock"
+                          />
                         </div>
                       );
                     })
@@ -1749,7 +1800,7 @@ export default function GradeGlowPlanner({
                   </div>
                   <p className="mt-2 text-xs font-black text-slate-400">{focusedProgress?.percentage ?? 0}% Fortschritt · {focusedProgress?.doneSessions ?? 0}/{focusedProgress?.totalSessions ?? 0} Sessions erledigt</p>
                 </div>
-                <div className="mt-4 space-y-3">{focusedPlan.length === 0 ? <p className="rounded-3xl bg-white/10 p-4 text-sm leading-6 text-slate-300 ring-1 ring-white/10">Für diese Prüfung ist aktuell kein Lernblock geplant. Erzeuge einen Plan neu oder füge manuell eine Einheit hinzu.</p> : focusedPlan.map((session) => <div key={session.id} className={`rounded-3xl p-4 ring-1 ${selectedCalendarSessionId === session.id ? "bg-fuchsia-500/20 ring-fuchsia-300/40" : session.isDone ? "bg-emerald-500/15 ring-emerald-300/20" : "bg-white/10 ring-white/10"}`}><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><label className="flex min-w-0 flex-1 items-start gap-3"><input type="checkbox" className="mt-1 h-5 w-5 accent-emerald-400" checked={session.isDone} onChange={() => markStudySessionDone(focusedExam.id, session, !session.isDone)} /><span className="min-w-0"><span className="flex flex-wrap items-center gap-2"><span className="block font-black">{session.title}</span>{selectedCalendarSessionId === session.id && <span className="rounded-full bg-fuchsia-300 px-2 py-0.5 text-[0.65rem] font-black text-slate-950">aus Kalender</span>}</span><span className="mt-1 block text-sm leading-6 text-slate-300">{formatDate(session.dateKey)} · {formatTime(session.time)} · {formatMinutes(session.durationMinutes)} · {session.focus || "Eigener Lernblock"}</span></span></label><div className="flex flex-wrap gap-2"><button type="button" className="rounded-xl bg-emerald-400 px-3 py-1.5 text-xs font-black text-slate-950 disabled:opacity-40" disabled={Boolean(activeTimer)} onClick={() => startStudyTimer(focusedExam.id, session.id, session.title)}>Timer</button><button type="button" className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-black text-fuchsia-100 ring-1 ring-white/10" onClick={() => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, isHidden: !current.isHidden }))}>{session.isHidden ? "Einblenden" : "Ausblenden"}</button><button type="button" className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-black text-rose-100 ring-1 ring-white/10" onClick={() => deleteStudySession(focusedExam.id, session.id)}>Löschen</button></div></div><div className="mt-3 grid gap-2 sm:grid-cols-4"><input className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-slate-400" value={formatDateInput(session.dateKey)} onChange={(event) => { const dateKey = normalizeDateInput(event.target.value); if (dateKey) updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, dateKey })); }} placeholder="TT.MM.JJJJ" /><input className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-slate-400" value={session.time} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, time: normalizeTimeInput(event.target.value) || event.target.value }))} placeholder="16:00" /><input className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-slate-400" inputMode="numeric" value={session.durationMinutes} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, durationMinutes: Math.max(15, Math.round(Number(event.target.value) || current.durationMinutes)) }))} /><input className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-slate-400" value={session.title} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, title: event.target.value }))} placeholder="Titel" /></div><textarea className="mt-2 w-full rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-400" value={session.notes} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, notes: event.target.value }))} placeholder="Notizen zu dieser Lerneinheit…" /></div>)}</div>
+                <div className="mt-4 space-y-3">{focusedPlan.length === 0 ? <p className="rounded-3xl bg-white/10 p-4 text-sm leading-6 text-slate-300 ring-1 ring-white/10">Für diese Prüfung ist aktuell kein Lernblock geplant. Erzeuge einen Plan neu oder füge manuell eine Einheit hinzu.</p> : focusedPlan.map((session) => <div key={session.id} className={`rounded-3xl p-4 ring-1 ${selectedCalendarSessionId === session.id ? "bg-fuchsia-500/20 ring-fuchsia-300/40" : session.isDone ? "bg-emerald-500/15 ring-emerald-300/20" : "bg-white/10 ring-white/10"}`}><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><label className="flex min-w-0 flex-1 items-start gap-3"><input type="checkbox" className="mt-1 h-5 w-5 accent-emerald-400" checked={session.isDone} onChange={() => markStudySessionDone(focusedExam.id, session, !session.isDone)} /><span className="min-w-0"><span className="flex flex-wrap items-center gap-2"><span className="block font-black">{session.title}</span>{selectedCalendarSessionId === session.id && <span className="rounded-full bg-fuchsia-300 px-2 py-0.5 text-[0.65rem] font-black text-slate-950">aus Kalender</span>}</span><span className="mt-1 block text-sm leading-6 text-slate-300">{formatDate(session.dateKey)} · {formatTime(session.time)} · {formatMinutes(session.durationMinutes)} · {session.focus || "Eigener Lernblock"}</span></span></label><div className="flex flex-wrap gap-2"><button type="button" className="rounded-xl bg-emerald-400 px-3 py-1.5 text-xs font-black text-slate-950 disabled:opacity-40" disabled={Boolean(activeTimer)} onClick={() => startStudyTimer(focusedExam.id, session.id, session.title)}>Timer</button><button type="button" className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-black text-fuchsia-100 ring-1 ring-white/10" onClick={() => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, isHidden: !current.isHidden }))}>{session.isHidden ? "Einblenden" : "Ausblenden"}</button><button type="button" className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-black text-rose-100 ring-1 ring-white/10" onClick={() => deleteStudySession(focusedExam.id, session.id)}>Löschen</button></div></div><div className="mt-3 grid gap-2 sm:grid-cols-4"><input type="date" className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-slate-400" value={session.dateKey} onChange={(event) => { if (!event.target.value) return; updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, dateKey: event.target.value })); }} /><input type="time" className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-slate-400" value={normalizeTimeInput(session.time) || ""} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, time: event.target.value }))} /><input type="number" min={1} className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-slate-400" value={session.durationMinutes} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, durationMinutes: Math.max(1, Math.round(Number(event.target.value) || current.durationMinutes)) }))} /><input className="rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm font-bold text-white outline-none placeholder:text-slate-400" value={session.title} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, title: event.target.value }))} placeholder="Titel" /></div><textarea className="mt-2 w-full rounded-2xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-400" value={session.notes} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, notes: event.target.value }))} placeholder="Notizen zu dieser Lerneinheit…" /></div>)}</div>
               </>}
             </div>
           </div>

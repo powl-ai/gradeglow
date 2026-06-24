@@ -1,20 +1,24 @@
 {
-  "name": "gradeglow-functions",
-  "private": true,
-  "main": "lib/index.js",
+  "name": "functions",
+  "scripts": {
+    "build": "tsc",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
   "engines": {
     "node": "20"
   },
-  "scripts": {
-    "build": "tsc",
-    "deploy": "firebase deploy --only functions",
-    "serve": "npm run build && firebase emulators:start --only functions,firestore"
-  },
+  "main": "lib/index.js",
   "dependencies": {
     "firebase-admin": "^13.0.0",
     "firebase-functions": "^6.0.0"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
-  }
+  },
+  "private": true
 }

@@ -25,6 +25,7 @@ export type AdminEntitlementInput = {
 };
 
 const cleanUid = (uid: string) => uid.trim();
+const isNonExpiringPlan = (plan: UserPlan) => plan === "lifetime" || plan === "admin" || plan === "free";
 
 export async function getAdminEntitlements() {
   if (!db || !isFirebaseConfigured) return [];
@@ -46,7 +47,7 @@ export async function grantEntitlementForAdmin(input: AdminEntitlementInput) {
     doc(db, "entitlements", uid),
     {
       plan: input.plan,
-      premiumUntil: input.plan === "premium" ? input.premiumUntil.trim() : input.premiumUntil.trim(),
+      premiumUntil: isNonExpiringPlan(input.plan) ? "" : input.premiumUntil.trim(),
       premiumSource: input.premiumSource.trim() || (input.betaTester ? "beta_test" : "manual"),
       premiumStatus: input.premiumStatus.trim() || "active",
       note: input.note.trim(),

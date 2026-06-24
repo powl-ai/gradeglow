@@ -26,6 +26,48 @@ const getDefaultPremiumUntil = () => {
   return date.toISOString().slice(0, 10);
 };
 
+const isNonExpiringPlan = (value: UserPlan) => value === "lifetime" || value === "admin";
+
+const getPlanDefaultConfig = (nextPlan: UserPlan) => {
+  if (nextPlan === "premium") {
+    return {
+      premiumUntil: getDefaultPremiumUntil(),
+      premiumSource: "beta_test",
+      premiumStatus: "active",
+      note: "1 Jahr Beta-Test Premium",
+      betaTester: true,
+    };
+  }
+
+  if (nextPlan === "lifetime") {
+    return {
+      premiumUntil: "",
+      premiumSource: "friend_bonus",
+      premiumStatus: "active",
+      note: "Freundesbonus - Lifetime",
+      betaTester: true,
+    };
+  }
+
+  if (nextPlan === "admin") {
+    return {
+      premiumUntil: "",
+      premiumSource: "founder",
+      premiumStatus: "active",
+      note: "Founder/Admin",
+      betaTester: true,
+    };
+  }
+
+  return {
+    premiumUntil: "",
+    premiumSource: "manual_revoke",
+    premiumStatus: "cancelled",
+    note: "Premium/Admin Zugriff manuell zurückgesetzt.",
+    betaTester: false,
+  };
+};
+
 const statusLabels: Record<FeedbackStatus, string> = {
   open: "Offen",
   reviewing: "In Prüfung",
@@ -53,6 +95,21 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const selectedUid = uid.trim();
+  const selectedPlanHasNoExpiry = isNonExpiringPlan(plan) || plan === "free";
+
+  const applyPreset = (nextPlan: UserPlan) => {
+    const defaults = getPlanDefaultConfig(nextPlan);
+    setPlan(nextPlan);
+    setPremiumUntil(defaults.premiumUntil);
+    setPremiumSource(defaults.premiumSource);
+    setPremiumStatus(defaults.premiumStatus);
+    setNote(defaults.note);
+    setBetaTester(defaults.betaTester);
+  };
+
+  const handlePlanChange = (nextPlan: UserPlan) => {
+    applyPreset(nextPlan);
+  };
 
   const sortedFeedback = useMemo(
     () => [...feedback].sort((a, b) => (b.createdAtIso || "").localeCompare(a.createdAtIso || "")),
@@ -130,13 +187,14 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
   };
 
   const editFromRow = (row: EntitlementRow) => {
+    const rowPlan = row.storedPlan;
     setUid(row.uid);
-    setPlan(row.storedPlan);
-    setPremiumUntil(row.premiumUntil || getDefaultPremiumUntil());
-    setPremiumSource(row.premiumSource || "manual");
+    setPlan(rowPlan);
+    setPremiumUntil(isNonExpiringPlan(rowPlan) || rowPlan === "free" ? "" : row.premiumUntil || getDefaultPremiumUntil());
+    setPremiumSource(row.premiumSource || getPlanDefaultConfig(rowPlan).premiumSource);
     setPremiumStatus(row.plan === "free" ? "cancelled" : "active");
-    setNote(row.note || "");
-    setBetaTester(row.premiumSource === "beta_test");
+    setNote(row.note || getPlanDefaultConfig(rowPlan).note);
+    setBetaTester(row.premiumSource === "beta_test" || row.premiumSource === "friend_bonus" || row.premiumSource === "founder");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -201,6 +259,13 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
                 <h2 className="mt-1 text-2xl font-black tracking-tight">Premium/Admin vergeben</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">UID aus Firebase Authentication kopieren. Dokument wird unter entitlements/UID gespeichert.</p>
 
+                <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                  <button type="button" onClick={() => applyPreset("premium")} className="rounded-2xl bg-violet-50 px-4 py-3 text-left text-xs font-black text-violet-700 ring-1 ring-violet-100 transition hover:-translate-y-0.5">1 Jahr Beta Premium</button>
+                  <button type="button" onClick={() => applyPreset("lifetime")} className="rounded-2xl bg-fuchsia-50 px-4 py-3 text-left text-xs font-black text-fuchsia-700 ring-1 ring-fuchsia-100 transition hover:-translate-y-0.5">Lifetime Freundesbonus</button>
+                  <button type="button" onClick={() => applyPreset("admin")} className="rounded-2xl bg-slate-950 px-4 py-3 text-left text-xs font-black text-white transition hover:-translate-y-0.5">Admin / Founder</button>
+                  <button type="button" onClick={() => applyPreset("free")} className="rounded-2xl bg-rose-50 px-4 py-3 text-left text-xs font-black text-rose-700 ring-1 ring-rose-100 transition hover:-translate-y-0.5">Free / Entfernen</button>
+                </div>
+
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <label className="block sm:col-span-2">
                     <span className="mb-1.5 block text-sm font-bold text-slate-700">Firebase Auth UID</span>
@@ -208,13 +273,22 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
                   </label>
                   <label className="block">
                     <span className="mb-1.5 block text-sm font-bold text-slate-700">Plan</span>
-                    <select className="field-input" value={plan} onChange={(event) => setPlan(event.target.value as UserPlan)}>
+                    <select className="field-input" value={plan} onChange={(event) => handlePlanChange(event.target.value as UserPlan)}>
                       {planOptions.map((item) => <option key={item} value={item}>{planLabels[item]}</option>)}
                     </select>
                   </label>
                   <label className="block">
                     <span className="mb-1.5 block text-sm font-bold text-slate-700">Premium bis</span>
-                    <input className="field-input" type="date" value={premiumUntil} onChange={(event) => setPremiumUntil(event.target.value)} />
+                    <input
+                      className="field-input disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                      type="date"
+                      value={premiumUntil}
+                      disabled={selectedPlanHasNoExpiry}
+                      onChange={(event) => setPremiumUntil(event.target.value)}
+                    />
+                    <span className="mt-1.5 block text-xs font-semibold text-slate-400">
+                      {selectedPlanHasNoExpiry ? "Kein Ablaufdatum nötig." : "Wird bei Premium automatisch auf 1 Jahr gesetzt."}
+                    </span>
                   </label>
                   <label className="block">
                     <span className="mb-1.5 block text-sm font-bold text-slate-700">Quelle</span>

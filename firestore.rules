@@ -2,50 +2,83 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function protectedPremiumFields() {
+      return [
+        "plan",
+        "isPremium",
+        "premiumStatus",
+        "premiumSource",
+        "premiumExpiresAt",
+        "premiumUntil",
+        "betaTester",
+        "role"
+      ];
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+
+      allow create: if isOwner(userId)
+        && !request.resource.data.keys().hasAny(protectedPremiumFields());
+
+      allow update: if isOwner(userId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(protectedPremiumFields());
+
+      allow delete: if isOwner(userId)
+        && !resource.data.keys().hasAny(protectedPremiumFields());
+    }
+
     match /users/{userId}/modules/{moduleId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
     }
 
     match /users/{userId}/exams/{examId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
     }
 
     match /users/{userId}/friends/{friendId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
     }
 
     match /users/{userId}/gradeglow/{documentId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
     }
 
     match /publicStudyProfiles/{profileId} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null && request.auth.uid == profileId;
-      allow delete: if request.auth != null && request.auth.uid == profileId;
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && request.auth.uid == profileId;
+      allow delete: if isSignedIn() && request.auth.uid == profileId;
     }
 
     match /studyFriendCodes/{codeId} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.normalizedCode == codeId;
-      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
     }
 
-
     match /studyActivityEvents/{profileId} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
         && request.auth.uid == profileId
         && request.resource.data.uid == request.auth.uid;
-      allow delete: if request.auth != null && request.auth.uid == profileId;
+      allow delete: if isSignedIn() && request.auth.uid == profileId;
     }
 
     // Manual Premium / Admin rights live here.
     // Clients can read their own entitlement but cannot write it.
     // Create or edit these documents manually in Firebase Console or later via Stripe/Paddle webhooks.
     match /entitlements/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId);
       allow write: if false;
     }
   }

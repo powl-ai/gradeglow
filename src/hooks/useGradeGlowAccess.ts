@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../lib/firebase";
-import { DEFAULT_USER_PLAN, getPlanLimits, normalizeEntitlement } from "../lib/gradeglowAccess";
+import { DEFAULT_USER_PLAN, getPlanLimits, mergeEntitlementSources } from "../lib/gradeglowAccess";
 import type { AppUser, GradeGlowEntitlement } from "../types";
 
 const ENTITLEMENTS_COLLECTION = "entitlements";
+const USERS_COLLECTION = "users";
 
 export type AccessSyncStatus = "local" | "cloud-loading" | "cloud-ready" | "cloud-error";
 
@@ -18,6 +19,16 @@ const defaultEntitlement: GradeGlowEntitlement = {
   note: "",
   updatedAtIso: "",
   isManuallyGranted: false,
+};
+
+const getAccessMessage = (entitlement: GradeGlowEntitlement) => {
+  if (entitlement.plan === "free") return "Free Plan aktiv";
+
+  const planLabel = entitlement.plan === "premium" ? "Premium" : entitlement.plan;
+  const untilSuffix = entitlement.premiumUntil ? ` bis ${entitlement.premiumUntil}` : "";
+  const sourceSuffix = entitlement.premiumSource === "beta_test" ? " · Beta" : "";
+
+  return `${planLabel} aktiv${untilSuffix}${sourceSuffix}`;
 };
 
 export function useGradeGlowAccess(user: AppUser) {
@@ -36,30 +47,59 @@ export function useGradeGlowAccess(user: AppUser) {
     setStatus("cloud-loading");
     setMessage("Plan wird geladen…");
 
-    const entitlementRef = doc(db, ENTITLEMENTS_COLLECTION, user.uid);
-    const unsubscribe = onSnapshot(
-      entitlementRef,
-      (snapshot) => {
-        const nextEntitlement = snapshot.exists()
-          ? normalizeEntitlement(snapshot.data())
-          : defaultEntitlement;
+    let userDocumentData: Record<string, unknown> | null | undefined = undefined;
+    let entitlementDocumentData: Record<string, unknown> | null | undefined = undefined;
+    let hasAnyListenerError = false;
 
-        setEntitlement(nextEntitlement);
-        setStatus("cloud-ready");
-        setMessage(
-          nextEntitlement.plan === "free"
-            ? "Free Plan aktiv"
-            : `${nextEntitlement.plan === "premium" ? "Premium" : nextEntitlement.plan} aktiv`,
-        );
+    const applyEntitlement = () => {
+      const hasReceivedAtLeastOneSnapshot =
+        userDocumentData !== undefined || entitlementDocumentData !== undefined;
+
+      if (!hasReceivedAtLeastOneSnapshot) return;
+
+      const nextEntitlement = mergeEntitlementSources(
+        userDocumentData ?? null,
+        entitlementDocumentData ?? null,
+      );
+
+      setEntitlement(nextEntitlement);
+      setStatus(hasAnyListenerError && nextEntitlement.plan === "free" ? "cloud-error" : "cloud-ready");
+      setMessage(getAccessMessage(nextEntitlement));
+    };
+
+    const userRef = doc(db, USERS_COLLECTION, user.uid);
+    const entitlementRef = doc(db, ENTITLEMENTS_COLLECTION, user.uid);
+
+    const unsubscribeUser = onSnapshot(
+      userRef,
+      (snapshot) => {
+        userDocumentData = snapshot.exists() ? snapshot.data() : null;
+        applyEntitlement();
       },
       () => {
-        setEntitlement(defaultEntitlement);
-        setStatus("cloud-error");
-        setMessage("Plan konnte nicht geladen werden · Free Fallback aktiv");
+        hasAnyListenerError = true;
+        userDocumentData = null;
+        applyEntitlement();
       },
     );
 
-    return () => unsubscribe();
+    const unsubscribeEntitlement = onSnapshot(
+      entitlementRef,
+      (snapshot) => {
+        entitlementDocumentData = snapshot.exists() ? snapshot.data() : null;
+        applyEntitlement();
+      },
+      () => {
+        hasAnyListenerError = true;
+        entitlementDocumentData = null;
+        applyEntitlement();
+      },
+    );
+
+    return () => {
+      unsubscribeUser();
+      unsubscribeEntitlement();
+    };
   }, [user.provider, user.uid]);
 
   const limits = useMemo(() => getPlanLimits(entitlement.plan), [entitlement.plan]);

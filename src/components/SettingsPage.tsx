@@ -713,7 +713,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
               </div>
 
               <p className="mt-4 rounded-2xl bg-slate-50 p-3 text-xs font-semibold leading-5 text-slate-500 ring-1 ring-slate-200">
-                Manuelle Freischaltung läuft später über Firebase Console im Dokument <span className="font-black text-slate-700">entitlements/{user.uid}</span>. User können dieses Dokument nur lesen, nicht selbst schreiben.
+                Manuelle Freischaltung läuft über Firebase Console im Dokument <span className="font-black text-slate-700">entitlements/{user.uid}</span>. Für Beta-Premium: plan = premium, premiumSource = beta_test, premiumUntil = 2027-06-24. User können Entitlements nur lesen, nicht selbst schreiben.
               </p>
             </div>
 

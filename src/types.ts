@@ -275,3 +275,47 @@ export type GradeGlowFeedback = {
   updatedAtIso: string;
   adminNote: string;
 };
+
+
+export type DiagnosticReportKind = "bug_report" | "client_error" | "ui_audit" | "system_check";
+
+export type DiagnosticStatus = "open" | "reviewing" | "fixed" | "ignored" | "closed";
+
+export type DiagnosticPriority = "low" | "normal" | "high" | "critical";
+
+export type UiIssue = {
+  id: string;
+  severity: "low" | "normal" | "high";
+  selector: string;
+  label: string;
+  message: string;
+};
+
+export type DiagnosticReport = {
+  id: string;
+  ownerUid: string;
+  ownerEmail: string;
+  ownerName: string;
+  kind: DiagnosticReportKind;
+  status: DiagnosticStatus;
+  priority: DiagnosticPriority;
+  title: string;
+  message: string;
+  page: string;
+  route: string;
+  userAgent: string;
+  appVersion: string;
+  browserLanguage: string;
+  viewport: string;
+  onlineStatus: string;
+  notificationPermission: string;
+  createdAtIso: string;
+  updatedAtIso: string;
+  lastSeenAtIso: string;
+  occurrenceCount: number;
+  errorName: string;
+  errorMessage: string;
+  stack: string;
+  adminNote: string;
+  metadata: Record<string, unknown>;
+};

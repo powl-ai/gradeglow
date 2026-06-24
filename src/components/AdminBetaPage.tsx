@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import GradeGlowLogo from "./GradeGlowLogo";
+import AdminDiagnosticsPanel from "./AdminDiagnosticsPanel";
 import { getAdminEntitlements, grantEntitlementForAdmin, revokeEntitlementForAdmin } from "../lib/adminBeta";
 import { getRecentFeedbackForAdmin, updateFeedbackStatusForAdmin } from "../lib/feedback";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
@@ -378,6 +379,8 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
                 ))}
               </div>
             </section>
+
+            <AdminDiagnosticsPanel />
           </>
         )}
       </div>

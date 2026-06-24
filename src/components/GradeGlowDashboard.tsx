@@ -64,6 +64,7 @@ export type DashboardPage =
   | "schedule"
   | "modules"
   | "feedback"
+  | "diagnostics"
   | "backup";
 
 type GradeGlowDashboardProps = {
@@ -147,6 +148,13 @@ const dashboardNavItems: DashboardNavItem[] = [
     label: "Feedback",
     description: "Bug melden und Feature wünschen",
     emoji: "💬",
+  },
+  {
+    id: "diagnostics",
+    href: "/diagnostics",
+    label: "Diagnose",
+    description: "Bugs, Status und Button-Audit",
+    emoji: "🛠",
   },
   {
     id: "backup",
@@ -2612,6 +2620,24 @@ export default function GradeGlowDashboard({
                   Admin-Beta-Verwaltung
                 </Link>
               )}
+            </div>
+          </section>
+        )}
+
+        {page === "diagnostics" && (
+          <section id="diagnostics" className="scroll-mt-6 rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+            <p className="text-sm font-bold text-violet-700">Beta Diagnostics</p>
+            <h2 className="mt-1 text-2xl font-black tracking-tight">Status prüfen und Bug melden</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Diagnose läuft auf einer eigenen Seite, damit Browserdaten, Button-Audit und Fehlerberichte sauber gespeichert werden.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href="/diagnostics" className="rounded-2xl bg-violet-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-violet-100 transition hover:-translate-y-0.5 hover:bg-violet-800">
+                Diagnose-Seite öffnen
+              </Link>
+              <Link href="/feedback" className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50">
+                Klassisches Feedback
+              </Link>
             </div>
           </section>
         )}

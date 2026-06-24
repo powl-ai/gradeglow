@@ -41,6 +41,18 @@ service cloud.firestore {
       return request.resource.data.status in ["open", "reviewing", "planned", "done", "closed"];
     }
 
+    function validDiagnosticKind() {
+      return request.resource.data.kind in ["bug_report", "client_error", "ui_audit", "system_check"];
+    }
+
+    function validDiagnosticPriority() {
+      return request.resource.data.priority in ["low", "normal", "high", "critical"];
+    }
+
+    function validDiagnosticStatus() {
+      return request.resource.data.status in ["open", "reviewing", "fixed", "ignored", "closed"];
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
 
@@ -129,6 +141,23 @@ service cloud.firestore {
 
       allow update: if isAdmin()
         && validFeedbackStatus();
+
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+    }
+
+    match /diagnostics/{reportId} {
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && validDiagnosticKind()
+        && validDiagnosticPriority()
+        && request.resource.data.status == "open"
+        && request.resource.data.title is string
+        && request.resource.data.message is string;
+
+      allow read: if isAdmin() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+
+      allow update: if isAdmin()
+        && validDiagnosticStatus();
 
       allow delete: if isAdmin() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
     }

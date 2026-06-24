@@ -13,6 +13,7 @@ import {
   type DocumentData,
 } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "./firebase";
+import { GRADEGLOW_APP_VERSION } from "./appVersion";
 import type {
   AppUser,
   FeedbackPriority,
@@ -21,7 +22,7 @@ import type {
   GradeGlowFeedback,
 } from "../types";
 
-export const FEEDBACK_APP_VERSION = "beta-2026-06-24";
+export const FEEDBACK_APP_VERSION = GRADEGLOW_APP_VERSION;
 
 export type NewFeedbackInput = {
   type: FeedbackType;

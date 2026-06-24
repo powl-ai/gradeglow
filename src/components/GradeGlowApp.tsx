@@ -2,6 +2,7 @@
 
 import AuthGate from "./AuthGate";
 import GradeGlowDashboard from "./GradeGlowDashboard";
+import ClientDiagnosticsLogger from "./ClientDiagnosticsLogger";
 import type { DashboardPage } from "./GradeGlowDashboard";
 
 type GradeGlowAppProps = {
@@ -12,7 +13,9 @@ export default function GradeGlowApp({ page = "overview" }: GradeGlowAppProps) {
   return (
     <AuthGate>
       {({ user, logout }) => (
-        <GradeGlowDashboard user={user} onLogout={logout} page={page} />
+        <ClientDiagnosticsLogger user={user}>
+          <GradeGlowDashboard user={user} onLogout={logout} page={page} />
+        </ClientDiagnosticsLogger>
       )}
     </AuthGate>
   );

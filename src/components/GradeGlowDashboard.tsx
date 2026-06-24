@@ -9,6 +9,7 @@ import GradeGlowLogo from "./GradeGlowLogo";
 import GradeGlowPlanner from "./GradeGlowPlanner";
 import PlanUsagePanel from "./PlanUsagePanel";
 import PwaInstallCard from "./PwaInstallCard";
+import BetaNoticeCard from "./BetaNoticeCard";
 import StudyFriendsPanel from "./StudyFriendsPanel";
 import StudyPlanningPanel from "./StudyPlanningPanel";
 import UniSchedulePanel from "./UniSchedulePanel";
@@ -62,6 +63,7 @@ export type DashboardPage =
   | "planning"
   | "schedule"
   | "modules"
+  | "feedback"
   | "backup";
 
 type GradeGlowDashboardProps = {
@@ -138,6 +140,13 @@ const dashboardNavItems: DashboardNavItem[] = [
     label: "Module",
     description: "Eintragen, bearbeiten und Leistungen",
     emoji: "📚",
+  },
+  {
+    id: "feedback",
+    href: "/feedback",
+    label: "Feedback",
+    description: "Bug melden und Feature wünschen",
+    emoji: "💬",
   },
   {
     id: "backup",
@@ -1428,6 +1437,16 @@ export default function GradeGlowDashboard({
               <span className="text-base">👤</span>
               <span>Profil</span>
             </Link>
+
+            {entitlement.plan === "admin" && (
+              <Link
+                href="/admin"
+                className="flex shrink-0 items-center gap-2 rounded-2xl bg-slate-950 px-3 py-2 text-sm font-black text-white ring-1 ring-slate-900 transition hover:-translate-y-0.5 hover:bg-slate-800 sm:px-4"
+              >
+                <span className="text-base">⚙</span>
+                <span>Admin</span>
+              </Link>
+            )}
           </div>
         </nav>
 
@@ -1518,6 +1537,8 @@ export default function GradeGlowDashboard({
               modulesCount={modules.length}
               examsCount={exams.length}
             />
+
+            <BetaNoticeCard compact />
 
             <section className="rounded-3xl bg-white/85 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
               <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
@@ -2573,6 +2594,26 @@ export default function GradeGlowDashboard({
               )}
             </section>
           </>
+        )}
+
+        {page === "feedback" && (
+          <section id="feedback" className="scroll-mt-6 rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+            <p className="text-sm font-bold text-violet-700">Feedback</p>
+            <h2 className="mt-1 text-2xl font-black tracking-tight">Bug melden oder Feature wünschen</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Feedback wird auf einer eigenen Seite gesammelt, damit Beta-Meldungen sauber in Firebase landen.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href="/feedback" className="rounded-2xl bg-violet-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-violet-100 transition hover:-translate-y-0.5 hover:bg-violet-800">
+                Feedback-Seite öffnen
+              </Link>
+              {entitlement.plan === "admin" && (
+                <Link href="/admin" className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-lg shadow-slate-200 transition hover:-translate-y-0.5 hover:bg-slate-800">
+                  Admin-Beta-Verwaltung
+                </Link>
+              )}
+            </div>
+          </section>
         )}
 
         {page === "backup" && (

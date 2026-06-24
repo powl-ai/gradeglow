@@ -251,3 +251,27 @@ export type GradeGlowNotification = {
   readAtIso: string;
   sourceEventId: string;
 };
+
+export type FeedbackType = "bug" | "feedback" | "feature_request" | "delete_request" | "beta_note";
+
+export type FeedbackStatus = "open" | "reviewing" | "planned" | "done" | "closed";
+
+export type FeedbackPriority = "low" | "normal" | "high";
+
+export type GradeGlowFeedback = {
+  id: string;
+  ownerUid: string;
+  ownerEmail: string;
+  ownerName: string;
+  type: FeedbackType;
+  status: FeedbackStatus;
+  priority: FeedbackPriority;
+  subject: string;
+  message: string;
+  page: string;
+  userAgent: string;
+  appVersion: string;
+  createdAtIso: string;
+  updatedAtIso: string;
+  adminNote: string;
+};

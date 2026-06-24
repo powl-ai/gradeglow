@@ -5,7 +5,9 @@ const dataItems = [
   "Accountdaten wie E-Mail-Adresse, Anzeigename und Login-Anbieter",
   "Profilangaben wie Name, Studiengang und Ziel-ECTS",
   "Module, Semester, ECTS, Status, Noten und Einzelleistungen",
-  "Prüfungen und Lernplan-Inhalte, wenn du sie in GradeGlow anlegst",
+  "Prüfungen, Lernplan-Inhalte und Stundenplan, wenn du sie in GradeGlow anlegst",
+  "Freundeslisten, Study-Circle-Aktivitäten und Benachrichtigungseinstellungen",
+  "Feedback, Bugmeldungen oder Löschanfragen, die du über die App sendest",
   "lokale Browserdaten für PWA, Offline-Seite, Cache und lokale Backups",
 ];
 
@@ -96,10 +98,13 @@ export default function InfoPage() {
 
               <div>
                 <p className="font-black text-slate-900">Kontakt</p>
-                <p>E-Mail: [gradeglow.support@icloud.com]</p>
+                <p>E-Mail: gradeglow.support@icloud.com</p>
               </div>
 
-              
+              <p className="rounded-2xl bg-amber-50 p-4 text-amber-800 ring-1 ring-amber-100">
+                Hinweis: Diese Angaben sind bewusst Platzhalter. Für eine öffentliche App solltest du hier
+                keine Fake-Daten stehen lassen.
+              </p>
             </div>
           </article>
 
@@ -148,9 +153,7 @@ export default function InfoPage() {
             <p className="text-sm font-bold text-fuchsia-200">Nutzerrechte & Löschung</p>
             <h2 className="mt-1 text-2xl font-black tracking-tight">Daten exportieren oder entfernen</h2>
             <p className="mt-3 text-sm leading-6 text-slate-300">
-              In der App kannst du deine Modul-Daten als JSON-Backup oder CSV exportieren. Für eine
-              öffentliche Version solltest du zusätzlich einen klaren Kontaktweg anbieten, über den Nutzer
-              eine Auskunft oder Löschung ihrer gespeicherten Daten anfragen können.
+              In den Einstellungen kannst du einen JSON-Export erstellen, App-Daten löschen oder den Account entfernen. Zusätzlich kannst du über die Feedback-Seite eine Datenschutz- oder Löschanfrage speichern. Kontakt: gradeglow.support@icloud.com.
             </p>
           </article>
 
@@ -159,9 +162,10 @@ export default function InfoPage() {
             <h2 className="mt-1 text-2xl font-black tracking-tight">Vor dem Teilen der App prüfen</h2>
             <ul className="mt-4 space-y-3 text-sm font-semibold leading-6 text-slate-600">
               <li>□ echte Impressumsdaten eintragen</li>
-              <li>□ Kontaktmail eintragen</li>
+              <li>□ Kontaktmail prüfen: gradeglow.support@icloud.com</li>
               <li>□ Firebase-/Vercel-Projektname prüfen</li>
-              <li>□ erklären, wie Nutzer Daten löschen lassen können</li>
+              <li>□ Datenexport und Löschung in Einstellungen testen</li>
+              <li>□ Admin-Account in entitlements einmalig auf plan = admin setzen</li>
               <li>□ Seite nach finalem Hosting-Domainwechsel nochmal prüfen</li>
             </ul>
           </article>

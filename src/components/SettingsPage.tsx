@@ -3,10 +3,11 @@
 import Link from "next/link";
 import GradeGlowLogo from "./GradeGlowLogo";
 import NotificationSettingsCard from "./NotificationSettingsCard";
+import BetaNoticeCard from "./BetaNoticeCard";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { deleteUser, updateProfile } from "firebase/auth";
-import { collection, deleteDoc, doc, getDocs, writeBatch } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, query, where, writeBatch } from "firebase/firestore";
 import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { DEFAULT_TARGET_ECTS, useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
@@ -15,6 +16,7 @@ import { PAGE_THEMES, getEffectivePageThemeId, getPageThemeStyle } from "../lib/
 import { STREAK_BADGES, getAvatarFrameWrapperClassName, getProfileBannerClassName } from "../lib/glowRewards";
 import { getUserModulesStorageKey } from "../lib/gradeglowModules";
 import { getUserExamsStorageKey } from "../lib/gradeglowExams";
+import { createDeleteRequest } from "../lib/feedback";
 import type { AccentColor, AppUser, GradeGlowProfile, PageThemeId, StartMode, ThemeMode } from "../types";
 
 type SettingsPageProps = {
@@ -70,6 +72,40 @@ const deleteCollectionDocs = async (path: string[]) => {
   const batch = writeBatch(db);
   snapshot.docs.forEach((item) => batch.delete(item.ref));
   await batch.commit();
+};
+
+const deleteQueryDocs = async (collectionPath: string, fieldName: string, value: string) => {
+  if (!db) return;
+  const snapshot = await getDocs(query(collection(db, collectionPath), where(fieldName, "==", value)));
+  if (snapshot.empty) return;
+
+  const batch = writeBatch(db);
+  snapshot.docs.forEach((item) => batch.delete(item.ref));
+  await batch.commit();
+};
+
+const readCollectionDocs = async (path: string[]) => {
+  if (!db) return [];
+  const snapshot = await getDocs(collection(db, path.join("/")));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+};
+
+const readQueryDocs = async (collectionPath: string, fieldName: string, value: string) => {
+  if (!db) return [];
+  const snapshot = await getDocs(query(collection(db, collectionPath), where(fieldName, "==", value)));
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+};
+
+const downloadJsonFile = (filename: string, data: unknown) => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 };
 
 const removeLocalUser = (uid: string) => {
@@ -157,6 +193,8 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeletingData, setIsDeletingData] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isExportingData, setIsExportingData] = useState(false);
+  const [isCreatingDeleteRequest, setIsCreatingDeleteRequest] = useState(false);
   const [isRestartingOnboarding, setIsRestartingOnboarding] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -255,6 +293,67 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     }
   };
 
+  const handleExportAccountData = async () => {
+    setDangerMessage("");
+    setIsExportingData(true);
+
+    try {
+      const exportedAtIso = new Date().toISOString();
+      const localData = {
+        modules: localStorage.getItem(getUserModulesStorageKey(user.uid)),
+        exams: localStorage.getItem(getUserExamsStorageKey(user.uid)),
+        profile: localStorage.getItem(`${PROFILE_STORAGE_KEY}-${user.uid}`),
+      };
+
+      const cloudData = user.provider === "firebase" && isFirebaseConfigured && db
+        ? {
+            profile: await getDoc(doc(db, "users", user.uid, "gradeglow", "settings")).then((snapshot) => snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null).catch(() => null),
+            modules: await readCollectionDocs(["users", user.uid, "modules"]),
+            exams: await readCollectionDocs(["users", user.uid, "exams"]),
+            schedule: await readCollectionDocs(["users", user.uid, "schedule"]),
+            friends: await readCollectionDocs(["users", user.uid, "friends"]),
+            notifications: await readCollectionDocs(["users", user.uid, "notifications"]),
+            notificationSettings: await readCollectionDocs(["users", user.uid, "notificationSettings"]),
+            feedback: await readQueryDocs("feedback", "ownerUid", user.uid),
+            publicStudyProfiles: await readQueryDocs("publicStudyProfiles", "uid", user.uid).catch(() => []),
+            studyActivityEvents: await readQueryDocs("studyActivityEvents", "uid", user.uid).catch(() => []),
+            studyFriendCodes: await readQueryDocs("studyFriendCodes", "uid", user.uid).catch(() => []),
+          }
+        : null;
+
+      downloadJsonFile(`gradeglow-export-${user.uid}-${exportedAtIso.slice(0, 10)}.json`, {
+        app: "GradeGlow",
+        version: 2,
+        exportedAtIso,
+        uid: user.uid,
+        email: user.email,
+        profile,
+        entitlement,
+        localData,
+        cloudData,
+      });
+      setDangerMessage("Datenexport wurde erstellt.");
+    } catch {
+      setDangerMessage("Datenexport konnte nicht erstellt werden.");
+    } finally {
+      setIsExportingData(false);
+    }
+  };
+
+  const handleCreateDeleteRequest = async () => {
+    setDangerMessage("");
+    setIsCreatingDeleteRequest(true);
+
+    try {
+      await createDeleteRequest(user, "Der Nutzer möchte Unterstützung bei Datenexport, App-Daten-Löschung oder Account-Löschung.");
+      setDangerMessage("Lösch-/Datenschutzanfrage wurde an GradeGlow Support gespeichert.");
+    } catch {
+      setDangerMessage("Anfrage konnte nicht gespeichert werden. Schreib alternativ an gradeglow.support@icloud.com.");
+    } finally {
+      setIsCreatingDeleteRequest(false);
+    }
+  };
+
   const handleDeleteAppData = async () => {
     if (deleteConfirmation !== "LÖSCHEN") {
       setDangerMessage("Tippe LÖSCHEN ein, um die Datenlöschung zu bestätigen.");
@@ -268,12 +367,17 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
       if (user.provider === "firebase" && isFirebaseConfigured && db) {
         await deleteCollectionDocs(["users", user.uid, "modules"]);
         await deleteCollectionDocs(["users", user.uid, "exams"]);
+        await deleteCollectionDocs(["users", user.uid, "schedule"]);
+        await deleteCollectionDocs(["users", user.uid, "friends"]);
         await deleteCollectionDocs(["users", user.uid, "notificationTokens"]);
         await deleteCollectionDocs(["users", user.uid, "notificationSettings"]);
         await deleteCollectionDocs(["users", user.uid, "notifications"]);
+        await deleteQueryDocs("feedback", "ownerUid", user.uid);
+        await deleteQueryDocs("studyFriendCodes", "uid", user.uid).catch(() => undefined);
         await deleteDoc(doc(db, "users", user.uid, "gradeglow", "settings")).catch(() => undefined);
         await deleteDoc(doc(db, "users", user.uid, "gradeglow", "dashboard")).catch(() => undefined);
         await deleteDoc(doc(db, "publicStudyProfiles", user.uid)).catch(() => undefined);
+        await deleteDoc(doc(db, "studyActivityEvents", user.uid)).catch(() => undefined);
       }
 
       clearLocalGradeGlowData(user.uid);
@@ -299,12 +403,17 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
       if (user.provider === "firebase" && auth?.currentUser) {
         await deleteCollectionDocs(["users", user.uid, "modules"]);
         await deleteCollectionDocs(["users", user.uid, "exams"]);
+        await deleteCollectionDocs(["users", user.uid, "schedule"]);
+        await deleteCollectionDocs(["users", user.uid, "friends"]);
         await deleteCollectionDocs(["users", user.uid, "notificationTokens"]);
         await deleteCollectionDocs(["users", user.uid, "notificationSettings"]);
         await deleteCollectionDocs(["users", user.uid, "notifications"]);
+        await deleteQueryDocs("feedback", "ownerUid", user.uid);
+        await deleteQueryDocs("studyFriendCodes", "uid", user.uid).catch(() => undefined);
         await deleteDoc(doc(db!, "users", user.uid, "gradeglow", "settings")).catch(() => undefined);
         await deleteDoc(doc(db!, "users", user.uid, "gradeglow", "dashboard")).catch(() => undefined);
         await deleteDoc(doc(db!, "publicStudyProfiles", user.uid)).catch(() => undefined);
+        await deleteDoc(doc(db!, "studyActivityEvents", user.uid)).catch(() => undefined);
         clearLocalGradeGlowData(user.uid);
         await deleteUser(auth.currentUser);
         return;
@@ -452,6 +561,8 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
             </div>
           </div>
         </header>
+
+        <BetaNoticeCard compact />
 
         <section className="grid gap-6 lg:grid-cols-[1fr_0.78fr]">
           <form className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6" onSubmit={handleSubmit}>
@@ -743,11 +854,25 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
             </div>
 
             <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-rose-100 backdrop-blur sm:p-6">
-              <p className="text-sm font-bold text-rose-700">Daten & Account</p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight">Löschen</h2>
+              <p className="text-sm font-bold text-rose-700">Datentransparenz & Löschung</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight">Daten exportieren oder löschen</h2>
               <p className="mt-3 text-sm leading-6 text-slate-500">
-                App-Daten löschen entfernt Module, Prüfungen und Profil. Account löschen entfernt zusätzlich den Login-Account. Bei Firebase kann dafür aus Sicherheitsgründen ein frischer Login nötig sein.
+                Du kannst einen JSON-Export deiner GradeGlow-Daten erstellen, App-Daten löschen oder deinen kompletten Login-Account entfernen. Gelöscht werden u. a. Module, Prüfungen, Stundenplan, Freunde, Benachrichtigungen, öffentliche Study-Circle-Daten und dein Profil.
               </p>
+
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <button type="button" className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200 disabled:opacity-50" onClick={handleExportAccountData} disabled={isExportingData || isDeletingData || isDeletingAccount}>
+                  {isExportingData ? "Exportiere…" : "Daten exportieren"}
+                </button>
+                <button type="button" className="rounded-2xl bg-violet-50 px-4 py-3 text-sm font-black text-violet-700 ring-1 ring-violet-100 disabled:opacity-50" onClick={handleCreateDeleteRequest} disabled={isCreatingDeleteRequest || isDeletingData || isDeletingAccount}>
+                  {isCreatingDeleteRequest ? "Sende…" : "Löschanfrage speichern"}
+                </button>
+              </div>
+
+              <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-xs font-semibold leading-5 text-amber-800 ring-1 ring-amber-100">
+                Hinweis: Account-Löschung bei Firebase kann einen frischen Login verlangen. Wenn es nicht klappt, kurz abmelden, neu anmelden und direkt nochmal löschen. Für Support: gradeglow.support@icloud.com
+              </div>
+
               <label className="mt-4 block">
                 <span className="mb-1.5 block text-sm font-bold text-slate-700">Zur Bestätigung LÖSCHEN eintippen</span>
                 <input className="field-input" value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value)} placeholder="LÖSCHEN" />
@@ -762,6 +887,18 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                 </button>
               </div>
             </div>
+
+            {entitlement.plan === "admin" && (
+              <div className="rounded-3xl bg-slate-950 p-5 text-white shadow-xl shadow-slate-950/10 ring-1 ring-white/10 sm:p-6">
+                <p className="text-sm font-bold text-fuchsia-200">Admin</p>
+                <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Beta-Verwaltung</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-300">Verwalte Beta-Premium und Feedback-Inbox auf der Admin-Seite.</p>
+                <Link href="/admin" className="mt-4 inline-flex rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-50">
+                  Admin-Bereich öffnen
+                </Link>
+              </div>
+            )}
+
           </aside>
         </section>
 

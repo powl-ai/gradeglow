@@ -5,14 +5,13 @@ import GradeGlowLogo from "./GradeGlowLogo";
 import NotificationSettingsCard from "./NotificationSettingsCard";
 import BetaNoticeCard from "./BetaNoticeCard";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties } from "react";
 import { deleteUser, updateProfile } from "firebase/auth";
 import { collection, deleteDoc, doc, getDoc, getDocs, query, where, writeBatch } from "firebase/firestore";
 import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { DEFAULT_TARGET_ECTS, useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { formatLimit, planDescriptions, planLabels } from "../lib/gradeglowAccess";
-import { PAGE_THEMES, getEffectivePageThemeId, getPageThemeStyle } from "../lib/gradeglowThemes";
+import { PAGE_THEMES, getEffectivePageThemeId, getPageThemeStyle, getThemeClassName } from "../lib/gradeglowThemes";
 import { STREAK_BADGES, getAvatarFrameWrapperClassName, getProfileBannerClassName } from "../lib/glowRewards";
 import { getUserModulesStorageKey } from "../lib/gradeglowModules";
 import { getUserExamsStorageKey } from "../lib/gradeglowExams";
@@ -47,14 +46,6 @@ const accentColorLabels: { value: AccentColor; label: string; dotClassName: stri
   { value: "cyan", label: "Cyan", dotClassName: "bg-cyan-500", unlockId: "accent-cyan" },
   { value: "rose", label: "Rose", dotClassName: "bg-rose-500", unlockId: "accent-rose" },
 ];
-
-const getThemeClassName = (themeMode: ThemeMode) => {
-  if (themeMode === "dark") return "gg-theme-dark";
-  if (themeMode === "light") return "gg-theme-light";
-  return "gg-theme-system";
-};
-
-const getThemeStyle = (pageThemeId: PageThemeId): CSSProperties => getPageThemeStyle(pageThemeId);
 
 const LOCAL_USERS_KEY = "gradeglow-local-users-v1";
 const LOCAL_SESSION_KEY = "gradeglow-local-session-v1";
@@ -469,7 +460,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
 
   const themeClassName = getThemeClassName(themeMode);
   const effectivePageThemeId = getEffectivePageThemeId(activePageThemeId, limits.premiumThemes);
-  const themeStyle = getThemeStyle(effectivePageThemeId);
+  const themeStyle = getPageThemeStyle(effectivePageThemeId);
   const userLabel = profile.displayName || user.displayName || user.email || "GradeGlow User";
   const userInitial = userLabel.trim().charAt(0).toUpperCase() || "G";
   const avatarSource = avatarDataUrl || profile.avatarDataUrl || user.photoURL || "";
@@ -659,7 +650,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
             <div className="mt-6 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
               <div className="mb-4">
                 <p className="text-sm font-black text-slate-950">Look & Feel</p>
-                <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">Passe GradeGlow an: Akzentfarbe, heller Modus, Dark Mode oder automatisch nach System.</p>
+                <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">Passe GradeGlow an: Akzentfarbe, heller Modus, Dark Mode oder automatisch nach System. Premium-Themes und Akzentfarben lassen sich jetzt kombinieren.</p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -729,7 +720,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                   </div>
                   {!limits.premiumThemes && (
                     <p className="mt-2 rounded-2xl bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800 ring-1 ring-amber-100">
-                      Rose Bloom und Study Sunrise als komplette App-Themes sind Premium. Free kann weiterhin Akzentfarben und Profilkosmetik nutzen.
+                      Komplette Seiten-Themes sind Premium. Free kann weiterhin Basis-Akzentfarben und Profilkosmetik nutzen.
                     </p>
                   )}
                 </div>

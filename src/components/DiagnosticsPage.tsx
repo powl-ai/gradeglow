@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import GradeGlowLogo from "./GradeGlowLogo";
+import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
+import { useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
+import { getEffectivePageThemeId, getPageThemeStyle, getThemeClassName } from "../lib/gradeglowThemes";
 import {
   createDiagnosticReport,
   getDiagnosticsSnapshot,
@@ -45,6 +48,11 @@ export default function DiagnosticsPage({ user, onLogout }: DiagnosticsPageProps
   const [uiIssues, setUiIssues] = useState<UiIssue[]>([]);
   const [reports, setReports] = useState<DiagnosticReport[]>([]);
   const [isLoadingReports, setIsLoadingReports] = useState(false);
+  const { profile } = useGradeGlowProfile(user);
+  const { limits } = useGradeGlowAccess(user);
+  const effectivePageThemeId = getEffectivePageThemeId(profile.activePageThemeId, limits.premiumThemes);
+  const themeClassName = getThemeClassName(profile.themeMode);
+  const themeStyle = getPageThemeStyle(effectivePageThemeId);
 
   const diagnosticRows = useMemo(
     () => [
@@ -146,7 +154,7 @@ export default function DiagnosticsPage({ user, onLogout }: DiagnosticsPageProps
   };
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950">
+    <main className={`gg-themed ${themeClassName} min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950`} data-accent={profile.accentColor} data-page-theme={effectivePageThemeId} style={themeStyle}>
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute left-[-8rem] top-[-8rem] h-96 w-96 rounded-full bg-fuchsia-200/60 blur-3xl" />
         <div className="absolute right-[-10rem] top-40 h-[28rem] w-[28rem] rounded-full bg-violet-200/60 blur-3xl" />

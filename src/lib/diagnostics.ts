@@ -251,8 +251,13 @@ export const scanCurrentPageForUiIssues = (): UiIssue[] => {
     const htmlElement = element as HTMLElement;
     const isButton = element.tagName.toLowerCase() === "button";
     const isLink = element.tagName.toLowerCase() === "a";
+    const isRoleButton = element.getAttribute("role") === "button";
     const disabled = htmlElement.hasAttribute("disabled") || htmlElement.getAttribute("aria-disabled") === "true";
     const href = isLink ? element.getAttribute("href") || "" : "";
+    const style = window.getComputedStyle(htmlElement);
+    const rect = htmlElement.getBoundingClientRect();
+    const isHidden = style.display === "none" || style.visibility === "hidden" || Number(style.opacity) < 0.05;
+    const isTooSmallToTap = !isHidden && !disabled && (rect.width > 0 || rect.height > 0) && (rect.width < 18 || rect.height < 18);
 
     if (!text) {
       issues.push({
@@ -261,6 +266,26 @@ export const scanCurrentPageForUiIssues = (): UiIssue[] => {
         selector: getElementSelector(element),
         label: "",
         message: "Klickbares Element ohne sichtbaren Text/aria-label gefunden.",
+      });
+    }
+
+    if (!disabled && style.pointerEvents === "none") {
+      issues.push({
+        id: `pointer-disabled-${index}`,
+        severity: "high",
+        selector: getElementSelector(element),
+        label: text,
+        message: "Klickbares Element wirkt aktiv, nimmt aber wegen pointer-events keine Klicks an.",
+      });
+    }
+
+    if (isTooSmallToTap) {
+      issues.push({
+        id: `tap-target-${index}`,
+        severity: "normal",
+        selector: getElementSelector(element),
+        label: text,
+        message: "Klickfläche ist sehr klein und kann auf Mobile wie ein kaputter Button wirken.",
       });
     }
 
@@ -281,6 +306,16 @@ export const scanCurrentPageForUiIssues = (): UiIssue[] => {
         selector: getElementSelector(element),
         label: text,
         message: "Button ohne type-Attribut gefunden. Kann in Formularen unerwartet submitten.",
+      });
+    }
+
+    if (isRoleButton && !htmlElement.hasAttribute("tabindex")) {
+      issues.push({
+        id: `role-button-keyboard-${index}`,
+        severity: "normal",
+        selector: getElementSelector(element),
+        label: text,
+        message: "role=button ohne tabindex gefunden. Per Tastatur ist das Element eventuell nicht erreichbar.",
       });
     }
   });

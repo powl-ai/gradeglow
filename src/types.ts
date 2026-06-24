@@ -12,7 +12,14 @@ export type ThemeMode = "system" | "light" | "dark";
 
 export type AccentColor = "violet" | "pink" | "blue" | "emerald" | "amber" | "cyan" | "rose";
 
-export type PageThemeId = "default" | "theme-night-library" | "theme-study-sunrise";
+export type PageThemeId =
+  | "default"
+  | "theme-night-library"
+  | "theme-study-sunrise"
+  | "theme-lavender-haze"
+  | "theme-matcha-focus"
+  | "theme-ocean-mist"
+  | "theme-mocha-latte";
 
 export type UserPlan = "free" | "premium" | "lifetime" | "admin";
 

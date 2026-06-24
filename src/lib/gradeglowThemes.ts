@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { PageThemeId } from "../types";
+import type { PageThemeId, ThemeMode } from "../types";
 
 export type GradeGlowPageTheme = {
   id: PageThemeId;
@@ -13,22 +13,50 @@ export const PAGE_THEMES: GradeGlowPageTheme[] = [
   {
     id: "default",
     title: "Classic Glow",
-    description: "Der normale helle GradeGlow-Look.",
+    description: "Der normale helle GradeGlow-Look. Akzentfarben bleiben trotzdem kombinierbar.",
     previewClassName: "from-violet-100 via-fuchsia-100 to-pink-100",
     isPremium: false,
   },
   {
     id: "theme-night-library",
     title: "Rose Bloom",
-    description: "Rosanes Premium-Theme für die gesamte App, inklusive Karten, Buttons und Diagramme.",
+    description: "Weiches rosé Premium-Theme für die gesamte App – kombinierbar mit jeder Akzentfarbe.",
     previewClassName: "from-rose-100 via-pink-200 to-fuchsia-300",
     isPremium: true,
   },
   {
     id: "theme-study-sunrise",
     title: "Study Sunrise",
-    description: "Warmer Sunrise-Look für die gesamte App, inklusive Karten und Diagramme.",
+    description: "Warmer Sunrise-Look für Karten, Hintergründe und Diagramme – Akzentfarbe frei wählbar.",
     previewClassName: "from-orange-100 via-pink-200 to-violet-200",
+    isPremium: true,
+  },
+  {
+    id: "theme-lavender-haze",
+    title: "Lavender Haze",
+    description: "Ruhiges, helles Lila-Theme mit premium Study-Lounge-Gefühl.",
+    previewClassName: "from-purple-100 via-violet-100 to-fuchsia-200",
+    isPremium: true,
+  },
+  {
+    id: "theme-matcha-focus",
+    title: "Matcha Focus",
+    description: "Cleanes grünliches Fokus-Theme für ruhige Lernphasen.",
+    previewClassName: "from-lime-100 via-emerald-100 to-teal-200",
+    isPremium: true,
+  },
+  {
+    id: "theme-ocean-mist",
+    title: "Ocean Mist",
+    description: "Frisches blaues Premium-Theme mit kühlem, klaren App-Look.",
+    previewClassName: "from-sky-100 via-cyan-100 to-blue-200",
+    isPremium: true,
+  },
+  {
+    id: "theme-mocha-latte",
+    title: "Mocha Latte",
+    description: "Warmes Coffeehouse-Theme mit beige/braunen Karten und ruhiger Oberfläche.",
+    previewClassName: "from-stone-100 via-amber-100 to-orange-200",
     isPremium: true,
   },
 ];
@@ -42,6 +70,12 @@ export const getEffectivePageThemeId = (themeId: PageThemeId, canUsePremiumTheme
   const theme = getPageTheme(themeId);
   if (theme.isPremium && !canUsePremiumThemes) return "default";
   return theme.id;
+};
+
+export const getThemeClassName = (themeMode: ThemeMode) => {
+  if (themeMode === "dark") return "gg-theme-dark";
+  if (themeMode === "light") return "gg-theme-light";
+  return "gg-theme-system";
 };
 
 export const getPageThemeStyle = (themeId: PageThemeId): CSSProperties => ({

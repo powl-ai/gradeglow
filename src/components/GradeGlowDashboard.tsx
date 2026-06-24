@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ChangeEvent, CSSProperties, FormEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import GlowRewardsPanel from "./GlowRewardsPanel";
 import GradeGlowInsights from "./GradeGlowInsights";
 import GradeGlowLogo from "./GradeGlowLogo";
@@ -23,7 +23,7 @@ import { usePushNotifications } from "../hooks/usePushNotifications";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { formatLimit, planLabels } from "../lib/gradeglowAccess";
 import { getAvatarFrameWrapperClassName, getProfileBannerClassName } from "../lib/glowRewards";
-import { getEffectivePageThemeId, getPageThemeStyle } from "../lib/gradeglowThemes";
+import { getEffectivePageThemeId, getPageThemeStyle, getThemeClassName } from "../lib/gradeglowThemes";
 import {
   DEFAULT_TARGET_ECTS,
   useGradeGlowProfile,
@@ -80,17 +80,6 @@ type DashboardNavItem = {
   description: string;
   emoji: string;
 };
-
-const getThemeClassName = (themeMode: string) => {
-  if (themeMode === "dark") return "gg-theme-dark";
-  if (themeMode === "light") return "gg-theme-light";
-  return "gg-theme-system";
-};
-
-const getThemeStyle = (accentColor: string, pageThemeId: ReturnType<typeof getEffectivePageThemeId>): CSSProperties => ({
-  ...getPageThemeStyle(pageThemeId),
-  colorScheme: accentColor === "amber" ? "light" : undefined,
-});
 
 const dashboardNavItems: DashboardNavItem[] = [
   {
@@ -286,7 +275,7 @@ export default function GradeGlowDashboard({
   const { foregroundMessage, clearForegroundMessage } = usePushNotifications(user);
   const themeClassName = getThemeClassName(profile.themeMode);
   const effectivePageThemeId = getEffectivePageThemeId(profile.activePageThemeId, limits.premiumThemes);
-  const themeStyle = getThemeStyle(profile.accentColor, effectivePageThemeId);
+  const themeStyle = getPageThemeStyle(effectivePageThemeId);
 
   useEffect(() => {
     const syncTimer = () => {

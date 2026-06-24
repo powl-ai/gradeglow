@@ -13,6 +13,7 @@ type StudyFriendsPanelProps = {
   profile: GradeGlowProfile;
   exams: ExamPlanItem[];
   saveProfile: (nextProfile: GradeGlowProfile) => Promise<void>;
+  isProfileLoaded?: boolean;
 };
 
 type CircleRow = PublicStudyProfile & {
@@ -210,6 +211,7 @@ export default function StudyFriendsPanel({
   profile,
   exams,
   saveProfile,
+  isProfileLoaded = true,
 }: StudyFriendsPanelProps) {
   const [friendCodeInput, setFriendCodeInput] = useState("");
   const [friendSearch, setFriendSearch] = useState("");
@@ -232,7 +234,7 @@ export default function StudyFriendsPanel({
     isBusy,
     addFriend,
     removeFriend,
-  } = useStudyFriends({ user, profile, exams, limits });
+  } = useStudyFriends({ user, profile, exams, limits, profileReady: isProfileLoaded });
 
   const leaderboardRows = useMemo<CircleRow[]>(() => {
     return [
@@ -260,6 +262,7 @@ export default function StudyFriendsPanel({
   );
 
   const toggleSharing = async () => {
+    if (!isProfileLoaded) return;
     setIsSavingSharing(true);
     try {
       await saveProfile({
@@ -272,6 +275,7 @@ export default function StudyFriendsPanel({
   };
 
   const updateShareSetting = async (key: ShareSettingKey) => {
+    if (!isProfileLoaded) return;
     setIsSavingPrivacy(true);
     try {
       await saveProfile({
@@ -284,6 +288,7 @@ export default function StudyFriendsPanel({
   };
 
   const toggleFriendActivityNotifications = async () => {
+    if (!isProfileLoaded) return;
     const shouldEnable = !profile.friendActivityNotificationsEnabled;
     setIsSavingNotifications(true);
 
@@ -307,6 +312,7 @@ export default function StudyFriendsPanel({
   };
 
   const handleAddFriend = async () => {
+    if (!isProfileLoaded) return;
     await addFriend(friendCodeInput);
     setFriendCodeInput("");
   };
@@ -345,7 +351,7 @@ export default function StudyFriendsPanel({
                 : "bg-slate-950 text-white ring-slate-900 hover:bg-violet-800"
             }`}
             onClick={toggleSharing}
-            disabled={!canUseCloudSocial || isSavingSharing}
+            disabled={!isProfileLoaded || !canUseCloudSocial || isSavingSharing}
           >
             {profile.studySharingEnabled ? "Sharing aktiv" : "Sharing aktivieren"}
           </button>
@@ -434,7 +440,7 @@ export default function StudyFriendsPanel({
               type="button"
               className="self-end rounded-2xl bg-violet-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-100 transition hover:-translate-y-0.5 hover:bg-violet-800 disabled:opacity-50"
               onClick={handleAddFriend}
-              disabled={!canUseCloudSocial || isBusy || !friendCodeInput.trim()}
+              disabled={!isProfileLoaded || !canUseCloudSocial || isBusy || !friendCodeInput.trim()}
             >
               Hinzufügen
             </button>
@@ -487,7 +493,7 @@ export default function StudyFriendsPanel({
                 : "bg-slate-950 text-white ring-slate-900"
             }`}
             onClick={() => void toggleFriendActivityNotifications()}
-            disabled={!canUseCloudSocial || isSavingNotifications}
+            disabled={!isProfileLoaded || !canUseCloudSocial || isSavingNotifications}
           >
             {profile.friendActivityNotificationsEnabled ? "Popups aktiv" : "Popups aktivieren"}
           </button>
@@ -507,21 +513,21 @@ export default function StudyFriendsPanel({
             title="Lernzeit teilen"
             description="Woche, Gesamtzeit und Leaderboard-Werte."
             checked={profile.shareStudyTime}
-            disabled={isSavingPrivacy}
+            disabled={!isProfileLoaded || isSavingPrivacy}
             onToggle={() => void updateShareSetting("shareStudyTime")}
           />
           <PrivacyToggle
             title="Fächer teilen"
             description="Top-Fächer und Fokusbereiche, aber keine Noten."
             checked={profile.shareStudySubjects}
-            disabled={isSavingPrivacy}
+            disabled={!isProfileLoaded || isSavingPrivacy}
             onToggle={() => void updateShareSetting("shareStudySubjects")}
           />
           <PrivacyToggle
             title="Streak teilen"
             description="Lernstreak und zuletzt gelernter Tag."
             checked={profile.shareStudyStreak}
-            disabled={isSavingPrivacy}
+            disabled={!isProfileLoaded || isSavingPrivacy}
             onToggle={() => void updateShareSetting("shareStudyStreak")}
           />
         </div>

@@ -283,9 +283,10 @@ type UseStudyFriendsArgs = {
   profile: GradeGlowProfile;
   exams: ExamPlanItem[];
   limits?: PlanLimits;
+  profileReady?: boolean;
 };
 
-export function useStudyFriends({ user, profile, exams, limits }: UseStudyFriendsArgs) {
+export function useStudyFriends({ user, profile, exams, limits, profileReady = true }: UseStudyFriendsArgs) {
   const [friends, setFriends] = useState<FriendListItem[]>([]);
   const [friendIds, setFriendIds] = useState<string[]>([]);
   const [message, setMessage] = useState("");
@@ -316,6 +317,22 @@ export function useStudyFriends({ user, profile, exams, limits }: UseStudyFriend
   );
 
   useEffect(() => {
+    if (!profileReady) {
+      setPublishMessage("Profil wird geladen…");
+      setDebugStatus({
+        canUseCloudSocial,
+        sharingEnabled: false,
+        publicProfilePublished: false,
+        friendCodeIndexed: false,
+        rulesAccessOk: false,
+        isChecking: true,
+        friendCode: ownFriendCode,
+        detail: "Study Circle wartet auf das geladene Cloud-Profil, damit kein leeres Profil veröffentlicht oder gelöscht wird.",
+        checkedAtIso: nowIso(),
+      });
+      return;
+    }
+
     if (!canUseCloudSocial || !db) {
       setPublishMessage("");
       setDebugStatus({
@@ -447,7 +464,7 @@ export function useStudyFriends({ user, profile, exams, limits }: UseStudyFriend
     return () => {
       didCancel = true;
     };
-  }, [canUseCloudSocial, ownFriendCode, ownPublicProfile, profile.studySharingEnabled, user.uid]);
+  }, [canUseCloudSocial, ownFriendCode, ownPublicProfile, profile.studySharingEnabled, profileReady, user.uid]);
 
   useEffect(() => {
     if (!canUseCloudSocial || !db) {

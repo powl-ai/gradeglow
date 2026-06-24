@@ -270,7 +270,7 @@ export default function GradeGlowDashboard({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const { profile, isProfileLoaded, saveProfile } = useGradeGlowProfile(user);
+  const { profile, isProfileLoaded, profileSyncMessage, saveProfile } = useGradeGlowProfile(user);
   const { toast: friendActivityToast, dismissToast: dismissFriendActivityToast } = useFriendActivityToast(user, profile);
   const { foregroundMessage, clearForegroundMessage } = usePushNotifications(user);
   const themeClassName = getThemeClassName(profile.themeMode);
@@ -1073,6 +1073,21 @@ export default function GradeGlowDashboard({
     ) : avatar;
   };
 
+  if (!isProfileLoaded) {
+    return (
+      <main className={`gg-themed ${themeClassName} flex min-h-screen items-center justify-center bg-[#fbf7ff] px-4 text-slate-950`} data-accent={profile.accentColor} data-page-theme={effectivePageThemeId} style={themeStyle}>
+        <div className="max-w-md rounded-[2rem] bg-white/95 p-6 text-center shadow-sm ring-1 ring-violet-100 backdrop-blur">
+          <GradeGlowLogo size="md" />
+          <p className="mt-5 text-sm font-bold text-violet-700">{profileSyncMessage}</p>
+          <h1 className="mt-2 text-2xl font-black tracking-tight">Deine Daten werden geladen…</h1>
+          <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
+            GradeGlow wartet auf dein Cloud-Profil, bevor Dashboard, Study Circle oder Rewards speichern dürfen. So werden leere Ladezustände nicht mehr über echte Profildaten geschrieben.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   if (isProfileLoaded && !profile.onboardingCompleted) {
     if (!isLoaded || !areExamsLoaded || !isScheduleLoaded) {
       return (
@@ -1608,6 +1623,7 @@ export default function GradeGlowDashboard({
               profile={profile}
               exams={exams}
               saveProfile={saveProfile}
+              isProfileLoaded={isProfileLoaded}
             />
           </section>
         )}
@@ -1625,6 +1641,7 @@ export default function GradeGlowDashboard({
               user={user}
               profile={profile}
               saveProfile={saveProfile}
+              isProfileLoaded={isProfileLoaded}
             />
           </section>
         )}

@@ -29,6 +29,7 @@ type GradeGlowPlannerProps = {
   user: AppUser;
   profile: GradeGlowProfile;
   saveProfile: (profile: GradeGlowProfile) => Promise<void>;
+  isProfileLoaded?: boolean;
 };
 
 type CalendarMode = "month" | "week";
@@ -584,6 +585,7 @@ export default function GradeGlowPlanner({
   user,
   profile,
   saveProfile,
+  isProfileLoaded = true,
 }: GradeGlowPlannerProps) {
   const [form, setForm] = useState(emptyForm);
   const [manualStudyForm, setManualStudyForm] = useState<StudyForm>(emptyStudyForm);
@@ -925,6 +927,8 @@ export default function GradeGlowPlanner({
   };
 
   const awardStudySessionReward = (sessionId: string, durationMinutes: number, title: string) => {
+    if (!isProfileLoaded) return;
+
     const earnedPoints = getStudySessionRewardPoints(durationMinutes);
     if (earnedPoints <= 0) return;
     if (rewardedSessionIdsRef.current.has(sessionId)) return;

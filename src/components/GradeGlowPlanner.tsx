@@ -32,6 +32,7 @@ type GradeGlowPlannerProps = {
 };
 
 type CalendarMode = "month" | "week";
+type CalendarContentFilter = "all" | "exams" | "study";
 
 type StudyForm = {
   examId: string;
@@ -66,6 +67,14 @@ const studyTimerModeOptions: { value: StudyTimerMode; label: string; description
   { value: "pomodoro", label: "Pomodoro", description: "25 Minuten Fokus" },
   { value: "stopwatch", label: "Stoppuhr", description: "zählt hoch bis zum Speichern" },
 ];
+
+const calendarContentFilterOptions: { value: CalendarContentFilter; label: string; description: string }[] = [
+  { value: "all", label: "Alles", description: "Prüfungen und Lernplan" },
+  { value: "exams", label: "Nur Prüfungen", description: "Lernblöcke ausblenden" },
+  { value: "study", label: "Nur Lernplan", description: "Prüfungen ausblenden" },
+];
+
+const focusTimerPresets = [25, 30, 45, 60, 90, 120];
 
 const getTimerModeLabel = (mode: StudyTimerMode) =>
   studyTimerModeOptions.find((option) => option.value === mode)?.label ?? "Timer";
@@ -580,6 +589,7 @@ export default function GradeGlowPlanner({
   const [manualStudyForm, setManualStudyForm] = useState<StudyForm>(emptyStudyForm);
   const [focusedExamId, setFocusedExamId] = useState<string | null>(null);
   const [calendarMode, setCalendarMode] = useState<CalendarMode>("month");
+  const [calendarContentFilter, setCalendarContentFilter] = useState<CalendarContentFilter>("all");
   const [calendarCursorDate, setCalendarCursorDate] = useState(() => startOfLocalDay(new Date()));
   const [showHiddenItems, setShowHiddenItems] = useState(false);
   const [examFilterId, setExamFilterId] = useState("all");
@@ -591,6 +601,7 @@ export default function GradeGlowPlanner({
   const [timerExamId, setTimerExamId] = useState("");
   const [timerSessionId, setTimerSessionId] = useState("free");
   const [timerMode, setTimerMode] = useState<StudyTimerMode>("focus");
+  const [timerCustomMinutes, setTimerCustomMinutes] = useState("30");
   const [timerNow, setTimerNow] = useState(() => Date.now());
   const [hasRestoredTimer, setHasRestoredTimer] = useState(false);
   const [draggedSession, setDraggedSession] = useState<{ examId: string; sessionId: string } | null>(null);
@@ -741,30 +752,41 @@ export default function GradeGlowPlanner({
 
   const calendarDays = useMemo(() => buildCalendarDays(calendarCursorDate, calendarMode), [calendarCursorDate, calendarMode]);
 
+  const calendarExams = useMemo(
+    () => (calendarContentFilter === "study" ? [] : visibleExams),
+    [calendarContentFilter, visibleExams],
+  );
+
+  const calendarStudySessions = useMemo(
+    () => (calendarContentFilter === "exams" ? [] : visibleStudySessions),
+    [calendarContentFilter, visibleStudySessions],
+  );
+
   const examsByDate = useMemo(() => {
     const grouped = new Map<string, ExamPlanItem[]>();
-    visibleExams.forEach((exam) => {
+    calendarExams.forEach((exam) => {
       const current = grouped.get(exam.examDate) ?? [];
       grouped.set(exam.examDate, [...current, exam]);
     });
     return grouped;
-  }, [visibleExams]);
+  }, [calendarExams]);
 
   const studySessionsByDate = useMemo(() => {
     const grouped = new Map<string, StudySessionItem[]>();
-    visibleStudySessions.forEach((session) => {
+    calendarStudySessions.forEach((session) => {
       const current = grouped.get(session.dateKey) ?? [];
       grouped.set(session.dateKey, [...current, session]);
     });
     return grouped;
-  }, [visibleStudySessions]);
+  }, [calendarStudySessions]);
 
   const nextExam = upcomingExams.find((exam) => getDaysUntil(exam.examDate) >= 0) ?? upcomingExams[0] ?? null;
   const todayKey = getDateKey(new Date());
-  const todaySessions = studySessionsByDate.get(todayKey) ?? [];
+  const todaySessions = visibleStudySessions.filter((session) => session.dateKey === todayKey);
   const todayStudyMinutes = todaySessions.reduce((sum, session) => sum + session.durationMinutes, 0);
   const thisWeekDays = buildCalendarDays(new Date(), "week");
-  const thisWeekSessions = thisWeekDays.flatMap((date) => studySessionsByDate.get(getDateKey(date)) ?? []);
+  const thisWeekDateKeys = new Set(thisWeekDays.map((date) => getDateKey(date)));
+  const thisWeekSessions = visibleStudySessions.filter((session) => thisWeekDateKeys.has(session.dateKey));
   const thisWeekStudyMinutes = thisWeekSessions.reduce((sum, session) => sum + session.durationMinutes, 0);
   const thisWeekDoneMinutes = thisWeekSessions
     .filter((session) => session.isDone)
@@ -780,9 +802,17 @@ export default function GradeGlowPlanner({
   const timerSessions = timerExam ? sortSessions(timerExam.studySessions).filter((session) => showHiddenItems || !session.isHidden) : [];
   const timerSessionIdValue = timerSessions.some((session) => session.id === timerSessionId) ? timerSessionId : "free";
   const selectedTimerSession = timerSessionIdValue === "free" ? null : timerSessions.find((session) => session.id === timerSessionIdValue) ?? null;
+  const parsedTimerCustomMinutes = clampMinutes(
+    Number(timerCustomMinutes.replace(",", ".")) || 30,
+    30,
+    1,
+    timerExam ? getTimerHardCapMinutes(timerExam) : MAX_STUDY_TIMER_MINUTES,
+  );
   const selectedTimerGoalMinutes = timerMode === "pomodoro"
     ? POMODORO_MINUTES
-    : selectedTimerSession?.durationMinutes ?? (timerExam ? getExamSessionGoal(timerExam) : DEFAULT_SESSION_GOAL_MINUTES);
+    : timerMode === "focus"
+      ? parsedTimerCustomMinutes
+      : selectedTimerSession?.durationMinutes ?? (timerExam ? getExamSessionGoal(timerExam) : DEFAULT_SESSION_GOAL_MINUTES);
 
   const normalizedFormDate = normalizeDateInput(form.examDate);
   const selectedCalendarDayExams = selectedCalendarDayKey ? examsByDate.get(selectedCalendarDayKey) ?? [] : [];
@@ -1176,6 +1206,20 @@ export default function GradeGlowPlanner({
               ))}
             </div>
 
+            <div className="grid grid-cols-3 gap-1 rounded-2xl bg-slate-100 p-1">
+              {calendarContentFilterOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`rounded-xl px-3 py-2 text-xs font-black transition sm:text-sm ${calendarContentFilter === option.value ? "bg-white text-violet-700 shadow-sm" : "text-slate-500"}`}
+                  onClick={() => setCalendarContentFilter(option.value)}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
             <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-2xl bg-slate-50 p-1 ring-1 ring-slate-200 sm:min-w-80">
               <button type="button" className="rounded-xl bg-white px-3 py-2 text-sm font-black text-slate-600 shadow-sm ring-1 ring-slate-200" onClick={() => moveCalendar(-1)} aria-label="Vorheriger Zeitraum">←</button>
               <p className="truncate px-2 text-center text-sm font-black text-slate-700">{calendarTitle}</p>
@@ -1229,7 +1273,7 @@ export default function GradeGlowPlanner({
           <button type="button" className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200" onClick={() => setShowHiddenItems((show) => !show)}>
             {showHiddenItems ? "Versteckte ausblenden" : `Versteckte anzeigen (${hiddenCount})`}
           </button>
-          <div className="grid gap-2 rounded-3xl bg-slate-950 p-2 text-white ring-1 ring-slate-900 sm:grid-cols-[minmax(160px,1fr)_minmax(160px,1fr)_minmax(150px,1fr)_auto] sm:items-center">
+          <div className="grid gap-2 rounded-3xl bg-slate-950 p-2 text-white ring-1 ring-slate-900 sm:grid-cols-[minmax(150px,1fr)_minmax(150px,1fr)_minmax(140px,1fr)_minmax(150px,0.8fr)_auto] sm:items-center">
             <select
               className="min-w-0 rounded-2xl border border-white/10 bg-white/10 px-3 py-3 text-sm font-black text-white outline-none"
               value={timerExamIdValue}
@@ -1247,7 +1291,12 @@ export default function GradeGlowPlanner({
             <select
               className="min-w-0 rounded-2xl border border-white/10 bg-white/10 px-3 py-3 text-sm font-black text-white outline-none"
               value={timerSessionIdValue}
-              onChange={(event) => setTimerSessionId(event.target.value)}
+              onChange={(event) => {
+                const nextSessionId = event.target.value;
+                setTimerSessionId(nextSessionId);
+                const nextSession = timerSessions.find((session) => session.id === nextSessionId);
+                if (nextSession) setTimerCustomMinutes(String(nextSession.durationMinutes));
+              }}
               disabled={!timerExam || Boolean(activeTimer)}
               aria-label="Lerneinheit für Timer auswählen"
             >
@@ -1267,6 +1316,19 @@ export default function GradeGlowPlanner({
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
+            <div className="min-w-0 rounded-2xl border border-white/10 bg-white/10 p-1.5">
+              <label className="block px-1 text-[0.62rem] font-black uppercase tracking-[0.12em] text-slate-400">
+                Fokus min
+              </label>
+              <input
+                className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-2 py-1.5 text-sm font-black text-white outline-none placeholder:text-slate-500 disabled:opacity-50"
+                inputMode="numeric"
+                value={timerCustomMinutes}
+                onChange={(event) => setTimerCustomMinutes(event.target.value)}
+                disabled={!timerExam || Boolean(activeTimer) || timerMode === "pomodoro" || timerMode === "stopwatch"}
+                aria-label="Fokus-Timer Dauer in Minuten"
+              />
+            </div>
             <button
               type="button"
               className="rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950 disabled:opacity-40"
@@ -1276,6 +1338,20 @@ export default function GradeGlowPlanner({
               Timer starten
             </button>
           </div>
+          {timerMode === "focus" && !activeTimer && (
+            <div className="flex flex-wrap gap-2">
+              {focusTimerPresets.map((minutes) => (
+                <button
+                  key={minutes}
+                  type="button"
+                  className={`rounded-full px-3 py-1.5 text-xs font-black ring-1 transition ${parsedTimerCustomMinutes === minutes ? "bg-violet-700 text-white ring-violet-600" : "bg-slate-50 text-slate-600 ring-slate-200"}`}
+                  onClick={() => setTimerCustomMinutes(String(minutes))}
+                >
+                  {minutes} min
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {activeTimer && (
@@ -1459,7 +1535,7 @@ export default function GradeGlowPlanner({
               );
             })}
           </div>
-          <div className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"><p className="text-sm font-black text-slate-700">Legende</p><div className="mt-3 flex flex-wrap gap-2 text-xs font-black"><span className="rounded-full bg-rose-50 px-3 py-1 text-rose-700 ring-1 ring-rose-100">Prüfung</span><span className="rounded-full bg-violet-50 px-3 py-1 text-violet-700 ring-1 ring-violet-100">Lernblock</span><span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-100">erledigt</span><span className="rounded-full bg-amber-50 px-3 py-1 text-amber-700 ring-1 ring-amber-100">viel geplant</span></div>{calendarMoveMessage && <p className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600 ring-1 ring-slate-200">{calendarMoveMessage}</p>}{studyRewardMessage && <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100">{studyRewardMessage}</p>}</div>
+          <div className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"><p className="text-sm font-black text-slate-700">Legende</p><div className="mt-3 flex flex-wrap gap-2 text-xs font-black"><span className="rounded-full bg-rose-50 px-3 py-1 text-rose-700 ring-1 ring-rose-100">Prüfung</span><span className="rounded-full bg-violet-50 px-3 py-1 text-violet-700 ring-1 ring-violet-100">Lernblock</span><span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-100">erledigt</span><span className="rounded-full bg-amber-50 px-3 py-1 text-amber-700 ring-1 ring-amber-100">viel geplant</span><span className="rounded-full bg-white px-3 py-1 text-slate-600 ring-1 ring-slate-200">Ansicht: {calendarContentFilterOptions.find((option) => option.value === calendarContentFilter)?.label}</span></div>{calendarMoveMessage && <p className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600 ring-1 ring-slate-200">{calendarMoveMessage}</p>}{studyRewardMessage && <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100">{studyRewardMessage}</p>}</div>
         </div>
       </div>
 

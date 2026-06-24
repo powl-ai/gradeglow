@@ -11,10 +11,13 @@ import PlanUsagePanel from "./PlanUsagePanel";
 import PwaInstallCard from "./PwaInstallCard";
 import StudyFriendsPanel from "./StudyFriendsPanel";
 import StudyPlanningPanel from "./StudyPlanningPanel";
+import UniSchedulePanel from "./UniSchedulePanel";
 import OnboardingWizard from "./OnboardingWizard";
 import ModuleDetailModal from "./ModuleDetailModal";
 import { useGradeGlowModules } from "../hooks/useGradeGlowModules";
 import { useGradeGlowExams } from "../hooks/useGradeGlowExams";
+import { useGradeGlowSchedule } from "../hooks/useGradeGlowSchedule";
+import { useFriendActivityToast } from "../hooks/useFriendActivityToast";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { formatLimit, planLabels } from "../lib/gradeglowAccess";
 import { getAvatarFrameWrapperClassName, getProfileBannerClassName } from "../lib/glowRewards";
@@ -56,6 +59,7 @@ export type DashboardPage =
   | "friends"
   | "exams"
   | "planning"
+  | "schedule"
   | "modules"
   | "backup";
 
@@ -112,6 +116,13 @@ const dashboardNavItems: DashboardNavItem[] = [
     label: "Prüfungen",
     description: "Prüfungsplaner und Lernplan",
     emoji: "🗓️",
+  },
+  {
+    id: "schedule",
+    href: "/schedule",
+    label: "Stundenplan",
+    description: "Uni-Plan mit Vorlesungen und Übungen",
+    emoji: "📅",
   },
   {
     id: "planning",
@@ -208,6 +219,12 @@ export default function GradeGlowDashboard({
     isLoaded: areExamsLoaded,
     syncMessage: examsSyncMessage,
   } = useGradeGlowExams(user);
+  const {
+    scheduleItems,
+    setScheduleItems,
+    isLoaded: isScheduleLoaded,
+    syncMessage: scheduleSyncMessage,
+  } = useGradeGlowSchedule(user);
   const { entitlement, limits } = useGradeGlowAccess(user);
 
   const [name, setName] = useState("");
@@ -247,6 +264,7 @@ export default function GradeGlowDashboard({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const { profile, isProfileLoaded, saveProfile } = useGradeGlowProfile(user);
+  const { toast: friendActivityToast, dismissToast: dismissFriendActivityToast } = useFriendActivityToast(user, profile);
   const themeClassName = getThemeClassName(profile.themeMode);
   const effectivePageThemeId = getEffectivePageThemeId(profile.activePageThemeId, limits.premiumThemes);
   const themeStyle = getThemeStyle(profile.accentColor, effectivePageThemeId);
@@ -1048,7 +1066,7 @@ export default function GradeGlowDashboard({
   };
 
   if (isProfileLoaded && !profile.onboardingCompleted) {
-    if (!isLoaded || !areExamsLoaded) {
+    if (!isLoaded || !areExamsLoaded || !isScheduleLoaded) {
       return (
         <main className="flex min-h-screen items-center justify-center bg-[#fbf7ff] px-4 text-slate-950">
           <div className="rounded-[2rem] bg-white/90 p-6 text-center shadow-sm ring-1 ring-violet-100">
@@ -1082,6 +1100,36 @@ export default function GradeGlowDashboard({
         <div className="absolute right-[-10rem] top-40 h-[28rem] w-[28rem] rounded-full bg-violet-200/60 blur-3xl" />
         <div className="absolute bottom-[-12rem] left-1/2 h-[30rem] w-[30rem] -translate-x-1/2 rounded-full bg-pink-200/50 blur-3xl" />
       </div>
+
+      {friendActivityToast && (
+        <div className="fixed left-1/2 top-3 z-40 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-[1.5rem] bg-slate-950/95 p-3 text-white shadow-2xl shadow-slate-950/25 ring-1 ring-white/10 backdrop-blur sm:top-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-400 text-sm font-black text-slate-950">
+              GG
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-black">
+                {friendActivityToast.status === "started"
+                  ? `${friendActivityToast.displayName} lernt gerade`
+                  : `${friendActivityToast.displayName} hat gelernt`}
+              </p>
+              <p className="mt-0.5 truncate text-xs font-semibold text-slate-300">
+                {friendActivityToast.status === "completed" && friendActivityToast.durationMinutes > 0
+                  ? `${friendActivityToast.durationMinutes} min · ${friendActivityToast.title}`
+                  : friendActivityToast.title}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="rounded-xl bg-white/10 px-2.5 py-1.5 text-xs font-black text-white ring-1 ring-white/10"
+              onClick={dismissFriendActivityToast}
+              aria-label="Freundesbenachrichtigung schließen"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {isNavigationOpen && (
         <div
@@ -1536,6 +1584,18 @@ export default function GradeGlowDashboard({
               user={user}
               profile={profile}
               saveProfile={saveProfile}
+            />
+          </section>
+        )}
+
+        {page === "schedule" && (
+          <section id="schedule" className="scroll-mt-6">
+            <UniSchedulePanel
+              modules={modules}
+              scheduleItems={scheduleItems}
+              setScheduleItems={setScheduleItems}
+              isLoaded={isScheduleLoaded}
+              syncMessage={scheduleSyncMessage}
             />
           </section>
         )}

@@ -143,6 +143,21 @@ export type ExamPlanItem = {
   studySessions: StudySessionItem[];
 };
 
+
+export type UniScheduleItem = {
+  id: string;
+  title: string;
+  moduleId: string | null;
+  moduleName: string;
+  weekday: number;
+  startTime: string;
+  endTime: string;
+  location: string;
+  notes: string;
+  color: string;
+  isHidden: boolean;
+};
+
 export type BackupFile = {
   app: string;
   version: number;

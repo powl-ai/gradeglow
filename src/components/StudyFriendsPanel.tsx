@@ -215,6 +215,7 @@ export default function StudyFriendsPanel({
   const [friendSearch, setFriendSearch] = useState("");
   const [isSavingSharing, setIsSavingSharing] = useState(false);
   const [isSavingPrivacy, setIsSavingPrivacy] = useState(false);
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
 
   const { entitlement, limits, accessSyncMessage } = useGradeGlowAccess(user);
@@ -279,6 +280,29 @@ export default function StudyFriendsPanel({
       });
     } finally {
       setIsSavingPrivacy(false);
+    }
+  };
+
+  const toggleFriendActivityNotifications = async () => {
+    const shouldEnable = !profile.friendActivityNotificationsEnabled;
+    setIsSavingNotifications(true);
+
+    try {
+      if (
+        shouldEnable &&
+        typeof window !== "undefined" &&
+        "Notification" in window &&
+        Notification.permission === "default"
+      ) {
+        await Notification.requestPermission();
+      }
+
+      await saveProfile({
+        ...profile,
+        friendActivityNotificationsEnabled: shouldEnable,
+      });
+    } finally {
+      setIsSavingNotifications(false);
     }
   };
 
@@ -443,6 +467,30 @@ export default function StudyFriendsPanel({
           )}
 
           <StudyCircleStatusCard status={debugStatus} />
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-[2rem] bg-white p-4 ring-1 ring-slate-200 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-bold text-violet-700">Benachrichtigungen</p>
+            <h3 className="text-xl font-black tracking-tight">Freunde lernen gerade</h3>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Wenn diese Option aktiv ist, zeigt GradeGlow oben in der App eine kurze Nachricht, sobald ein Freund eine Lernsession startet oder abschließt.
+            </p>
+          </div>
+          <button
+            type="button"
+            className={`shrink-0 rounded-2xl px-4 py-3 text-sm font-black ring-1 transition hover:-translate-y-0.5 disabled:opacity-50 ${
+              profile.friendActivityNotificationsEnabled
+                ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
+                : "bg-slate-950 text-white ring-slate-900"
+            }`}
+            onClick={() => void toggleFriendActivityNotifications()}
+            disabled={!canUseCloudSocial || isSavingNotifications}
+          >
+            {profile.friendActivityNotificationsEnabled ? "Popups aktiv" : "Popups aktivieren"}
+          </button>
         </div>
       </div>
 

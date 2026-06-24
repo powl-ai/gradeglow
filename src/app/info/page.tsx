@@ -96,13 +96,10 @@ export default function InfoPage() {
 
               <div>
                 <p className="font-black text-slate-900">Kontakt</p>
-                <p>E-Mail: [deine-kontaktmail@example.com]</p>
+                <p>E-Mail: [gradeglow.support@icloud.com]</p>
               </div>
 
-              <p className="rounded-2xl bg-amber-50 p-4 text-amber-800 ring-1 ring-amber-100">
-                Hinweis: Diese Angaben sind bewusst Platzhalter. Für eine öffentliche App solltest du hier
-                keine Fake-Daten stehen lassen.
-              </p>
+              
             </div>
           </article>
 

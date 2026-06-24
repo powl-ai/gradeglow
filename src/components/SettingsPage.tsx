@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import GradeGlowLogo from "./GradeGlowLogo";
+import NotificationSettingsCard from "./NotificationSettingsCard";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { deleteUser, updateProfile } from "firebase/auth";
@@ -267,6 +268,9 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
       if (user.provider === "firebase" && isFirebaseConfigured && db) {
         await deleteCollectionDocs(["users", user.uid, "modules"]);
         await deleteCollectionDocs(["users", user.uid, "exams"]);
+        await deleteCollectionDocs(["users", user.uid, "notificationTokens"]);
+        await deleteCollectionDocs(["users", user.uid, "notificationSettings"]);
+        await deleteCollectionDocs(["users", user.uid, "notifications"]);
         await deleteDoc(doc(db, "users", user.uid, "gradeglow", "settings")).catch(() => undefined);
         await deleteDoc(doc(db, "users", user.uid, "gradeglow", "dashboard")).catch(() => undefined);
         await deleteDoc(doc(db, "publicStudyProfiles", user.uid)).catch(() => undefined);
@@ -295,6 +299,9 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
       if (user.provider === "firebase" && auth?.currentUser) {
         await deleteCollectionDocs(["users", user.uid, "modules"]);
         await deleteCollectionDocs(["users", user.uid, "exams"]);
+        await deleteCollectionDocs(["users", user.uid, "notificationTokens"]);
+        await deleteCollectionDocs(["users", user.uid, "notificationSettings"]);
+        await deleteCollectionDocs(["users", user.uid, "notifications"]);
         await deleteDoc(doc(db!, "users", user.uid, "gradeglow", "settings")).catch(() => undefined);
         await deleteDoc(doc(db!, "users", user.uid, "gradeglow", "dashboard")).catch(() => undefined);
         await deleteDoc(doc(db!, "publicStudyProfiles", user.uid)).catch(() => undefined);
@@ -717,6 +724,8 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
               </p>
             </div>
 
+
+            <NotificationSettingsCard user={user} />
             <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
               <p className="text-sm font-bold text-violet-700">Setup</p>
               <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Onboarding erneut starten</h2>

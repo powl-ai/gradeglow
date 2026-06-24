@@ -1,4 +1,4 @@
-import { getApp, getApps, initializeApp, type FirebaseOptions } from "firebase/app";
+import { getApp, getApps, initializeApp, type FirebaseApp, type FirebaseOptions } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 
@@ -20,15 +20,17 @@ export const isFirebaseConfigured = Boolean(
     firebaseConfig.appId
 );
 
+let appInstance: FirebaseApp | null = null;
 let authInstance: Auth | null = null;
 let firestoreInstance: Firestore | null = null;
 
 if (isFirebaseConfigured) {
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  authInstance = getAuth(app);
+  appInstance = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  authInstance = getAuth(appInstance);
   authInstance.languageCode = "de";
-  firestoreInstance = getFirestore(app);
+  firestoreInstance = getFirestore(appInstance);
 }
 
+export const firebaseApp = appInstance;
 export const auth = authInstance;
 export const db = firestoreInstance;

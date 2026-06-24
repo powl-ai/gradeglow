@@ -18,6 +18,7 @@ import { useGradeGlowModules } from "../hooks/useGradeGlowModules";
 import { useGradeGlowExams } from "../hooks/useGradeGlowExams";
 import { useGradeGlowSchedule } from "../hooks/useGradeGlowSchedule";
 import { useFriendActivityToast } from "../hooks/useFriendActivityToast";
+import { usePushNotifications } from "../hooks/usePushNotifications";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { formatLimit, planLabels } from "../lib/gradeglowAccess";
 import { getAvatarFrameWrapperClassName, getProfileBannerClassName } from "../lib/glowRewards";
@@ -265,6 +266,7 @@ export default function GradeGlowDashboard({
 
   const { profile, isProfileLoaded, saveProfile } = useGradeGlowProfile(user);
   const { toast: friendActivityToast, dismissToast: dismissFriendActivityToast } = useFriendActivityToast(user, profile);
+  const { foregroundMessage, clearForegroundMessage } = usePushNotifications(user);
   const themeClassName = getThemeClassName(profile.themeMode);
   const effectivePageThemeId = getEffectivePageThemeId(profile.activePageThemeId, limits.premiumThemes);
   const themeStyle = getThemeStyle(profile.accentColor, effectivePageThemeId);
@@ -1100,6 +1102,27 @@ export default function GradeGlowDashboard({
         <div className="absolute right-[-10rem] top-40 h-[28rem] w-[28rem] rounded-full bg-violet-200/60 blur-3xl" />
         <div className="absolute bottom-[-12rem] left-1/2 h-[30rem] w-[30rem] -translate-x-1/2 rounded-full bg-pink-200/50 blur-3xl" />
       </div>
+
+      {foregroundMessage && (
+        <div className="fixed left-1/2 top-3 z-50 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-[1.5rem] bg-violet-950/95 p-3 text-white shadow-2xl shadow-violet-950/25 ring-1 ring-white/10 backdrop-blur sm:top-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-200 text-sm font-black text-violet-950">
+              GG
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-black">{foregroundMessage.title}</p>
+              <p className="mt-1 text-xs font-semibold leading-5 text-violet-100">{foregroundMessage.body}</p>
+            </div>
+            <button
+              type="button"
+              className="rounded-full bg-white/10 px-2 py-1 text-xs font-black text-white transition hover:bg-white/20"
+              onClick={clearForegroundMessage}
+            >
+              Schließen
+            </button>
+          </div>
+        </div>
+      )}
 
       {friendActivityToast && (
         <div className="fixed left-1/2 top-3 z-40 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-[1.5rem] bg-slate-950/95 p-3 text-white shadow-2xl shadow-slate-950/25 ring-1 ring-white/10 backdrop-blur sm:top-5">

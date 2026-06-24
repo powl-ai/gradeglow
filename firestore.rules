@@ -56,6 +56,26 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
+    match /users/{userId}/notificationSettings/{documentId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && documentId == "main"
+        && request.resource.data.ownerUid == userId;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/notificationTokens/{tokenId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+        && request.resource.data.uid == userId;
+      allow delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, update, delete: if isOwner(userId);
+      allow create: if isOwner(userId);
+    }
+
     match /publicStudyProfiles/{profileId} {
       allow read: if isSignedIn();
       allow create, update: if isSignedIn() && request.auth.uid == profileId;

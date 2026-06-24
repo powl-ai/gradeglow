@@ -218,3 +218,36 @@ export type PublicStudyActivity = {
   completedAtIso: string;
   updatedAtIso: string;
 };
+
+export type NotificationKind =
+  | "friend_activity"
+  | "study_reminder"
+  | "exam_reminder"
+  | "streak_reminder"
+  | "system";
+
+export type GradeGlowNotificationSettings = {
+  pushNotificationsEnabled: boolean;
+  inAppNotificationsEnabled: boolean;
+  friendActivityPushEnabled: boolean;
+  studyReminderPushEnabled: boolean;
+  examReminderPushEnabled: boolean;
+  streakReminderPushEnabled: boolean;
+  quietHoursEnabled: boolean;
+  quietHoursStart: string;
+  quietHoursEnd: string;
+  updatedAtIso: string;
+};
+
+export type GradeGlowNotification = {
+  id: string;
+  kind: NotificationKind;
+  title: string;
+  body: string;
+  url: string;
+  actorUid: string;
+  actorName: string;
+  createdAtIso: string;
+  readAtIso: string;
+  sourceEventId: string;
+};

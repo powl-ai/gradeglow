@@ -54,6 +54,9 @@ const getLatestStudyDateKey = (latestStudyAt: Date | null) => (latestStudyAt ? g
 const isValidAccentColor = (value: string): value is AccentColor =>
   ["violet", "pink", "blue", "emerald", "amber", "cyan", "rose"].includes(value);
 
+const hasCosmeticAccess = (profile: GradeGlowProfile, cosmeticId: string, limits: PlanLimits) =>
+  limits.premiumThemes || ownsCosmetic(profile, cosmeticId);
+
 type GlowRewardsPanelProps = {
   profile: GradeGlowProfile;
   exams: ExamPlanItem[];
@@ -222,7 +225,7 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile, limits, 
     setMessage("");
 
     const purchasedIds = normalizePurchasedCosmetics(profile.purchasedCosmeticIds);
-    const alreadyOwned = purchasedIds.includes(cosmetic.id);
+    const alreadyOwned = purchasedIds.includes(cosmetic.id) || limits.premiumThemes;
 
     if (cosmetic.premiumOnly && !limits.premiumThemes) {
       setMessage(`${cosmetic.title} ist ein Premium-Theme. Dein aktueller Plan: ${planLabel}.`);
@@ -240,7 +243,7 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile, limits, 
       await saveProfile({
         ...profile,
         glowPoints: alreadyOwned ? profile.glowPoints : profile.glowPoints - cosmetic.cost,
-        purchasedCosmeticIds: alreadyOwned ? purchasedIds : [...purchasedIds, cosmetic.id],
+        purchasedCosmeticIds: purchasedIds.includes(cosmetic.id) || limits.premiumThemes ? purchasedIds : [...purchasedIds, cosmetic.id],
         accentColor:
           cosmetic.kind === "accent" && cosmetic.accentColor && isValidAccentColor(cosmetic.accentColor)
             ? cosmetic.accentColor
@@ -381,9 +384,9 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile, limits, 
             <div>
               <p className="text-sm font-bold text-violet-700">Glow Shop</p>
               <h2 className="mt-1 text-2xl font-black tracking-tight">Kosmetik mit Punkten freischalten</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">Teste Farben, Banner, Profilbild-Frames und komplette App-Themes zuerst in der Vorschau. Die Ganzseiten-Themes sind Premium.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">Teste Farben, Banner, Profilbild-Frames und komplette App-Themes zuerst in der Vorschau. Premium/Admin nutzt alle aktuellen Shop-Looks ohne GP-Kauf; Free kann sie freischalten.</p>
             </div>
-            <span className="self-start rounded-full bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-700 ring-1 ring-violet-100">{profile.glowPoints} Punkte</span>
+            <span className="self-start rounded-full bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-700 ring-1 ring-violet-100">{limits.premiumThemes ? `${planLabel} · Shop frei` : `${profile.glowPoints} Punkte`}</span>
           </div>
 
           <div className={`mt-5 overflow-hidden rounded-3xl p-4 shadow-lg shadow-violet-950/10 ring-1 ring-slate-900/10 ${previewCosmetic?.kind === "pageTheme" ? previewPageThemeClassName : `${previewBannerClassName} text-white`}`}>
@@ -407,7 +410,7 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile, limits, 
             {previewCosmetic && (
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 <button type="button" className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 disabled:opacity-45" onClick={() => void redeemOrEquipCosmetic(previewCosmetic.id)} disabled={isSaving}>
-                  {ownsCosmetic(profile, previewCosmetic.id) ? "Aktivieren" : `${previewCosmetic.cost} GP einlösen`}
+                  {hasCosmeticAccess(profile, previewCosmetic.id, limits) ? "Aktivieren" : `${previewCosmetic.cost} GP einlösen`}
                 </button>
                 <button type="button" className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-black text-white ring-1 ring-white/10" onClick={() => setPreviewCosmeticId(null)}>
                   Vorschau schließen
@@ -418,7 +421,7 @@ export default function GlowRewardsPanel({ profile, exams, saveProfile, limits, 
 
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             {GLOW_COSMETICS.map((item) => {
-              const owned = ownsCosmetic(profile, item.id);
+              const owned = hasCosmeticAccess(profile, item.id, limits);
               const isActive =
                 (item.kind === "accent" && item.accentColor === profile.accentColor) ||
                 (item.kind === "avatarFrame" && item.id === profile.activeAvatarFrameId) ||

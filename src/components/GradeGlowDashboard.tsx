@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import GlowRewardsPanel from "./GlowRewardsPanel";
 import GradeGlowInsights from "./GradeGlowInsights";
@@ -172,6 +172,7 @@ const emptyAssessmentInput: AssessmentInput = {
 };
 
 const ACTIVE_TIMER_STORAGE_KEY = "gradeglow-active-study-timer-v1";
+const QUICK_RAIL_SCROLL_STORAGE_KEY = "gradeglow-quick-rail-scroll-left-v1";
 
 type StoredActiveStudyTimer = {
   examId: string;
@@ -269,6 +270,8 @@ export default function GradeGlowDashboard({
   const [globalTimerNow, setGlobalTimerNow] = useState(() => Date.now());
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const quickRailRef = useRef<HTMLElement | null>(null);
+  const activeQuickRailItemRef = useRef<HTMLAnchorElement | null>(null);
 
   const { profile, isProfileLoaded, profileSyncMessage, saveProfile } = useGradeGlowProfile(user);
   const { toast: friendActivityToast, dismissToast: dismissFriendActivityToast } = useFriendActivityToast(user, profile);
@@ -1073,6 +1076,26 @@ export default function GradeGlowDashboard({
     ) : avatar;
   };
 
+  const handleQuickRailScroll = useCallback(() => {
+    const rail = quickRailRef.current;
+    if (!rail || typeof window === "undefined") return;
+    window.sessionStorage.setItem(QUICK_RAIL_SCROLL_STORAGE_KEY, String(rail.scrollLeft));
+  }, []);
+
+  useEffect(() => {
+    const rail = quickRailRef.current;
+    if (!rail || typeof window === "undefined") return;
+
+    const savedScrollLeft = Number(window.sessionStorage.getItem(QUICK_RAIL_SCROLL_STORAGE_KEY) || "0");
+    window.requestAnimationFrame(() => {
+      if (Number.isFinite(savedScrollLeft) && savedScrollLeft > 0) {
+        rail.scrollLeft = savedScrollLeft;
+      }
+      activeQuickRailItemRef.current?.scrollIntoView({ behavior: "auto", block: "nearest", inline: "nearest" });
+      window.sessionStorage.setItem(QUICK_RAIL_SCROLL_STORAGE_KEY, String(rail.scrollLeft));
+    });
+  }, [page]);
+
   if (!isProfileLoaded) {
     return (
       <main className={`gg-themed ${themeClassName} flex min-h-screen items-center justify-center bg-[#fbf7ff] px-4 text-slate-950`} data-accent={profile.accentColor} data-page-theme={effectivePageThemeId} style={themeStyle}>
@@ -1419,6 +1442,8 @@ export default function GradeGlowDashboard({
         )}
 
         <nav
+          ref={quickRailRef}
+          onScroll={handleQuickRailScroll}
           className="sticky top-[calc(env(safe-area-inset-top,0px)+0.5rem)] z-30 -mx-3 overflow-x-auto px-3 pb-1 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
           aria-label="GradeGlow Schnellnavigation"
         >
@@ -1429,6 +1454,7 @@ export default function GradeGlowDashboard({
               return (
                 <Link
                   key={item.id}
+                  ref={isActive ? activeQuickRailItemRef : undefined}
                   href={item.href}
                   className={`flex shrink-0 items-center gap-2 rounded-2xl px-3 py-2 text-sm font-black ring-1 transition hover:-translate-y-0.5 sm:px-4 ${
                     isActive

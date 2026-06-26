@@ -205,6 +205,14 @@ export const getPageThemePreviewClassName = (themeId: string) => {
       return "bg-gradient-to-br from-rose-100 via-pink-200 to-fuchsia-300 text-slate-950";
     case "theme-study-sunrise":
       return "bg-gradient-to-br from-orange-100 via-pink-200 to-violet-300 text-slate-950";
+    case "theme-lavender-haze":
+      return "bg-gradient-to-br from-purple-100 via-violet-100 to-fuchsia-200 text-slate-950";
+    case "theme-matcha-focus":
+      return "bg-gradient-to-br from-lime-100 via-emerald-100 to-teal-200 text-slate-950";
+    case "theme-ocean-mist":
+      return "bg-gradient-to-br from-sky-100 via-cyan-100 to-blue-200 text-slate-950";
+    case "theme-mocha-latte":
+      return "bg-gradient-to-br from-stone-100 via-amber-100 to-orange-200 text-slate-950";
     default:
       return "bg-gradient-to-br from-violet-100 via-fuchsia-100 to-pink-100 text-slate-950";
   }

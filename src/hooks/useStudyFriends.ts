@@ -101,7 +101,7 @@ const buildPublicProfile = (
     friendCode: buildStudyFriendCode(user.uid),
     displayName: profile.displayName || user.displayName || "GradeGlow User",
     degreeProgram: profile.degreeProgram,
-    avatarDataUrl: profile.avatarDataUrl,
+    avatarDataUrl: getPublicImageSource(profile.avatarDataUrl || user.photoURL || ""),
     totalDoneMinutes: shouldShareStudyTime ? getTotalDoneStudyMinutes(exams) : 0,
     thisWeekDoneMinutes: shouldShareStudyTime ? getThisWeekDoneStudyMinutes(exams) : 0,
     topSubjects,
@@ -150,6 +150,15 @@ const migrateSubjectStats = (rawValue: unknown): PublicStudyProfile["topSubjects
 
 const getShareFlag = (value: unknown) => value !== false;
 
+const getPublicImageSource = (value: unknown) => {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  return trimmed.startsWith("data:image/") || trimmed.startsWith("https://") || trimmed.startsWith("http://")
+    ? trimmed
+    : "";
+};
+
 const migratePublicProfile = (
   uid: string,
   rawProfile: unknown,
@@ -173,10 +182,7 @@ const migratePublicProfile = (
         ? record.displayName.trim()
         : "GradeGlow User",
     degreeProgram: typeof record.degreeProgram === "string" ? record.degreeProgram : "",
-    avatarDataUrl:
-      typeof record.avatarDataUrl === "string" && record.avatarDataUrl.startsWith("data:image/")
-        ? record.avatarDataUrl
-        : "",
+    avatarDataUrl: getPublicImageSource(record.avatarDataUrl),
     totalDoneMinutes:
       shareStudyTime && typeof record.totalDoneMinutes === "number" && Number.isFinite(record.totalDoneMinutes)
         ? record.totalDoneMinutes
@@ -217,10 +223,7 @@ const migratePublicActivity = (rawActivity: unknown): PublicStudyActivity | null
       typeof record.displayName === "string" && record.displayName.trim()
         ? record.displayName.trim()
         : "GradeGlow Friend",
-    avatarDataUrl:
-      typeof record.avatarDataUrl === "string" && record.avatarDataUrl.startsWith("data:image/")
-        ? record.avatarDataUrl
-        : "",
+    avatarDataUrl: getPublicImageSource(record.avatarDataUrl),
     status,
     title: typeof record.title === "string" && record.title.trim() ? record.title.trim() : "Lernsession",
     examId: typeof record.examId === "string" ? record.examId : "",

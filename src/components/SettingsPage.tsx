@@ -650,7 +650,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
             <div className="mt-6 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
               <div className="mb-4">
                 <p className="text-sm font-black text-slate-950">Look & Feel</p>
-                <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">Passe GradeGlow an: Akzentfarbe, heller Modus, Dark Mode oder automatisch nach System. Premium-Themes und Akzentfarben lassen sich jetzt kombinieren.</p>
+                <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">Passe GradeGlow an: Akzentfarbe, heller Modus, Dark Mode oder automatisch nach System. Beim Theme-Wechsel wird automatisch die passende Akzentfarbe gesetzt. Danach kannst du sie weiterhin bewusst kombinieren.</p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -675,7 +675,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                   <span className="mb-2 block text-sm font-bold text-slate-700">Akzentfarbe</span>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {accentColorLabels.map((option) => {
-                      const isLocked = Boolean(option.unlockId && !profile.purchasedCosmeticIds.includes(option.unlockId) && accentColor !== option.value);
+                      const isLocked = Boolean(option.unlockId && !limits.premiumThemes && !profile.purchasedCosmeticIds.includes(option.unlockId) && accentColor !== option.value);
                       return (
                         <button
                           key={option.value}
@@ -705,7 +705,10 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                           key={theme.id}
                           type="button"
                           className={`rounded-2xl p-3 text-left ring-1 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 ${isSelected ? "bg-slate-950 text-white ring-slate-900" : "bg-white text-slate-700 ring-slate-200 hover:bg-violet-50"}`}
-                          onClick={() => setActivePageThemeId(theme.id)}
+                          onClick={() => {
+                            setActivePageThemeId(theme.id);
+                            setAccentColor(theme.defaultAccentColor);
+                          }}
                           disabled={isLocked}
                           title={isLocked ? "Premium-Theme · im Freundesbonus/Premium freischalten" : theme.title}
                         >
@@ -720,7 +723,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                   </div>
                   {!limits.premiumThemes && (
                     <p className="mt-2 rounded-2xl bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800 ring-1 ring-amber-100">
-                      Komplette Seiten-Themes sind Premium. Free kann weiterhin Basis-Akzentfarben und Profilkosmetik nutzen.
+                      Komplette Seiten-Themes sind Premium. Premium/Admin hat alle aktuellen Glow-Point-Kosmetiken direkt verfügbar; Free kann Basis-Akzentfarben nutzen und weitere Looks im Glow Shop freischalten.
                     </p>
                   )}
                 </div>

@@ -66,6 +66,15 @@ export function useGradeGlowSchedule(user: AppUser): UseGradeGlowScheduleResult 
       return undefined;
     }
 
+    const localBackup = loadLocalScheduleItems(storageKey);
+    if (localBackup.length > 0) {
+      setScheduleState(localBackup);
+      lastPersistedScheduleRef.current = localBackup;
+      setSyncStatus("cloud-loading");
+      setSyncMessage("Lokales Stundenplan-Backup geladen · prüfe Cloud…");
+      setIsLoaded(true);
+    }
+
     const firestore = db;
     const scheduleCollectionRef = collection(firestore, "users", user.uid, SCHEDULE_COLLECTION_NAME);
 

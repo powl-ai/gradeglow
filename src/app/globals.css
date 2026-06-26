@@ -674,3 +674,236 @@ details > summary::-webkit-details-marker {
     color: #cbd5e1 !important;
   }
 }
+
+/* Beta contrast polish: make theme/accent typography consistent across Planner, StuPo,
+   Admin and Study Circle without touching semantic success/error colors. */
+.gg-themed .text-violet-300,
+.gg-themed .text-violet-400,
+.gg-themed .text-violet-600,
+.gg-themed .text-violet-700,
+.gg-themed .text-violet-800,
+.gg-themed .text-violet-900,
+.gg-themed .text-fuchsia-300,
+.gg-themed .text-fuchsia-400,
+.gg-themed .text-fuchsia-500,
+.gg-themed .text-fuchsia-600,
+.gg-themed .text-fuchsia-700,
+.gg-themed .text-pink-500,
+.gg-themed .text-pink-600,
+.gg-themed .text-pink-700,
+.gg-themed .hover\:text-violet-700:hover,
+.gg-themed .hover\:text-fuchsia-700:hover {
+  color: var(--gg-accent-700) !important;
+}
+
+.gg-themed .text-violet-100,
+.gg-themed .text-violet-200,
+.gg-themed .text-fuchsia-100,
+.gg-themed .text-fuchsia-200,
+.gg-themed .text-fuchsia-200\/80,
+.gg-themed .text-fuchsia-50\/90,
+.gg-themed .text-pink-100,
+.gg-themed .text-pink-200 {
+  color: var(--gg-accent-200) !important;
+}
+
+.gg-themed .bg-violet-500\/20,
+.gg-themed .bg-fuchsia-500\/20,
+.gg-themed .bg-violet-50\/70,
+.gg-themed .bg-fuchsia-50\/70 {
+  background-color: color-mix(in srgb, var(--gg-accent-100) 70%, transparent) !important;
+}
+
+.gg-themed .ring-violet-300\/40,
+.gg-themed .ring-fuchsia-300\/40,
+.gg-themed .ring-violet-100,
+.gg-themed .ring-fuchsia-100,
+.gg-themed .border-violet-200,
+.gg-themed .border-fuchsia-200 {
+  --tw-ring-color: var(--gg-accent-200) !important;
+  border-color: var(--gg-accent-200) !important;
+}
+
+.gg-themed input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+.gg-themed select,
+.gg-themed textarea {
+  background-color: color-mix(in srgb, var(--gg-surface) 92%, white) !important;
+  border-color: var(--gg-border) !important;
+  color: var(--gg-app-text) !important;
+}
+
+.gg-themed input::placeholder,
+.gg-themed textarea::placeholder {
+  color: color-mix(in srgb, var(--gg-muted) 62%, transparent) !important;
+}
+
+.gg-themed select option {
+  background: var(--gg-surface) !important;
+  color: var(--gg-app-text) !important;
+}
+
+.gg-theme-dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+.gg-theme-dark select,
+.gg-theme-dark textarea {
+  background-color: rgba(15, 23, 42, 0.86) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #f8fafc !important;
+}
+
+.gg-theme-dark .text-slate-300,
+.gg-theme-dark .text-slate-400,
+.gg-theme-dark .text-slate-500,
+.gg-theme-dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+.gg-theme-dark .bg-white\/10 .text-slate-300,
+.gg-theme-dark .bg-white\/10 .text-slate-400,
+.gg-theme-dark .bg-slate-950 .text-slate-300,
+.gg-theme-dark .bg-slate-950 .text-slate-400 {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+/* Theme-specific dark palettes. A selected Premium theme now stays recognizable
+   in Dark Mode instead of falling back to the generic dark look. */
+.gg-theme-dark.gg-themed[data-page-theme="theme-night-library"],
+.gg-theme-dark.gg-themed[data-page-theme="night-library"] {
+  --gg-app-bg: #160711;
+  --gg-app-text: #fff1f7;
+  --gg-surface: rgba(38, 14, 28, 0.94);
+  --gg-surface-soft: rgba(80, 22, 52, 0.72);
+  --gg-surface-strong: #831843;
+  --gg-border: rgba(244, 114, 182, 0.28);
+  --gg-muted: #fbcfe8;
+  --gg-orb-one: rgba(244, 114, 182, 0.18);
+  --gg-orb-two: rgba(236, 72, 153, 0.16);
+  --gg-orb-three: rgba(217, 70, 239, 0.14);
+}
+
+.gg-theme-dark.gg-themed[data-page-theme="theme-study-sunrise"] {
+  --gg-app-bg: #180d08;
+  --gg-app-text: #fff7ed;
+  --gg-surface: rgba(42, 20, 10, 0.94);
+  --gg-surface-soft: rgba(85, 38, 12, 0.68);
+  --gg-surface-strong: #7c2d12;
+  --gg-border: rgba(251, 146, 60, 0.26);
+  --gg-muted: #fed7aa;
+  --gg-orb-one: rgba(251, 146, 60, 0.18);
+  --gg-orb-two: rgba(251, 113, 133, 0.14);
+  --gg-orb-three: rgba(167, 139, 250, 0.13);
+}
+
+.gg-theme-dark.gg-themed[data-page-theme="theme-lavender-haze"] {
+  --gg-app-bg: #0f0a1f;
+  --gg-app-text: #f8f3ff;
+  --gg-surface: rgba(30, 20, 54, 0.94);
+  --gg-surface-soft: rgba(56, 35, 100, 0.68);
+  --gg-surface-strong: #3b0764;
+  --gg-border: rgba(196, 181, 253, 0.28);
+  --gg-muted: #ddd6fe;
+  --gg-orb-one: rgba(167, 139, 250, 0.18);
+  --gg-orb-two: rgba(217, 70, 239, 0.14);
+  --gg-orb-three: rgba(129, 140, 248, 0.12);
+}
+
+.gg-theme-dark.gg-themed[data-page-theme="theme-matcha-focus"] {
+  --gg-app-bg: #05110b;
+  --gg-app-text: #ecfdf5;
+  --gg-surface: rgba(8, 35, 24, 0.94);
+  --gg-surface-soft: rgba(18, 78, 51, 0.66);
+  --gg-surface-strong: #052e16;
+  --gg-border: rgba(74, 222, 128, 0.24);
+  --gg-muted: #bbf7d0;
+  --gg-orb-one: rgba(74, 222, 128, 0.16);
+  --gg-orb-two: rgba(45, 212, 191, 0.12);
+  --gg-orb-three: rgba(187, 247, 208, 0.10);
+}
+
+.gg-theme-dark.gg-themed[data-page-theme="theme-ocean-mist"] {
+  --gg-app-bg: #03111d;
+  --gg-app-text: #eff6ff;
+  --gg-surface: rgba(7, 32, 51, 0.94);
+  --gg-surface-soft: rgba(10, 74, 110, 0.66);
+  --gg-surface-strong: #0c4a6e;
+  --gg-border: rgba(125, 211, 252, 0.26);
+  --gg-muted: #bae6fd;
+  --gg-orb-one: rgba(125, 211, 252, 0.16);
+  --gg-orb-two: rgba(56, 189, 248, 0.12);
+  --gg-orb-three: rgba(147, 197, 253, 0.11);
+}
+
+.gg-theme-dark.gg-themed[data-page-theme="theme-mocha-latte"] {
+  --gg-app-bg: #140d08;
+  --gg-app-text: #fdf8f0;
+  --gg-surface: rgba(38, 25, 15, 0.94);
+  --gg-surface-soft: rgba(74, 44, 19, 0.66);
+  --gg-surface-strong: #451a03;
+  --gg-border: rgba(217, 119, 6, 0.24);
+  --gg-muted: #fde68a;
+  --gg-orb-one: rgba(251, 191, 36, 0.13);
+  --gg-orb-two: rgba(180, 83, 9, 0.12);
+  --gg-orb-three: rgba(251, 146, 60, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  .gg-theme-system.gg-themed[data-page-theme="theme-night-library"],
+  .gg-theme-system.gg-themed[data-page-theme="night-library"] {
+    --gg-app-bg: #160711;
+    --gg-app-text: #fff1f7;
+    --gg-surface: rgba(38, 14, 28, 0.94);
+    --gg-surface-soft: rgba(80, 22, 52, 0.72);
+    --gg-surface-strong: #831843;
+    --gg-border: rgba(244, 114, 182, 0.28);
+    --gg-muted: #fbcfe8;
+  }
+
+  .gg-theme-system.gg-themed[data-page-theme="theme-study-sunrise"] {
+    --gg-app-bg: #180d08;
+    --gg-app-text: #fff7ed;
+    --gg-surface: rgba(42, 20, 10, 0.94);
+    --gg-surface-soft: rgba(85, 38, 12, 0.68);
+    --gg-surface-strong: #7c2d12;
+    --gg-border: rgba(251, 146, 60, 0.26);
+    --gg-muted: #fed7aa;
+  }
+
+  .gg-theme-system.gg-themed[data-page-theme="theme-lavender-haze"] {
+    --gg-app-bg: #0f0a1f;
+    --gg-app-text: #f8f3ff;
+    --gg-surface: rgba(30, 20, 54, 0.94);
+    --gg-surface-soft: rgba(56, 35, 100, 0.68);
+    --gg-surface-strong: #3b0764;
+    --gg-border: rgba(196, 181, 253, 0.28);
+    --gg-muted: #ddd6fe;
+  }
+
+  .gg-theme-system.gg-themed[data-page-theme="theme-matcha-focus"] {
+    --gg-app-bg: #05110b;
+    --gg-app-text: #ecfdf5;
+    --gg-surface: rgba(8, 35, 24, 0.94);
+    --gg-surface-soft: rgba(18, 78, 51, 0.66);
+    --gg-surface-strong: #052e16;
+    --gg-border: rgba(74, 222, 128, 0.24);
+    --gg-muted: #bbf7d0;
+  }
+
+  .gg-theme-system.gg-themed[data-page-theme="theme-ocean-mist"] {
+    --gg-app-bg: #03111d;
+    --gg-app-text: #eff6ff;
+    --gg-surface: rgba(7, 32, 51, 0.94);
+    --gg-surface-soft: rgba(10, 74, 110, 0.66);
+    --gg-surface-strong: #0c4a6e;
+    --gg-border: rgba(125, 211, 252, 0.26);
+    --gg-muted: #bae6fd;
+  }
+
+  .gg-theme-system.gg-themed[data-page-theme="theme-mocha-latte"] {
+    --gg-app-bg: #140d08;
+    --gg-app-text: #fdf8f0;
+    --gg-surface: rgba(38, 25, 15, 0.94);
+    --gg-surface-soft: rgba(74, 44, 19, 0.66);
+    --gg-surface-strong: #451a03;
+    --gg-border: rgba(217, 119, 6, 0.24);
+    --gg-muted: #fde68a;
+  }
+}

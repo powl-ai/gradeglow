@@ -70,6 +70,15 @@ export function useGradeGlowModules(user: AppUser): UseGradeGlowModulesResult {
       return undefined;
     }
 
+    const localBackup = loadLocalModules(storageKey);
+    if (localBackup.length > 0) {
+      setModulesState(localBackup);
+      lastPersistedModulesRef.current = localBackup;
+      setSyncStatus("cloud-loading");
+      setSyncMessage("Lokales Modul-Backup geladen · prüfe Cloud…");
+      setIsLoaded(true);
+    }
+
     let didCancel = false;
     let unsubscribe: (() => void) | undefined;
 

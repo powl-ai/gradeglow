@@ -123,6 +123,13 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
     [feedback],
   );
 
+  const betaTesterCount = entitlements.filter((row) =>
+    ["beta_test", "founder", "friend_bonus"].includes(row.premiumSource),
+  ).length;
+  const premiumLikeCount = entitlements.filter((row) => row.plan !== "free").length;
+  const openFeedbackCount = feedback.filter((item) => item.status === "open" || item.status === "reviewing").length;
+  const highPriorityFeedbackCount = feedback.filter((item) => item.priority === "high" && item.status !== "done" && item.status !== "closed").length;
+
   const loadAdminData = async () => {
     if (!isAdmin) return;
     setIsLoading(true);
@@ -260,6 +267,45 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
           </section>
         ) : (
           <>
+            <section className="grid gap-3 md:grid-cols-4">
+              <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-600">Beta Tester</p>
+                <p className="mt-2 text-3xl font-black tracking-tight">{betaTesterCount}</p>
+                <p className="mt-1 text-xs font-semibold text-slate-500">Quelle beta/founder/friend_bonus</p>
+              </div>
+              <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-600">Premium aktiv</p>
+                <p className="mt-2 text-3xl font-black tracking-tight">{premiumLikeCount}</p>
+                <p className="mt-1 text-xs font-semibold text-slate-500">Premium, Lifetime oder Admin</p>
+              </div>
+              <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-amber-100 backdrop-blur">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-600">Offene Rückmeldungen</p>
+                <p className="mt-2 text-3xl font-black tracking-tight">{openFeedbackCount}</p>
+                <p className="mt-1 text-xs font-semibold text-slate-500">open oder reviewing</p>
+              </div>
+              <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-rose-100 backdrop-blur">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-rose-600">High Priority</p>
+                <p className="mt-2 text-3xl font-black tracking-tight">{highPriorityFeedbackCount}</p>
+                <p className="mt-1 text-xs font-semibold text-slate-500">vor Beta-Invite prüfen</p>
+              </div>
+            </section>
+
+            <section className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-emerald-100 backdrop-blur sm:p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-emerald-700">Launch Readiness</p>
+                  <h2 className="mt-1 text-2xl font-black tracking-tight">Mini-Beta mit 2–3 Accounts starten</h2>
+                  <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-slate-500">
+                    Erst Profil, Module, Prüfung, Theme-Wechsel, Study Circle und Feedback testen. Danach größere Features wie Stripe, Blaze/Push oder Paywall.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/diagnostics" className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5">Diagnostics</Link>
+                  <Link href="/feedback" className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-700 ring-1 ring-emerald-100 transition hover:-translate-y-0.5">Feedback testen</Link>
+                </div>
+              </div>
+            </section>
+
             <section className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
               <form className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6" onSubmit={saveEntitlement}>
                 <p className="text-sm font-bold text-violet-700">Beta-Verwaltung</p>

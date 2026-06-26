@@ -187,8 +187,10 @@ export function useGradeGlowExams(user: AppUser): UseGradeGlowExamsResult {
     const localBackup = loadLocalExams(storageKey);
     if (localBackup.length > 0) {
       setExamsState(localBackup);
+      lastPersistedExamsRef.current = localBackup;
       setSyncStatus("cloud-loading");
-      setSyncMessage("Lokales Backup geladen · prüfe Cloud…");
+      setSyncMessage("Lokales Prüfungs-Backup geladen · prüfe Cloud…");
+      setIsLoaded(true);
     }
 
     const firestore = db;

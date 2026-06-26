@@ -36,6 +36,37 @@ const statusLabels: Record<string, string> = {
   closed: "Geschlossen",
 };
 
+const quickBugTemplates = [
+  {
+    label: "Daten wirken weg",
+    title: "Daten werden nach Theme-/Seitenwechsel leer angezeigt",
+    buttonLabel: "Cloud-/Ladezustand",
+    message: "Ich habe die Seite/Theme gewechselt und Inhalte wirkten kurz leer oder kamen erst nach Reload zurück.",
+    priority: "high" as DiagnosticPriority,
+  },
+  {
+    label: "Button kaputt",
+    title: "Button ohne Funktion oder leer",
+    buttonLabel: "Bitte Button/Bereich eintragen",
+    message: "Ein Button war leer, nicht klickbar oder hat nichts ausgelöst. Schritte: ",
+    priority: "normal" as DiagnosticPriority,
+  },
+  {
+    label: "Theme/Lesbarkeit",
+    title: "Text oder Button ist im Theme schlecht lesbar",
+    buttonLabel: "Theme + Seite eintragen",
+    message: "In diesem Theme ist Text/Button zu hell, zu dunkel oder nicht gut erkennbar. Theme/Akzent: ",
+    priority: "normal" as DiagnosticPriority,
+  },
+  {
+    label: "Study Circle",
+    title: "Study Circle / Freundescode Problem",
+    buttonLabel: "Freunde / Study Circle",
+    message: "Freund hinzufügen, Profilbild, Sharing oder Code funktioniert nicht wie erwartet. Code/Schritt: ",
+    priority: "high" as DiagnosticPriority,
+  },
+];
+
 export default function DiagnosticsPage({ user, onLogout }: DiagnosticsPageProps) {
   const [snapshot, setSnapshot] = useState(() => getDiagnosticsSnapshot());
   const [title, setTitle] = useState("");
@@ -100,6 +131,14 @@ export default function DiagnosticsPage({ user, onLogout }: DiagnosticsPageProps
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.uid]);
+
+  const applyQuickTemplate = (template: (typeof quickBugTemplates)[number]) => {
+    setTitle(template.title);
+    setButtonLabel(template.buttonLabel);
+    setMessage(template.message);
+    setPriority(template.priority);
+    setFormMessage("Vorlage eingefügt. Ergänze kurz deine Schritte und speichere den Bug.");
+  };
 
   const submitBugReport = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -193,6 +232,19 @@ export default function DiagnosticsPage({ user, onLogout }: DiagnosticsPageProps
             <p className="mt-2 text-sm leading-6 text-slate-500">
               Nutze das für leere Buttons, nicht gespeicherte Daten, Login-Probleme oder alles, was komisch wirkt.
             </p>
+
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
+              {quickBugTemplates.map((template) => (
+                <button
+                  key={template.label}
+                  type="button"
+                  className="rounded-2xl bg-violet-50 px-4 py-3 text-left text-xs font-black text-violet-700 ring-1 ring-violet-100 transition hover:-translate-y-0.5 hover:bg-violet-100"
+                  onClick={() => applyQuickTemplate(template)}
+                >
+                  {template.label}
+                </button>
+              ))}
+            </div>
 
             <div className="mt-5 grid gap-4">
               <label className="block">

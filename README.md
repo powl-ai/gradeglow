@@ -147,3 +147,7 @@ Der Bereich `/exams` enthält jetzt zusätzlich einen Monats-/Wochenkalender. Pr
 - Automatisch generierte Lernblöcke beachten weiterhin ein Tageslimit von maximal 5 Stunden.
 - In den Einstellungen gibt es jetzt einen Bereich „Daten & Account“ zum Löschen von App-Daten oder des Accounts.
 
+
+## Beta Launch Ready
+
+Aktueller Stand: `beta-2026-06-26-launch`. Details stehen in `BETA_LAUNCH_READY_UPDATE.md`.

@@ -10,6 +10,8 @@ import GradeGlowPlanner from "./GradeGlowPlanner";
 import PlanUsagePanel from "./PlanUsagePanel";
 import PwaInstallCard from "./PwaInstallCard";
 import BetaNoticeCard from "./BetaNoticeCard";
+import BetaLaunchPanel from "./BetaLaunchPanel";
+import FloatingBetaActions from "./FloatingBetaActions";
 import StudyFriendsPanel from "./StudyFriendsPanel";
 import StudyPlanningPanel from "./StudyPlanningPanel";
 import UniSchedulePanel from "./UniSchedulePanel";
@@ -1057,6 +1059,9 @@ export default function GradeGlowDashboard({
       : null;
   const isInsightsVisible = page === "insights" || isInsightsOpen;
   const isBackupVisible = page === "backup" || isToolsOpen;
+  const isDataStillChecking = !isLoaded || !areExamsLoaded || !isScheduleLoaded;
+  const profileComplete = Boolean(profile.displayName && profile.university && profile.degreeProgram);
+  const betaCloudMessages = [syncMessage, examsSyncMessage, scheduleSyncMessage].filter(Boolean);
   const renderAvatar = (className: string) => {
     const avatar = avatarSource ? (
       <div
@@ -1086,14 +1091,38 @@ export default function GradeGlowDashboard({
     const rail = quickRailRef.current;
     if (!rail || typeof window === "undefined") return;
 
-    const savedScrollLeft = Number(window.sessionStorage.getItem(QUICK_RAIL_SCROLL_STORAGE_KEY) || "0");
-    window.requestAnimationFrame(() => {
+    const alignActiveItem = () => {
+      const activeItem = activeQuickRailItemRef.current;
+      if (!activeItem) return;
+
+      const savedScrollLeft = Number(window.sessionStorage.getItem(QUICK_RAIL_SCROLL_STORAGE_KEY) || "0");
       if (Number.isFinite(savedScrollLeft) && savedScrollLeft > 0) {
         rail.scrollLeft = savedScrollLeft;
       }
-      activeQuickRailItemRef.current?.scrollIntoView({ behavior: "auto", block: "nearest", inline: "nearest" });
+
+      const railWidth = rail.clientWidth;
+      const itemLeft = activeItem.offsetLeft;
+      const itemRight = itemLeft + activeItem.offsetWidth;
+      const visibleLeft = rail.scrollLeft;
+      const visibleRight = visibleLeft + railWidth;
+      const needsScroll = itemLeft < visibleLeft + 12 || itemRight > visibleRight - 12;
+
+      if (needsScroll) {
+        rail.scrollTo({
+          left: Math.max(0, itemLeft - (railWidth - activeItem.offsetWidth) / 2),
+          behavior: "auto",
+        });
+      }
+
       window.sessionStorage.setItem(QUICK_RAIL_SCROLL_STORAGE_KEY, String(rail.scrollLeft));
+    };
+
+    const firstFrame = window.requestAnimationFrame(() => {
+      const secondFrame = window.requestAnimationFrame(alignActiveItem);
+      return () => window.cancelAnimationFrame(secondFrame);
     });
+
+    return () => window.cancelAnimationFrame(firstFrame);
   }, [page]);
 
   if (!isProfileLoaded) {
@@ -1146,6 +1175,8 @@ export default function GradeGlowDashboard({
         <div className="absolute right-[-10rem] top-40 h-[28rem] w-[28rem] rounded-full bg-violet-200/60 blur-3xl" />
         <div className="absolute bottom-[-12rem] left-1/2 h-[30rem] w-[30rem] -translate-x-1/2 rounded-full bg-pink-200/50 blur-3xl" />
       </div>
+
+      <FloatingBetaActions isAdmin={entitlement.plan === "admin"} />
 
       {foregroundMessage && (
         <div className="fixed left-1/2 top-3 z-50 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-[1.5rem] bg-violet-950/95 p-3 text-white shadow-2xl shadow-violet-950/25 ring-1 ring-white/10 backdrop-blur sm:top-5">
@@ -1487,6 +1518,27 @@ export default function GradeGlowDashboard({
             )}
           </div>
         </nav>
+
+        {isDataStillChecking && (
+          <section className="rounded-3xl bg-amber-50/90 p-4 text-sm font-bold leading-6 text-amber-900 shadow-sm ring-1 ring-amber-100 backdrop-blur sm:p-5">
+            GradeGlow prüft noch Cloud-Daten. Bereits sichtbare lokale Backups bleiben erhalten — bitte erst speichern, wenn der Ladehinweis verschwunden ist.
+            <span className="mt-2 block text-xs font-semibold text-amber-700">
+              {betaCloudMessages.join(" · ")}
+            </span>
+          </section>
+        )}
+
+        {page === "overview" && (
+          <BetaLaunchPanel
+            user={user}
+            moduleCount={modules.length}
+            examCount={exams.length}
+            studyCircleReady={profile.studySharingEnabled}
+            profileReady={isProfileLoaded}
+            profileComplete={profileComplete}
+            cloudMessages={betaCloudMessages}
+          />
+        )}
 
         {page === "overview" && (
           <>

@@ -473,7 +473,7 @@ export default function AuthGate({ children }: AuthGateProps) {
   return (
     <main className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_left,_#f5d0fe,_transparent_34%),radial-gradient(circle_at_bottom_right,_#fbcfe8,_transparent_30%),linear-gradient(135deg,_#2e1065,_#4c1d95_48%,_#831843)] px-3 py-4 text-white sm:px-4 md:p-8">
       <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-5 sm:gap-8 lg:grid-cols-[1.08fr_0.92fr]">
-        <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur md:p-10">
+        <section className="relative order-2 overflow-hidden rounded-[2rem] border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur md:p-10 lg:order-1">
           <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-fuchsia-300/20 blur-3xl" />
           <div className="absolute -bottom-28 left-10 h-72 w-72 rounded-full bg-pink-300/20 blur-3xl" />
 
@@ -505,8 +505,8 @@ export default function AuthGate({ children }: AuthGateProps) {
                 <p className="text-sm text-fuchsia-100/80">Backup ready</p>
               </div>
               <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
-                <p className="text-2xl font-black">PWA</p>
-                <p className="text-sm text-fuchsia-100/80">installierbar</p>
+                <p className="text-2xl font-black">Beta</p>
+                <p className="text-sm text-fuchsia-100/80">mit Einführung</p>
               </div>
             </div>
 
@@ -518,7 +518,7 @@ export default function AuthGate({ children }: AuthGateProps) {
           </div>
         </section>
 
-        <section className="min-w-0 rounded-[2rem] bg-white p-5 text-slate-950 shadow-2xl md:p-8">
+        <section className="order-1 min-w-0 rounded-[2rem] bg-white p-5 text-slate-950 shadow-2xl md:p-8 lg:order-2">
           <div className="mb-6">
             <div className="mb-3 inline-flex rounded-full bg-violet-50 px-3 py-1 text-sm font-semibold text-violet-700">
               {mode === "login" ? "Login" : "Registrierung"}
@@ -529,6 +529,10 @@ export default function AuthGate({ children }: AuthGateProps) {
                 ? "E-Mail-Accounts müssen bestätigt sein. Social Login läuft über Firebase Auth."
                 : "Nach der Registrierung bekommst du eine Bestätigungs-Mail, bevor der Account genutzt wird."}
             </p>
+            <div className="mt-4 rounded-2xl bg-violet-50 p-4 text-sm font-semibold leading-6 text-violet-900 ring-1 ring-violet-100">
+              <p className="font-black">Beta-Start in 4 Schritten</p>
+              <p className="mt-1 text-violet-700">Account erstellen → Profil speichern → Modul + Prüfung anlegen → Lernsession testen.</p>
+            </div>
           </div>
 
           <div className="mb-5 grid grid-cols-2 rounded-2xl bg-slate-100 p-1">

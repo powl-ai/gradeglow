@@ -111,27 +111,27 @@ const SubjectBars = ({ profile }: { profile: PublicStudyProfile }) => {
 };
 
 const LeaderboardCard = ({ row, rank }: { row: CircleRow; rank: number }) => (
-  <div className="flex min-w-0 items-center gap-3 rounded-3xl bg-white p-4 ring-1 ring-slate-200">
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-sm font-black text-white">
+  <div className="flex min-w-0 items-center gap-3 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10">
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-sm font-black text-slate-950">
       #{rank}
     </div>
     <Avatar image={row.avatarDataUrl} label={row.displayName} />
     <div className="min-w-0 flex-1">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="truncate text-sm font-black text-slate-950">{row.displayName}</p>
+        <p className="truncate text-sm font-black text-white">{row.displayName}</p>
         {row.isSelf && (
           <span className="rounded-full bg-violet-50 px-2 py-1 text-[0.68rem] font-black uppercase tracking-[0.12em] text-violet-700 ring-1 ring-violet-100">
             Du
           </span>
         )}
       </div>
-      <p className="truncate text-xs font-semibold text-slate-500">
+      <p className="truncate text-xs font-semibold text-white/75">
         {row.degreeProgram || "Kein Studiengang sichtbar"}
       </p>
     </div>
     <div className="shrink-0 text-right">
-      <p className="text-xs font-semibold text-slate-500">diese Woche</p>
-      <p className="text-base font-black text-slate-950">{formatSharedMinutes(row, row.thisWeekDoneMinutes)}</p>
+      <p className="text-xs font-semibold text-white/70">diese Woche</p>
+      <p className="text-base font-black text-white">{formatSharedMinutes(row, row.thisWeekDoneMinutes)}</p>
     </div>
   </div>
 );

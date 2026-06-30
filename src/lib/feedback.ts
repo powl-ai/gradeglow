@@ -108,13 +108,17 @@ export async function submitGradeGlowFeedback(user: AppUser, input: NewFeedbackI
 export async function getMyFeedback(user: AppUser) {
   if (!db || !isFirebaseConfigured) return [];
 
+  // Keep this query index-free for beta testers. Combining ownerUid + orderBy can
+  // require a composite Firestore index, which made users think their own feedback
+  // disappeared even though admins could already see it.
   const feedbackQuery = query(
     collection(db, "feedback"),
     where("ownerUid", "==", user.uid),
-    orderBy("createdAtIso", "desc"),
   );
   const snapshot = await getDocs(feedbackQuery);
-  return snapshot.docs.map((item) => normalizeFeedback(item.id, item.data()));
+  return snapshot.docs
+    .map((item) => normalizeFeedback(item.id, item.data()))
+    .sort((a, b) => b.createdAtIso.localeCompare(a.createdAtIso));
 }
 
 export async function getRecentFeedbackForAdmin() {

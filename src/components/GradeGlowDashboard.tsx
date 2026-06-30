@@ -1475,10 +1475,10 @@ export default function GradeGlowDashboard({
         <nav
           ref={quickRailRef}
           onScroll={handleQuickRailScroll}
-          className="sticky top-[calc(env(safe-area-inset-top,0px)+0.5rem)] z-30 -mx-3 overflow-x-auto px-3 pb-1 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+          className="no-scrollbar sticky top-[calc(env(safe-area-inset-top,0px)+0.5rem)] z-30 w-full max-w-full overflow-x-auto overscroll-x-contain pb-1"
           aria-label="GradeGlow Schnellnavigation"
         >
-          <div className="flex w-max min-w-full items-center gap-2 rounded-[1.6rem] border border-white/70 bg-white/75 p-2 shadow-lg shadow-violet-100/60 backdrop-blur-xl">
+          <div className="inline-flex min-w-max max-w-none items-center gap-2 rounded-[1.6rem] border border-white/70 bg-white/75 p-2 shadow-lg shadow-violet-100/60 backdrop-blur-xl">
             {dashboardNavItems.map((item) => {
               const isActive = item.id === page;
 

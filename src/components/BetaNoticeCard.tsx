@@ -2,9 +2,10 @@ import Link from "next/link";
 
 type BetaNoticeCardProps = {
   compact?: boolean;
+  feedbackHref?: string;
 };
 
-export default function BetaNoticeCard({ compact = false }: BetaNoticeCardProps) {
+export default function BetaNoticeCard({ compact = false, feedbackHref = "/feedback" }: BetaNoticeCardProps) {
   return (
     <section className={`rounded-3xl bg-slate-950 text-white shadow-xl shadow-violet-950/10 ring-1 ring-white/10 ${compact ? "p-4" : "p-5 sm:p-6"}`}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -17,7 +18,7 @@ export default function BetaNoticeCard({ compact = false }: BetaNoticeCardProps)
           </p>
         </div>
         <Link
-          href="/feedback"
+          href={feedbackHref}
           className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-black text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-50"
         >
           Feedback geben

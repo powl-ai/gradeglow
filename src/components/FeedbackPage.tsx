@@ -47,6 +47,7 @@ export default function FeedbackPage({ user, onLogout }: FeedbackPageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [myFeedback, setMyFeedback] = useState<GradeGlowFeedback[]>([]);
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
+  const [feedbackListMessage, setFeedbackListMessage] = useState("");
   const { profile } = useGradeGlowProfile(user);
   const { limits } = useGradeGlowAccess(user);
   const effectivePageThemeId = getEffectivePageThemeId(profile.activePageThemeId, limits.premiumThemes);
@@ -61,10 +62,12 @@ export default function FeedbackPage({ user, onLogout }: FeedbackPageProps) {
 
   const loadFeedback = async () => {
     setIsLoadingFeedback(true);
+    setFeedbackListMessage("");
     try {
       setMyFeedback(await getMyFeedback(user));
     } catch {
       setMyFeedback([]);
+      setFeedbackListMessage("Deine Meldungen konnten gerade nicht geladen werden. Admins sehen sie trotzdem, wenn das Speichern geklappt hat.");
     } finally {
       setIsLoadingFeedback(false);
     }
@@ -148,10 +151,10 @@ export default function FeedbackPage({ user, onLogout }: FeedbackPageProps) {
           </div>
         </header>
 
-        <BetaNoticeCard />
+        <BetaNoticeCard feedbackHref="#feedback-form" />
 
         <section className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
-          <form className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6" onSubmit={submitFeedback}>
+          <form id="feedback-form" className="scroll-mt-6 rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6" onSubmit={submitFeedback}>
             <p className="text-sm font-bold text-violet-700">Neue Rückmeldung</p>
             <h2 className="mt-1 text-2xl font-black tracking-tight">Was soll ich mir anschauen?</h2>
 
@@ -216,7 +219,10 @@ export default function FeedbackPage({ user, onLogout }: FeedbackPageProps) {
 
             <div className="mt-5 space-y-3">
               {isLoadingFeedback && <p className="text-sm font-semibold text-slate-500">Lade Feedback…</p>}
-              {!isLoadingFeedback && myFeedback.length === 0 && (
+              {feedbackListMessage && (
+                <p className="rounded-2xl bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-800 ring-1 ring-amber-100">{feedbackListMessage}</p>
+              )}
+              {!isLoadingFeedback && !feedbackListMessage && myFeedback.length === 0 && (
                 <p className="rounded-2xl bg-slate-50 p-4 text-sm font-semibold leading-6 text-slate-500 ring-1 ring-slate-200">Noch keine Meldungen gespeichert.</p>
               )}
               {myFeedback.map((item) => (

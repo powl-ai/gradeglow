@@ -907,3 +907,43 @@ details > summary::-webkit-details-marker {
     --gg-muted: #fde68a;
   }
 }
+
+
+/* Beta feedback patch 1: mobile overflow and dark-theme contrast fixes. */
+.gg-themed nav[aria-label="GradeGlow Schnellnavigation"] {
+  contain: inline-size;
+}
+
+.gg-themed nav[aria-label="GradeGlow Schnellnavigation"] > div {
+  max-width: max-content;
+}
+
+.gg-theme-dark .bg-violet-50,
+.gg-theme-dark .bg-fuchsia-50,
+.gg-theme-dark .hover\:bg-violet-50:hover,
+.gg-theme-dark .hover\:bg-fuchsia-50:hover {
+  background-color: color-mix(in srgb, var(--gg-accent-900) 56%, var(--gg-surface) 44%) !important;
+}
+
+.gg-theme-dark .bg-violet-50 .text-violet-700,
+.gg-theme-dark .bg-fuchsia-50 .text-violet-700,
+.gg-theme-dark .bg-violet-50 .text-slate-500,
+.gg-theme-dark .bg-fuchsia-50 .text-slate-500,
+.gg-theme-dark .bg-violet-50 .text-slate-700,
+.gg-theme-dark .bg-fuchsia-50 .text-slate-700 {
+  color: #ffffff !important;
+}
+
+.gg-theme-dark .bg-white\/10 .text-violet-100,
+.gg-theme-dark .bg-white\/10 .text-violet-200,
+.gg-theme-dark .bg-white\/10 .text-fuchsia-100,
+.gg-theme-dark .bg-white\/10 .text-fuchsia-200 {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+@media (max-width: 640px) {
+  .gg-themed .fixed.bottom-4.right-4 {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.85rem);
+    right: calc(env(safe-area-inset-right, 0px) + 0.85rem);
+  }
+}

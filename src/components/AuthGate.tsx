@@ -518,27 +518,39 @@ export default function AuthGate({ children }: AuthGateProps) {
           </div>
         </section>
 
-        <section className="order-1 min-w-0 rounded-[2rem] bg-white p-5 text-slate-950 shadow-2xl md:p-8 lg:order-2">
-          <div className="mb-6">
-            <div className="mb-3 inline-flex rounded-full bg-violet-50 px-3 py-1 text-sm font-semibold text-violet-700">
+        <section className="order-1 min-w-0 rounded-[1.8rem] bg-white p-4 text-slate-950 shadow-2xl sm:rounded-[2rem] sm:p-5 md:p-8 lg:order-2">
+          <div className="mb-4 sm:mb-6">
+            <div className="mb-4 flex items-center gap-3 lg:hidden">
+              <GradeGlowLogo size="md" />
+              <div className="min-w-0">
+                <p className="text-[0.68rem] font-black uppercase tracking-[0.28em] text-violet-500">
+                  GradeGlow
+                </p>
+                <p className="text-xl font-black leading-tight tracking-tight text-slate-950 sm:text-2xl">
+                  Dein Studium, aber schön.
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-2 inline-flex rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700 sm:mb-3 sm:text-sm">
               {mode === "login" ? "Login" : "Registrierung"}
             </div>
-            <h2 className="text-3xl font-black tracking-tight">{title}</h2>
-            <p className="mt-2 text-sm text-slate-500">
+            <h2 className="text-2xl font-black tracking-tight sm:text-3xl">{title}</h2>
+            <p className="mt-1.5 text-sm leading-6 text-slate-500 sm:mt-2">
               {mode === "login"
-                ? "E-Mail-Accounts müssen bestätigt sein. Social Login läuft über Firebase Auth."
+                ? "E-Mail bestätigen, einloggen und dann Profil, Module und Prüfung anlegen."
                 : "Nach der Registrierung bekommst du eine Bestätigungs-Mail, bevor der Account genutzt wird."}
             </p>
-            <div className="mt-4 rounded-2xl bg-violet-50 p-4 text-sm font-semibold leading-6 text-violet-900 ring-1 ring-violet-100">
+            <div className="mt-3 rounded-2xl bg-violet-50 p-3 text-sm font-semibold leading-6 text-violet-900 ring-1 ring-violet-100 sm:mt-4 sm:p-4">
               <p className="font-black">Beta-Start in 4 Schritten</p>
-              <p className="mt-1 text-violet-700">Account erstellen → Profil speichern → Modul + Prüfung anlegen → Lernsession testen.</p>
+              <p className="mt-1 text-violet-700">Account erstellen → Profil speichern → Modul + Prüfung → Lernsession testen.</p>
             </div>
           </div>
 
-          <div className="mb-5 grid grid-cols-2 rounded-2xl bg-slate-100 p-1">
+          <div className="mb-4 grid grid-cols-2 rounded-2xl bg-slate-100 p-1 sm:mb-5">
             <button
               type="button"
-              className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+              className={`rounded-xl px-3 py-2.5 text-sm font-bold transition sm:px-4 sm:py-3 ${
                 mode === "login"
                   ? "bg-white text-slate-950 shadow-sm"
                   : "text-slate-500 hover:text-slate-900"
@@ -552,7 +564,7 @@ export default function AuthGate({ children }: AuthGateProps) {
             </button>
             <button
               type="button"
-              className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
+              className={`rounded-xl px-3 py-2.5 text-sm font-bold transition sm:px-4 sm:py-3 ${
                 mode === "register"
                   ? "bg-white text-slate-950 shadow-sm"
                   : "text-slate-500 hover:text-slate-900"
@@ -566,7 +578,7 @@ export default function AuthGate({ children }: AuthGateProps) {
             </button>
           </div>
 
-          <form className="space-y-3" onSubmit={handleEmailAuth}>
+          <form className="space-y-2.5 sm:space-y-3" onSubmit={handleEmailAuth}>
             {mode === "register" && (
               <label className="block">
                 <span className="mb-1 block text-sm font-semibold text-slate-700">
@@ -574,7 +586,7 @@ export default function AuthGate({ children }: AuthGateProps) {
                 </span>
                 <input
                   autoComplete="name"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100 sm:py-3"
                   placeholder="z. B. Paul"
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}
@@ -590,7 +602,7 @@ export default function AuthGate({ children }: AuthGateProps) {
               </span>
               <input
                 autoComplete="email"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100 sm:py-3"
                 inputMode={mode === "login" && !isFirebaseConfigured ? "text" : "email"}
                 placeholder={
                   mode === "login" && !isFirebaseConfigured
@@ -609,7 +621,7 @@ export default function AuthGate({ children }: AuthGateProps) {
               </span>
               <input
                 autoComplete={mode === "login" ? "current-password" : "new-password"}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100 sm:py-3"
                 placeholder="mindestens 6 Zeichen"
                 type="password"
                 value={password}
@@ -630,7 +642,7 @@ export default function AuthGate({ children }: AuthGateProps) {
             )}
 
             <button
-              className="w-full rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 px-4 py-3 font-black text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01] disabled:opacity-60"
+              className="w-full rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 px-4 py-3 font-black text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01] disabled:opacity-60 sm:py-3.5"
               disabled={isSubmitting}
               type="submit"
             >
@@ -642,7 +654,7 @@ export default function AuthGate({ children }: AuthGateProps) {
             </button>
           </form>
 
-          <div className="my-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+          <div className="my-4 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 sm:my-6">
             <div className="h-px flex-1 bg-slate-200" />
             oder
             <div className="h-px flex-1 bg-slate-200" />
@@ -671,13 +683,13 @@ export default function AuthGate({ children }: AuthGateProps) {
             ))}
           </div>
 
-          <p className="mt-4 text-xs leading-5 text-slate-400">
+          <p className="mt-3 text-xs leading-5 text-slate-400 sm:mt-4">
             GitHub läuft über Firebase und GitHub OAuth. Apple bleibt als „bald verfügbar“-Button sichtbar,
             weil dafür zusätzlich Apple Developer Setup mit Service ID, Team ID und Private Key nötig ist.
             Auf Mobile/PWA nutzt GradeGlow automatisch Redirect statt Popup.
           </p>
 
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-3 border-t border-slate-100 pt-4 text-xs font-bold text-slate-400">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 border-t border-slate-100 pt-4 text-xs font-bold text-slate-400 sm:mt-5">
             <Link className="transition hover:text-violet-700" href="/info">
               Info, Datenschutz & Impressum
             </Link>

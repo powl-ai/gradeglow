@@ -190,14 +190,14 @@ const PrivacyToggle = ({
 }) => (
   <button
     type="button"
-    className={`rounded-2xl p-3 text-left ring-1 transition disabled:opacity-60 ${checked ? "bg-violet-50 ring-violet-100" : "bg-white ring-slate-200"}`}
+    className={`study-privacy-toggle rounded-2xl p-3 text-left ring-1 transition disabled:opacity-60 ${checked ? "bg-violet-50 ring-violet-100" : "bg-white ring-slate-200"}`}
     onClick={onToggle}
     disabled={disabled}
   >
     <span className="flex items-start justify-between gap-3">
       <span className="min-w-0">
-        <span className="block text-sm font-black text-slate-800">{title}</span>
-        <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{description}</span>
+        <span className="study-privacy-title block text-sm font-black text-slate-800">{title}</span>
+        <span className="study-privacy-description mt-1 block text-xs font-semibold leading-5 text-slate-500">{description}</span>
       </span>
       <span className={`mt-0.5 flex h-6 w-11 shrink-0 items-center rounded-full p-1 transition ${checked ? "bg-violet-700" : "bg-slate-300"}`}>
         <span className={`h-4 w-4 rounded-full bg-white transition ${checked ? "translate-x-5" : "translate-x-0"}`} />

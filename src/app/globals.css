@@ -947,3 +947,73 @@ details > summary::-webkit-details-marker {
     right: calc(env(safe-area-inset-right, 0px) + 0.85rem);
   }
 }
+
+/* Beta feedback patch 2: mobile first polish, fixed quick rail shell and Study Circle privacy contrast. */
+.gg-themed nav[aria-label="GradeGlow Schnellnavigation"] {
+  overflow-y: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 0.75rem, #000 calc(100% - 0.75rem), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 0.75rem, #000 calc(100% - 0.75rem), transparent 100%);
+}
+
+.gg-themed nav[aria-label="GradeGlow Schnellnavigation"] > div {
+  max-width: none;
+}
+
+.gg-themed .study-privacy-toggle {
+  background: color-mix(in srgb, var(--gg-surface) 86%, var(--gg-accent-50) 14%) !important;
+  color: var(--gg-app-text) !important;
+  border-color: var(--gg-border) !important;
+  --tw-ring-color: var(--gg-border) !important;
+}
+
+.gg-themed .study-privacy-toggle.bg-violet-50 {
+  background: color-mix(in srgb, var(--gg-surface) 74%, var(--gg-accent-100) 26%) !important;
+}
+
+.gg-themed .study-privacy-toggle .study-privacy-title {
+  color: var(--gg-app-text) !important;
+}
+
+.gg-themed .study-privacy-toggle .study-privacy-description {
+  color: var(--gg-muted) !important;
+}
+
+.gg-theme-dark .study-privacy-toggle,
+.gg-theme-dark .study-privacy-toggle.bg-violet-50 {
+  background: color-mix(in srgb, var(--gg-surface-soft) 82%, white 8%) !important;
+  color: #f8fafc !important;
+}
+
+.gg-theme-dark .study-privacy-toggle .study-privacy-title {
+  color: #f8fafc !important;
+}
+
+.gg-theme-dark .study-privacy-toggle .study-privacy-description {
+  color: rgba(226, 232, 240, 0.82) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .gg-theme-system .study-privacy-toggle,
+  .gg-theme-system .study-privacy-toggle.bg-violet-50 {
+    background: color-mix(in srgb, var(--gg-surface-soft) 82%, white 8%) !important;
+    color: #f8fafc !important;
+  }
+
+  .gg-theme-system .study-privacy-toggle .study-privacy-title {
+    color: #f8fafc !important;
+  }
+
+  .gg-theme-system .study-privacy-toggle .study-privacy-description {
+    color: rgba(226, 232, 240, 0.82) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  nav[aria-label="GradeGlow Schnellnavigation"] {
+    margin-inline: 0;
+  }
+
+  nav[aria-label="GradeGlow Schnellnavigation"] a {
+    white-space: nowrap;
+  }
+}

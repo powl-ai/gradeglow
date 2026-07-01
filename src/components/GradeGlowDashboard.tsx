@@ -11,7 +11,6 @@ import PlanUsagePanel from "./PlanUsagePanel";
 import PwaInstallCard from "./PwaInstallCard";
 import BetaNoticeCard from "./BetaNoticeCard";
 import BetaLaunchPanel from "./BetaLaunchPanel";
-import FloatingBetaActions from "./FloatingBetaActions";
 import StudyFriendsPanel from "./StudyFriendsPanel";
 import StudyPlanningPanel from "./StudyPlanningPanel";
 import UniSchedulePanel from "./UniSchedulePanel";
@@ -35,6 +34,7 @@ import type {
   AppUser,
   Assessment,
   BackupFile,
+  GradeGlowFeatureId,
   ModuleStatus,
   StatusFilter,
   UniModule,
@@ -81,6 +81,10 @@ type DashboardNavItem = {
   label: string;
   description: string;
   emoji: string;
+  featureId?: GradeGlowFeatureId;
+  betaOnly?: boolean;
+  adminOnly?: boolean;
+  navHidden?: boolean;
 };
 
 const dashboardNavItems: DashboardNavItem[] = [
@@ -97,6 +101,7 @@ const dashboardNavItems: DashboardNavItem[] = [
     label: "Insights",
     description: "Diagramme und Glow Check",
     emoji: "📊",
+    featureId: "insights",
   },
   {
     id: "friends",
@@ -104,6 +109,7 @@ const dashboardNavItems: DashboardNavItem[] = [
     label: "Freunde",
     description: "Study Circle und Lernvergleich",
     emoji: "👥",
+    featureId: "friends",
   },
   {
     id: "exams",
@@ -118,6 +124,7 @@ const dashboardNavItems: DashboardNavItem[] = [
     label: "Stundenplan",
     description: "Uni-Plan mit Vorlesungen und Übungen",
     emoji: "📅",
+    featureId: "schedule",
   },
   {
     id: "planning",
@@ -125,6 +132,7 @@ const dashboardNavItems: DashboardNavItem[] = [
     label: "StuPo & Planung",
     description: "Import, Semesterplanung und Fehlversuche",
     emoji: "🧭",
+    featureId: "planning",
   },
   {
     id: "modules",
@@ -134,18 +142,12 @@ const dashboardNavItems: DashboardNavItem[] = [
     emoji: "📚",
   },
   {
-    id: "feedback",
-    href: "/feedback",
-    label: "Feedback",
-    description: "Bug melden und Feature wünschen",
-    emoji: "💬",
-  },
-  {
     id: "diagnostics",
     href: "/diagnostics",
     label: "Diagnose",
     description: "Bugs, Status und Button-Audit",
     emoji: "🛠",
+    betaOnly: true,
   },
   {
     id: "backup",
@@ -153,6 +155,7 @@ const dashboardNavItems: DashboardNavItem[] = [
     label: "Backup",
     description: "Export, Import und CSV",
     emoji: "💾",
+    navHidden: true,
   },
 ];
 
@@ -1047,6 +1050,15 @@ export default function GradeGlowDashboard({
   const profileBannerClassName = getProfileBannerClassName(profile.activeProfileBannerId);
   const degreeProgramLabel =
     profile.degreeProgram || "Studiengang noch nicht gesetzt";
+  const enabledFeatureIds = new Set(profile.enabledFeatureIds);
+  const isBetaDiagnosticsUser = entitlement.plan === "admin" || ["beta_test", "founder", "manual"].includes(entitlement.premiumSource);
+  const visibleDashboardNavItems = dashboardNavItems.filter((item) => {
+    if (item.navHidden) return false;
+    if (item.featureId && !enabledFeatureIds.has(item.featureId)) return false;
+    if (item.betaOnly && !isBetaDiagnosticsUser) return false;
+    if (item.adminOnly && entitlement.plan !== "admin") return false;
+    return true;
+  });
   const activeNavItem =
     dashboardNavItems.find((item) => item.id === page) ?? dashboardNavItems[0];
   const globalTimerExam = globalTimer ? exams.find((exam) => exam.id === globalTimer.examId) ?? null : null;
@@ -1176,8 +1188,6 @@ export default function GradeGlowDashboard({
         <div className="absolute bottom-[-12rem] left-1/2 h-[30rem] w-[30rem] -translate-x-1/2 rounded-full bg-pink-200/50 blur-3xl" />
       </div>
 
-      <FloatingBetaActions isAdmin={entitlement.plan === "admin"} />
-
       {foregroundMessage && (
         <div className="fixed left-1/2 top-3 z-50 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-[1.5rem] bg-violet-950/95 p-3 text-white shadow-2xl shadow-violet-950/25 ring-1 ring-white/10 backdrop-blur sm:top-5">
           <div className="flex items-start gap-3">
@@ -1299,7 +1309,7 @@ export default function GradeGlowDashboard({
 
             <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
               <div className="grid gap-2">
-                {dashboardNavItems.map((item) => {
+                {visibleDashboardNavItems.map((item) => {
                   const isActive = item.id === page;
 
                   return (
@@ -1479,7 +1489,7 @@ export default function GradeGlowDashboard({
           aria-label="GradeGlow Schnellnavigation"
         >
           <div className="flex w-max max-w-none items-center gap-2 pr-3">
-            {dashboardNavItems.map((item) => {
+            {visibleDashboardNavItems.map((item) => {
               const isActive = item.id === page;
 
               return (
@@ -1498,14 +1508,6 @@ export default function GradeGlowDashboard({
                 </Link>
               );
             })}
-
-            <Link
-              href="/settings"
-              className="flex shrink-0 items-center gap-2 rounded-2xl bg-white/80 px-3 py-2 text-sm font-black text-slate-600 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50 hover:text-violet-700 hover:ring-violet-100 sm:px-4"
-            >
-              <span className="text-base">👤</span>
-              <span>Profil</span>
-            </Link>
 
             {entitlement.plan === "admin" && (
               <Link
@@ -1653,7 +1655,7 @@ export default function GradeGlowDashboard({
               </div>
             </section>
 
-            <GlowRewardsPanel profile={profile} exams={exams} saveProfile={saveProfile} limits={limits} planLabel={planLabels[entitlement.plan]} />
+            {enabledFeatureIds.has("rewards") && <GlowRewardsPanel profile={profile} exams={exams} saveProfile={saveProfile} limits={limits} planLabel={planLabels[entitlement.plan]} />}
 
             <PwaInstallCard />
           </>
@@ -2824,12 +2826,11 @@ export default function GradeGlowDashboard({
         <footer className="flex flex-col items-center justify-between gap-3 pb-2 text-xs font-bold text-slate-400 sm:flex-row">
           <span>GradeGlow Prototype</span>
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <Link href="/info" className="transition hover:text-violet-700">
-              Info, Datenschutz & Impressum
-            </Link>
-            <Link href="/settings" className="transition hover:text-violet-700">
-              Profil
-            </Link>
+            <Link href="/feedback" className="transition hover:text-violet-700">Feedback</Link>
+            {isBetaDiagnosticsUser && <Link href="/diagnostics" className="transition hover:text-violet-700">Diagnose</Link>}
+            <Link href="/settings" className="transition hover:text-violet-700">Profil & Backup</Link>
+            <Link href="/info" className="transition hover:text-violet-700">Info, Datenschutz & Impressum</Link>
+            {entitlement.plan === "admin" && <Link href="/admin" className="transition hover:text-violet-700">Admin</Link>}
           </div>
         </footer>
       </div>

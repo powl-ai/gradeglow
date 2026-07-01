@@ -4,8 +4,8 @@ import Link from "next/link";
 import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { useMemo, useState } from "react";
 import type { Dispatch, FormEvent, SetStateAction } from "react";
-import type { AppUser, ExamPlanItem, GradeGlowProfile, StartMode, UniModule } from "../types";
-import { DEFAULT_TARGET_ECTS } from "../hooks/useGradeGlowProfile";
+import type { AppUser, ExamPlanItem, GradeGlowFeatureId, GradeGlowProfile, StartMode, UniModule } from "../types";
+import { DEFAULT_ENABLED_FEATURE_IDS, DEFAULT_TARGET_ECTS } from "../hooks/useGradeGlowProfile";
 import GradeGlowLogo from "./GradeGlowLogo";
 import { createDemoGradeGlowData, DEMO_EXAM_MARKER, DEMO_SOURCE } from "../lib/demoData";
 import { db, isFirebaseConfigured } from "../lib/firebase";
@@ -59,6 +59,14 @@ const startOptions: {
 
 const ectsPresets = [180, 210, 120, 90];
 
+const featurePreferenceOptions: { id: GradeGlowFeatureId; title: string; description: string }[] = [
+  { id: "insights", title: "Insights", description: "Statistiken und Diagramme" },
+  { id: "friends", title: "Study Circle", description: "Freunde und Lernvergleich" },
+  { id: "schedule", title: "Stundenplan", description: "Vorlesungen und Uni-Woche" },
+  { id: "planning", title: "StuPo & Planung", description: "Semesterplanung und Import" },
+  { id: "rewards", title: "GlowPoints", description: "Daily Glow und Kosmetik" },
+];
+
 const parseNumber = (value: string) => Number(value.replace(",", "."));
 
 export default function OnboardingWizard({
@@ -81,6 +89,9 @@ export default function OnboardingWizard({
     profile.preferredStartMode || "manual",
   );
   const [message, setMessage] = useState("");
+  const [enabledFeatureIds, setEnabledFeatureIds] = useState<GradeGlowFeatureId[]>(
+    profile.enabledFeatureIds.length > 0 ? profile.enabledFeatureIds : [...DEFAULT_ENABLED_FEATURE_IDS],
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   const selectedOption = useMemo(
@@ -102,6 +113,7 @@ export default function OnboardingWizard({
       targetEcts: Number.isFinite(parsedEcts) && parsedEcts > 0 ? parsedEcts : DEFAULT_TARGET_ECTS,
       preferredStartMode,
       onboardingCompleted: completed,
+      enabledFeatureIds: Array.from(new Set(enabledFeatureIds)),
     };
   };
 
@@ -195,6 +207,14 @@ export default function OnboardingWizard({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const toggleFeaturePreference = (featureId: GradeGlowFeatureId) => {
+    setEnabledFeatureIds((current) =>
+      current.includes(featureId)
+        ? current.filter((item) => item !== featureId)
+        : [...current, featureId],
+    );
   };
 
   const skip = async () => {
@@ -326,6 +346,32 @@ export default function OnboardingWizard({
                     <p className="mt-1 text-sm leading-6 text-slate-500">{option.description}</p>
                   </button>
                 ))}
+              </div>
+
+              <div className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <p className="text-sm font-black text-slate-950">Welche Bereiche brauchst du?</p>
+                <p className="mt-1 text-sm leading-6 text-slate-500">Du kannst alles später im Profil ändern. Überblick, Module und Prüfungen bleiben immer aktiv.</p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {featurePreferenceOptions.map((option) => {
+                    const isEnabled = enabledFeatureIds.includes(option.id);
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        className={`rounded-2xl p-3 text-left ring-1 transition hover:-translate-y-0.5 ${isEnabled ? "bg-violet-50 text-slate-950 ring-violet-200" : "bg-white text-slate-500 ring-slate-200"}`}
+                        onClick={() => toggleFeaturePreference(option.id)}
+                      >
+                        <span className="flex items-center justify-between gap-3">
+                          <span className="text-sm font-black">{option.title}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-black ${isEnabled ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" : "bg-slate-100 text-slate-500"}`}>
+                            {isEnabled ? "aktiv" : "aus"}
+                          </span>
+                        </span>
+                        <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{option.description}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}

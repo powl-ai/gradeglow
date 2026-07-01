@@ -1147,3 +1147,38 @@ details > summary::-webkit-details-marker {
     background-color: rgba(15, 23, 42, 0.78) !important;
   }
 }
+
+/* Beta navigation/preferences polish: readable detail editors and calmer in-app nav. */
+.gg-themed .planner-detail-input {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--gg-border) 84%, white 16%);
+  background: color-mix(in srgb, var(--gg-surface) 92%, white 8%) !important;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--gg-app-text) !important;
+  outline: none;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.05);
+}
+
+.gg-themed .planner-detail-input::placeholder {
+  color: color-mix(in srgb, var(--gg-muted) 68%, transparent) !important;
+}
+
+.gg-themed .planner-detail-input:focus {
+  border-color: var(--gg-accent-500) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--gg-accent-500) 18%, transparent);
+}
+
+.gg-theme-dark .planner-detail-input {
+  background: color-mix(in srgb, var(--gg-surface-soft) 88%, white 12%) !important;
+  color: #f8fafc !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .gg-theme-system .planner-detail-input {
+    background: color-mix(in srgb, var(--gg-surface-soft) 88%, white 12%) !important;
+    color: #f8fafc !important;
+  }
+}

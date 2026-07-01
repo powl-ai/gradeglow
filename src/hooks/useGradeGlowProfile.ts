@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../lib/firebase";
 import { validPageThemeIds } from "../lib/gradeglowThemes";
-import type { AccentColor, AppIconId, AppUser, GradeGlowProfile, PageThemeId, StartMode, ThemeMode } from "../types";
+import type { AccentColor, AppIconId, AppUser, GradeGlowFeatureId, GradeGlowProfile, PageThemeId, StartMode, ThemeMode } from "../types";
 
 export type ProfileSyncStatus =
   | "local"
@@ -29,6 +29,16 @@ const validAppIconIds: AppIconId[] = [
   "app-icon-mocha",
   "app-icon-rose",
 ];
+
+export const DEFAULT_ENABLED_FEATURE_IDS: GradeGlowFeatureId[] = [
+  "insights",
+  "friends",
+  "schedule",
+  "planning",
+  "rewards",
+];
+
+const validFeatureIds = new Set<GradeGlowFeatureId>(DEFAULT_ENABLED_FEATURE_IDS);
 
 const parseTargetEcts = (value: unknown) => {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
@@ -96,6 +106,17 @@ const getStringArrayValue = (value: unknown) =>
     ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0).map((item) => item.trim())
     : [];
 
+const getFeatureIdsValue = (value: unknown): GradeGlowFeatureId[] => {
+  if (!Array.isArray(value)) return [...DEFAULT_ENABLED_FEATURE_IDS];
+
+  const filtered = value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter((item): item is GradeGlowFeatureId => validFeatureIds.has(item as GradeGlowFeatureId));
+
+  return Array.from(new Set(filtered));
+};
+
 const getPositiveNumberValue = (value: unknown, fallback = 0) => {
   if (typeof value === "number" && Number.isFinite(value)) return Math.max(0, Math.round(value));
   if (typeof value === "string") {
@@ -123,7 +144,8 @@ const isMeaningfulProfile = (profile: GradeGlowProfile) =>
       profile.activePageThemeId !== "default" ||
       profile.accentColor !== "violet" ||
       profile.glowPoints > 0 ||
-      profile.purchasedCosmeticIds.length > 0
+      profile.purchasedCosmeticIds.length > 0 ||
+      profile.enabledFeatureIds.length !== DEFAULT_ENABLED_FEATURE_IDS.length
   );
 
 const keepRecentBackups = (value: unknown): GradeGlowProfile[] => {
@@ -176,6 +198,7 @@ const migrateProfile = (
     activePageThemeId: getPageThemeId(profileObject.activePageThemeId),
     themeMode: getThemeMode(profileObject.themeMode),
     accentColor: getAccentColor(profileObject.accentColor),
+    enabledFeatureIds: getFeatureIdsValue(profileObject.enabledFeatureIds),
   };
 };
 
@@ -220,6 +243,7 @@ export function useGradeGlowProfile(user: AppUser) {
       activePageThemeId: "default",
       themeMode: "system",
       accentColor: "violet",
+      enabledFeatureIds: [...DEFAULT_ENABLED_FEATURE_IDS],
     }),
     [fallbackDisplayName]
   );

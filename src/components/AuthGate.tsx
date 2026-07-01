@@ -655,7 +655,7 @@ export default function AuthGate({ children }: AuthGateProps) {
                 <input
                   autoComplete="name"
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100 sm:py-3"
-                  placeholder="z. B. Paul"
+                  placeholder="z. B. Max Mustermann"
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}
                 />

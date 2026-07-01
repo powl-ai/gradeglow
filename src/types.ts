@@ -29,6 +29,13 @@ export type AppIconId =
   | "app-icon-mocha"
   | "app-icon-rose";
 
+export type GradeGlowFeatureId =
+  | "insights"
+  | "friends"
+  | "schedule"
+  | "planning"
+  | "rewards";
+
 export type UserPlan = "free" | "premium" | "lifetime" | "admin";
 
 export type GradeGlowEntitlement = {
@@ -85,6 +92,7 @@ export type GradeGlowProfile = {
   activePageThemeId: PageThemeId;
   themeMode: ThemeMode;
   accentColor: AccentColor;
+  enabledFeatureIds: GradeGlowFeatureId[];
 };
 
 export type ModuleStatus = "passed" | "ungraded" | "open" | "failed";

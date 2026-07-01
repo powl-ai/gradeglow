@@ -8,7 +8,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "re
 import { deleteUser, updateProfile } from "firebase/auth";
 import { collection, deleteDoc, doc, getDoc, getDocs, query, where, writeBatch } from "firebase/firestore";
 import { auth, db, isFirebaseConfigured } from "../lib/firebase";
-import { DEFAULT_TARGET_ECTS, useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
+import { DEFAULT_ENABLED_FEATURE_IDS, DEFAULT_TARGET_ECTS, useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { formatLimit, planDescriptions, planLabels } from "../lib/gradeglowAccess";
 import { PAGE_THEMES, getEffectivePageThemeId, getPageThemeStyle, getThemeClassName } from "../lib/gradeglowThemes";
@@ -16,7 +16,7 @@ import { STREAK_BADGES, getAvatarFrameWrapperClassName, getProfileBannerClassNam
 import { getUserModulesStorageKey } from "../lib/gradeglowModules";
 import { getUserExamsStorageKey } from "../lib/gradeglowExams";
 import { createDeleteRequest } from "../lib/feedback";
-import type { AccentColor, AppUser, GradeGlowProfile, PageThemeId, StartMode, ThemeMode } from "../types";
+import type { AccentColor, AppUser, GradeGlowFeatureId, GradeGlowProfile, PageThemeId, StartMode, ThemeMode } from "../types";
 
 type SettingsPageProps = {
   user: AppUser;
@@ -24,6 +24,14 @@ type SettingsPageProps = {
 };
 
 const ectsPresets = [180, 210, 120, 90];
+
+const featurePreferenceOptions: { id: GradeGlowFeatureId; title: string; description: string }[] = [
+  { id: "insights", title: "Insights", description: "Diagramme, Fortschritt und Auswertungen anzeigen." },
+  { id: "friends", title: "Study Circle", description: "Freunde, Vergleich und Circle-Quests nutzen." },
+  { id: "schedule", title: "Stundenplan", description: "Uni-Woche, Vorlesungen und Übungen eintragen." },
+  { id: "planning", title: "StuPo & Planung", description: "Semesterplanung, Import und Fehlversuche anzeigen." },
+  { id: "rewards", title: "GlowPoints", description: "Daily Glow, Streaks und Kosmetik-Shop sichtbar lassen." },
+];
 const startModeLabels: Record<StartMode, string> = {
   manual: "Module manuell eintragen",
   stupo: "StuPo importieren",
@@ -177,6 +185,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   const [accentColor, setAccentColor] = useState<AccentColor>("violet");
   const [activePageThemeId, setActivePageThemeId] = useState<PageThemeId>("default");
   const [avatarDataUrl, setAvatarDataUrl] = useState("");
+  const [enabledFeatureIds, setEnabledFeatureIds] = useState<GradeGlowFeatureId[]>([...DEFAULT_ENABLED_FEATURE_IDS]);
   const [avatarMessage, setAvatarMessage] = useState("");
   const [formMessage, setFormMessage] = useState("");
   const [dangerMessage, setDangerMessage] = useState("");
@@ -203,6 +212,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     setAccentColor(profile.accentColor || "violet");
     setActivePageThemeId(profile.activePageThemeId || "default");
     setAvatarDataUrl(profile.avatarDataUrl || "");
+    setEnabledFeatureIds(profile.enabledFeatureIds.length > 0 ? profile.enabledFeatureIds : [...DEFAULT_ENABLED_FEATURE_IDS]);
   }, [isProfileLoaded, profile]);
 
   const syncStyle = useMemo(() => {
@@ -238,8 +248,9 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
       activePageThemeId: limits.premiumThemes ? activePageThemeId : "default",
       onboardingCompleted: true,
       avatarDataUrl,
+      enabledFeatureIds: Array.from(new Set(enabledFeatureIds)),
     };
-  }, [accentColor, activePageThemeId, avatarDataUrl, currentSemester, degreeProgram, degreeType, displayName, limits.premiumThemes, preferredStartMode, profile, targetEcts, themeMode, university]);
+  }, [accentColor, activePageThemeId, avatarDataUrl, currentSemester, degreeProgram, degreeType, displayName, enabledFeatureIds, limits.premiumThemes, preferredStartMode, profile, targetEcts, themeMode, university]);
 
   const hasChanges = useMemo(() => {
     return JSON.stringify(nextProfile) !== JSON.stringify({ ...profile, onboardingCompleted: true });
@@ -485,6 +496,16 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     ) : avatar;
   };
 
+  const toggleFeaturePreference = (featureId: GradeGlowFeatureId) => {
+    setEnabledFeatureIds((current) => {
+      if (current.includes(featureId)) {
+        return current.filter((item) => item !== featureId);
+      }
+
+      return [...current, featureId];
+    });
+  };
+
   return (
     <main className={`gg-themed ${themeClassName} min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950`} data-accent={accentColor} data-page-theme={effectivePageThemeId} style={themeStyle}>
       <div className="pointer-events-none fixed inset-0 -z-10">
@@ -645,6 +666,34 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                   ))}
                 </select>
               </label>
+            </div>
+
+            <div className="mt-6 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <div className="mb-4">
+                <p className="text-sm font-black text-slate-950">Sichtbare Bereiche</p>
+                <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">Blende Funktionen aus, die du nicht nutzt. Pflichtbereiche wie Überblick, Module und Prüfungen bleiben immer sichtbar.</p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {featurePreferenceOptions.map((option) => {
+                  const isEnabled = enabledFeatureIds.includes(option.id);
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      className={`rounded-2xl p-3 text-left ring-1 transition hover:-translate-y-0.5 ${isEnabled ? "bg-violet-50 text-slate-950 ring-violet-200" : "bg-white text-slate-500 ring-slate-200"}`}
+                      onClick={() => toggleFeaturePreference(option.id)}
+                    >
+                      <span className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-black">{option.title}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-black ${isEnabled ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" : "bg-slate-100 text-slate-500"}`}>
+                          {isEnabled ? "aktiv" : "aus"}
+                        </span>
+                      </span>
+                      <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{option.description}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="mt-6 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
@@ -832,6 +881,15 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
 
             <NotificationSettingsCard user={user} />
             <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+              <p className="text-sm font-bold text-violet-700">Backup</p>
+              <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Daten sichern & übertragen</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-500">JSON-Backup, Import und CSV-Export sind jetzt im Profil gebündelt. Die Detailseite bleibt erreichbar, verschwindet aber aus der Hauptnavigation.</p>
+              <Link href="/backup" className="mt-4 inline-flex rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-800">
+                Backup öffnen
+              </Link>
+            </div>
+
+            <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
               <p className="text-sm font-bold text-violet-700">Setup</p>
               <h2 className="mt-1 text-xl font-black tracking-tight sm:text-2xl">Onboarding erneut starten</h2>
               <p className="mt-3 text-sm leading-6 text-slate-500">
@@ -900,6 +958,8 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
           <span>GradeGlow Einstellungen</span>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link href="/" className="transition hover:text-violet-700">Dashboard</Link>
+            <Link href="/feedback" className="transition hover:text-violet-700">Feedback</Link>
+            <Link href="/backup" className="transition hover:text-violet-700">Backup</Link>
             <Link href="/info" className="transition hover:text-violet-700">Info, Datenschutz & Impressum</Link>
           </div>
         </footer>

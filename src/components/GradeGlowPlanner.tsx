@@ -102,6 +102,24 @@ const statusOptions: { value: ExamStatus; label: string }[] = [
 ];
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+const studyWeekDayOptions = [
+  { value: 5, label: "Mo–Fr", description: "5 Tage" },
+  { value: 6, label: "Mo–Sa", description: "6 Tage" },
+  { value: 7, label: "Mo–So", description: "7 Tage" },
+];
+
+const normalizeStudyWeekDays = (value: unknown) => {
+  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value.replace(",", ".")) : 6;
+  if (!Number.isFinite(parsed)) return 6;
+  return Math.min(7, Math.max(5, Math.round(parsed)));
+};
+
+const isAllowedStudyDate = (date: Date, studyWeekDays: number) => {
+  const day = date.getDay();
+  if (day === 0) return studyWeekDays >= 7;
+  if (day === 6) return studyWeekDays >= 6;
+  return day >= 1 && day <= 5;
+};
 
 const emptyForm = {
   title: "",
@@ -313,10 +331,11 @@ const startOfWeek = (date: Date) => {
   return addDays(start, mondayOffset);
 };
 
-const buildCalendarDays = (cursorDate: Date, mode: CalendarMode) => {
+const buildCalendarDays = (cursorDate: Date, mode: CalendarMode, studyWeekDays = 6) => {
   if (mode === "week") {
     const weekStart = startOfWeek(cursorDate);
-    return Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+    const visibleDays = Math.min(7, Math.max(5, studyWeekDays));
+    return Array.from({ length: visibleDays }, (_, index) => addDays(weekStart, index));
   }
 
   const monthStart = new Date(cursorDate.getFullYear(), cursorDate.getMonth(), 1);
@@ -476,7 +495,7 @@ const getFocusTopic = (index: number, total: number) => {
   return "finale Wiederholung: Formeln, Definitionen, Beispiele, Schlaf";
 };
 
-const getCandidateStudyDates = (exam: ExamPlanItem) => {
+const getCandidateStudyDates = (exam: ExamPlanItem, studyWeekDays = 6) => {
   const today = startOfLocalDay(new Date());
   const examDate = toDate(exam.examDate);
   if (!examDate) return [today];
@@ -485,7 +504,9 @@ const getCandidateStudyDates = (exam: ExamPlanItem) => {
 
   const startOffset = Math.max(0, daysUntil - Math.max(1, exam.studyStartDays || DEFAULT_STUDY_START_DAYS));
   const length = Math.max(1, daysUntil - startOffset);
-  return Array.from({ length }, (_, index) => addDays(today, startOffset + index));
+  const candidates = Array.from({ length }, (_, index) => addDays(today, startOffset + index));
+  const allowedCandidates = candidates.filter((date) => isAllowedStudyDate(date, studyWeekDays));
+  return allowedCandidates.length > 0 ? allowedCandidates : candidates;
 };
 
 const pickBestStudyDate = (
@@ -504,24 +525,31 @@ const pickBestStudyDate = (
   }
 
   const uniqueIndexes = [...new Set(orderedIndexes)];
-  const exact = uniqueIndexes.find((index) => {
-    const booked = bookedByDate.get(getDateKey(candidates[index])) ?? 0;
-    return booked + durationMinutes <= dailyLimitMinutes;
-  });
-  if (exact !== undefined) return candidates[exact];
+  const softDailyTarget = Math.max(durationMinutes, Math.round(dailyLimitMinutes * 0.72));
+  const ranked = uniqueIndexes
+    .map((index) => {
+      const dateKey = getDateKey(candidates[index]);
+      const booked = bookedByDate.get(dateKey) ?? 0;
+      const available = dailyLimitMinutes - booked;
+      const overflow = Math.max(0, booked + durationMinutes - softDailyTarget);
+      const distance = Math.abs(index - desiredIndex);
+      return {
+        index,
+        available,
+        score: distance * 90 + booked + overflow * 2,
+      };
+    })
+    .filter((candidate) => candidate.available > 0)
+    .sort((a, b) => a.score - b.score || a.index - b.index);
 
-  const withCapacity = uniqueIndexes.find((index) => {
-    const booked = bookedByDate.get(getDateKey(candidates[index])) ?? 0;
-    return booked < dailyLimitMinutes;
-  });
-
-  return withCapacity === undefined ? null : candidates[withCapacity];
+  return ranked[0] ? candidates[ranked[0].index] : null;
 };
 
 const createStudySessionsForExam = (
   exam: ExamPlanItem,
   moduleById: Map<string, UniModule>,
   bookedByDate = new Map<string, number>(),
+  studyWeekDays = 6,
 ): StudySessionItem[] => {
   if (exam.status === "done" || getDaysUntil(exam.examDate) < 0) return [];
 
@@ -530,7 +558,7 @@ const createStudySessionsForExam = (
   const sessionLength = getSessionLength(exam);
   const dailyLimit = getExamDailyLimit(exam);
   const sessionCount = Math.max(1, Math.ceil(totalMinutes / sessionLength));
-  const candidates = getCandidateStudyDates(exam);
+  const candidates = getCandidateStudyDates(exam, studyWeekDays);
   let remainingMinutes = totalMinutes;
   const sessions: StudySessionItem[] = [];
 
@@ -613,6 +641,18 @@ export default function GradeGlowPlanner({
   const [studyRewardMessage, setStudyRewardMessage] = useState("");
   const rewardedSessionIdsRef = useRef(new Set(normalizeRewardedStudySessionIds(profile.rewardedStudySessionIds)));
   const focusPanelRef = useRef<HTMLDivElement | null>(null);
+  const planningWeekDays = normalizeStudyWeekDays(profile.studyWeekDays);
+
+
+  const updateStudyWeekDays = async (days: number) => {
+    if (!isProfileLoaded) return;
+    try {
+      await saveProfile({ ...profile, studyWeekDays: normalizeStudyWeekDays(days) });
+      setCalendarCursorDate((current) => startOfLocalDay(current));
+    } catch {
+      // Profile guard already shows a loading message; keep the current setting in place.
+    }
+  };
 
   useEffect(() => {
     if (!activeTimer) return undefined;
@@ -732,11 +772,11 @@ export default function GradeGlowPlanner({
       }
 
       changed = true;
-      nextExamById.set(exam.id, { ...exam, studySessions: createStudySessionsForExam(exam, moduleById, booked) });
+      nextExamById.set(exam.id, { ...exam, studySessions: createStudySessionsForExam(exam, moduleById, booked, planningWeekDays) });
     });
 
     if (changed) setExams(sortedExams.map((exam) => nextExamById.get(exam.id) ?? exam));
-  }, [isLoaded, moduleById, setExams, sortedExams]);
+  }, [isLoaded, moduleById, planningWeekDays, setExams, sortedExams]);
 
   const allStudySessions = useMemo(
     () => sortSessions(sortedExams.flatMap((exam) => exam.studySessions.map((session) => ({ ...session, examId: exam.id })))),
@@ -752,7 +792,7 @@ export default function GradeGlowPlanner({
     ? sortSessions(focusedExam.studySessions).filter((session) => showHiddenItems || !session.isHidden)
     : [];
 
-  const calendarDays = useMemo(() => buildCalendarDays(calendarCursorDate, calendarMode), [calendarCursorDate, calendarMode]);
+  const calendarDays = useMemo(() => buildCalendarDays(calendarCursorDate, calendarMode, planningWeekDays), [calendarCursorDate, calendarMode, planningWeekDays]);
 
   const calendarExams = useMemo(
     () => (calendarContentFilter === "study" ? [] : visibleExams),
@@ -1007,7 +1047,7 @@ export default function GradeGlowPlanner({
     });
 
     const manualSessions = exam.studySessions.filter((session) => session.isManual);
-    const generatedSessions = createStudySessionsForExam(exam, moduleById, booked);
+    const generatedSessions = createStudySessionsForExam(exam, moduleById, booked, planningWeekDays);
     updateExam(examId, (current) => ({ ...current, studySessions: [...manualSessions, ...generatedSessions] }));
   };
 
@@ -1187,10 +1227,10 @@ export default function GradeGlowPlanner({
   const calendarTitle =
     calendarMode === "month"
       ? formatMonthLabel(calendarCursorDate)
-      : `${formatShortDate(startOfWeek(calendarCursorDate))} – ${formatShortDate(addDays(startOfWeek(calendarCursorDate), 6))}`;
+      : `${formatShortDate(startOfWeek(calendarCursorDate))} – ${formatShortDate(addDays(startOfWeek(calendarCursorDate), planningWeekDays - 1))}`;
 
   return (
-    <section className="space-y-5 sm:space-y-6">
+    <section className="gg-planner-panel space-y-5 sm:space-y-6">
       <div className="rounded-3xl bg-white/90 p-4 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
@@ -1218,6 +1258,20 @@ export default function GradeGlowPlanner({
                   className={`rounded-xl px-3 py-2 text-xs font-black transition sm:text-sm ${calendarContentFilter === option.value ? "bg-white text-violet-700 shadow-sm" : "text-slate-500"}`}
                   onClick={() => setCalendarContentFilter(option.value)}
                   title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-3 gap-1 rounded-2xl bg-slate-100 p-1" title="Welche Wochentage die automatische Lernplanung nutzen darf">
+              {studyWeekDayOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`rounded-xl px-3 py-2 text-xs font-black transition sm:text-sm ${planningWeekDays === option.value ? "bg-white text-violet-700 shadow-sm" : "text-slate-500"}`}
+                  onClick={() => updateStudyWeekDays(option.value)}
+                  disabled={!isProfileLoaded}
                 >
                   {option.label}
                 </button>
@@ -1475,10 +1529,10 @@ export default function GradeGlowPlanner({
 
       <div className="overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
         <div className="p-3 sm:p-5">
-          <div className="grid grid-cols-7 gap-1 text-center text-[0.6rem] font-black uppercase tracking-[0.12em] text-slate-400 sm:gap-2 sm:text-xs">
-            {weekdayLabels.map((weekday) => <div key={weekday} className="px-0.5 py-2">{weekday}</div>)}
+          <div className={`grid ${calendarMode === "week" ? (planningWeekDays === 5 ? "grid-cols-5" : planningWeekDays === 6 ? "grid-cols-6" : "grid-cols-7") : "grid-cols-7"} gap-1 text-center text-[0.6rem] font-black uppercase tracking-[0.12em] text-slate-400 sm:gap-2 sm:text-xs`}>
+            {(calendarMode === "week" ? weekdayLabels.slice(0, planningWeekDays) : weekdayLabels).map((weekday) => <div key={weekday} className="px-0.5 py-2">{weekday}</div>)}
           </div>
-          <div className="grid grid-cols-7 gap-1 sm:gap-2">
+          <div className={`grid ${calendarMode === "week" ? (planningWeekDays === 5 ? "grid-cols-5" : planningWeekDays === 6 ? "grid-cols-6" : "grid-cols-7") : "grid-cols-7"} gap-1 sm:gap-2`}>
             {calendarDays.map((date) => {
               const dateKey = getDateKey(date);
               const dayExams = examsByDate.get(dateKey) ?? [];
@@ -1491,7 +1545,7 @@ export default function GradeGlowPlanner({
               return (
                 <div
                   key={dateKey}
-                  className={`min-h-24 overflow-hidden rounded-xl p-1.5 ring-1 transition sm:min-h-32 sm:rounded-2xl sm:p-2.5 ${isDropTarget ? "ring-violet-300" : ""} ${isToday ? "bg-violet-50 ring-violet-300" : muted ? "bg-slate-50/70 ring-slate-100" : "bg-white ring-slate-200"}`}
+                  className={`${calendarMode === "week" ? "min-h-40 sm:min-h-56 lg:min-h-64" : "min-h-24 sm:min-h-32"} overflow-hidden rounded-xl p-1.5 ring-1 transition sm:rounded-2xl sm:p-2.5 ${isDropTarget ? "ring-violet-300" : ""} ${isToday ? "bg-violet-50 ring-violet-300" : muted ? "bg-slate-50/70 ring-slate-100" : "bg-white ring-slate-200"}`}
                   onDragOver={(event) => {
                     if (!draggedSession) return;
                     event.preventDefault();
@@ -1513,7 +1567,7 @@ export default function GradeGlowPlanner({
                   <div className="mt-1.5 space-y-1">
                     {dayExams.slice(0, 1).map((exam) => { const kind = examKindOptions.find((option) => option.value === exam.kind); return <button key={exam.id} type="button" className="block w-full truncate rounded-lg bg-rose-50 px-1.5 py-1 text-left text-[0.58rem] font-black text-rose-700 ring-1 ring-rose-100 sm:rounded-xl sm:px-2 sm:text-[0.68rem]" onClick={(event) => { event.stopPropagation(); jumpToExamDetails(exam.id); }} title={`${exam.title} · Details öffnen`}><span className="sm:hidden">{kind?.emoji ?? "📌"}</span><span className="hidden sm:inline">{kind?.emoji ?? "📌"} {exam.title}</span></button>; })}
                     {dayExams.length > 1 && <p className="truncate rounded-lg bg-rose-50 px-1.5 py-1 text-[0.58rem] font-bold text-rose-500 sm:rounded-xl sm:px-2 sm:text-[0.68rem]">+{dayExams.length - 1} Prüfung</p>}
-                    {daySessions.slice(0, calendarMode === "week" ? 4 : 2).map((session) => (
+                    {daySessions.slice(0, calendarMode === "week" ? 8 : 2).map((session) => (
                       <button
                         key={session.id}
                         type="button"
@@ -1532,7 +1586,7 @@ export default function GradeGlowPlanner({
                         {session.isDone ? "✓ " : ""}{session.title || "Lernblock"}
                       </button>
                     ))}
-                    {daySessions.length > (calendarMode === "week" ? 4 : 2) && <p className="truncate rounded-lg bg-violet-50 px-1.5 py-1 text-[0.58rem] font-bold text-violet-500 sm:rounded-xl sm:px-2 sm:text-[0.68rem]">+{daySessions.length - (calendarMode === "week" ? 4 : 2)} Lernblock</p>}
+                    {daySessions.length > (calendarMode === "week" ? 8 : 2) && <p className="truncate rounded-lg bg-violet-50 px-1.5 py-1 text-[0.58rem] font-bold text-violet-500 sm:rounded-xl sm:px-2 sm:text-[0.68rem]">+{daySessions.length - (calendarMode === "week" ? 8 : 2)} Lernblock</p>}
                     {dayStudyMinutes > 0 && <p className="truncate rounded-lg bg-slate-50 px-1.5 py-1 text-[0.58rem] font-black text-slate-500 ring-1 ring-slate-100">Σ {formatMinutes(dayStudyMinutes)}</p>}
                   </div>
                 </div>

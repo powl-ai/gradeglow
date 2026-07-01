@@ -58,6 +58,7 @@ export type GradeGlowProfile = {
   degreeType: string;
   currentSemester: number;
   targetEcts: number;
+  studyWeekDays: number;
   preferredStartMode: StartMode;
   onboardingCompleted: boolean;
   avatarDataUrl: string;

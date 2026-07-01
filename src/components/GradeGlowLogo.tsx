@@ -36,7 +36,7 @@ export default function GradeGlowLogo({
   return (
     <div
       aria-label={`${iconVisual.label} GradeGlow Logo`}
-      className={`relative flex shrink-0 items-center justify-center overflow-hidden font-black tracking-[-0.14em] ring-1 ${sizeClasses[size]} ${usesDefaultIcon ? toneClasses[tone] : iconVisual.shellClassName} ${className}`}
+      className={`gg-logo-icon relative flex shrink-0 items-center justify-center overflow-hidden font-black tracking-[-0.14em] ring-1 ${sizeClasses[size]} ${usesDefaultIcon ? toneClasses[tone] : iconVisual.shellClassName} ${className}`}
       {...props}
     >
       <div className={`absolute inset-0 ${iconVisual.glowClassName}`} />

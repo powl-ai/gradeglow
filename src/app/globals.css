@@ -1017,3 +1017,133 @@ details > summary::-webkit-details-marker {
     white-space: nowrap;
   }
 }
+
+/* Beta feedback patch 4: app-store prep polish, safer dark contrast and calendar readability. */
+
+@media (prefers-color-scheme: dark) { .gg-theme-system .gg-logo-icon.bg-white { background: #ffffff !important; color: #2e1065 !important; --tw-ring-color: rgba(255, 255, 255, 0.7) !important; } }
+
+.gg-theme-dark .gg-logo-icon.bg-white {
+  background: #ffffff !important;
+  color: #2e1065 !important;
+  --tw-ring-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.gg-theme-dark .gg-logo-icon.bg-white span {
+  color: #2e1065 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .gg-theme-system .gg-logo-icon.bg-white span {
+    color: #2e1065 !important;
+  }
+}
+
+.gg-theme-dark .shadow-violet-100,
+.gg-theme-dark .shadow-violet-200,
+.gg-theme-dark .shadow-fuchsia-950\/20 {
+  --tw-shadow-color: rgba(0, 0, 0, 0.22) !important;
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), 0 8px 24px rgba(0, 0, 0, 0.18) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .gg-theme-system .shadow-violet-100,
+  .gg-theme-system .shadow-violet-200,
+  .gg-theme-system .shadow-fuchsia-950\/20 {
+    --tw-shadow-color: rgba(0, 0, 0, 0.22) !important;
+    box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), 0 8px 24px rgba(0, 0, 0, 0.18) !important;
+  }
+}
+
+.gg-theme-dark .gg-planner-panel .bg-violet-50,
+.gg-theme-dark .gg-planner-panel .bg-fuchsia-50 {
+  background-color: color-mix(in srgb, var(--gg-surface-soft) 82%, var(--gg-accent-500) 18%) !important;
+  color: #f8fafc !important;
+}
+
+.gg-theme-dark .gg-planner-panel .text-violet-700,
+.gg-theme-dark .gg-planner-panel .text-violet-600,
+.gg-theme-dark .gg-planner-panel .text-violet-500,
+.gg-theme-dark .gg-planner-panel .text-violet-400,
+.gg-theme-dark .gg-planner-panel .text-fuchsia-700,
+.gg-theme-dark .gg-planner-panel .text-fuchsia-600,
+.gg-theme-dark .gg-planner-panel .text-fuchsia-500,
+.gg-theme-dark .gg-planner-panel .text-fuchsia-400 {
+  color: color-mix(in srgb, var(--gg-accent-200) 88%, white 12%) !important;
+}
+
+.gg-theme-dark .gg-planner-panel .bg-rose-50 {
+  background-color: rgba(255, 241, 242, 0.94) !important;
+  color: #9f1239 !important;
+}
+
+.gg-theme-dark .gg-planner-panel .bg-rose-50 .text-rose-700,
+.gg-theme-dark .gg-planner-panel .text-rose-700 {
+  color: #be123c !important;
+}
+
+.gg-theme-dark .gg-planner-panel .bg-emerald-50 {
+  background-color: rgba(236, 253, 245, 0.96) !important;
+  color: #047857 !important;
+}
+
+.gg-theme-dark .gg-planner-panel .bg-emerald-50 .text-emerald-700,
+.gg-theme-dark .gg-planner-panel .text-emerald-700 {
+  color: #047857 !important;
+}
+
+.gg-theme-dark .gg-planner-panel [role="button"] {
+  border-color: rgba(148, 163, 184, 0.34) !important;
+}
+
+.gg-theme-dark .gg-planner-panel .bg-white,
+.gg-theme-dark .gg-planner-panel .bg-white\/90 {
+  background-color: rgba(15, 23, 42, 0.78) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .gg-theme-system .gg-planner-panel .bg-violet-50,
+  .gg-theme-system .gg-planner-panel .bg-fuchsia-50 {
+    background-color: color-mix(in srgb, var(--gg-surface-soft) 82%, var(--gg-accent-500) 18%) !important;
+    color: #f8fafc !important;
+  }
+
+  .gg-theme-system .gg-planner-panel .text-violet-700,
+  .gg-theme-system .gg-planner-panel .text-violet-600,
+  .gg-theme-system .gg-planner-panel .text-violet-500,
+  .gg-theme-system .gg-planner-panel .text-violet-400,
+  .gg-theme-system .gg-planner-panel .text-fuchsia-700,
+  .gg-theme-system .gg-planner-panel .text-fuchsia-600,
+  .gg-theme-system .gg-planner-panel .text-fuchsia-500,
+  .gg-theme-system .gg-planner-panel .text-fuchsia-400 {
+    color: color-mix(in srgb, var(--gg-accent-200) 88%, white 12%) !important;
+  }
+
+  .gg-theme-system .gg-planner-panel .bg-rose-50 {
+    background-color: rgba(255, 241, 242, 0.94) !important;
+    color: #9f1239 !important;
+  }
+
+  .gg-theme-system .gg-planner-panel .bg-rose-50 .text-rose-700,
+  .gg-theme-system .gg-planner-panel .text-rose-700 {
+    color: #be123c !important;
+  }
+
+  .gg-theme-system .gg-planner-panel .bg-emerald-50 {
+    background-color: rgba(236, 253, 245, 0.96) !important;
+    color: #047857 !important;
+  }
+
+  .gg-theme-system .gg-planner-panel .bg-emerald-50 .text-emerald-700,
+  .gg-theme-system .gg-planner-panel .text-emerald-700 {
+    color: #047857 !important;
+  }
+
+  .gg-theme-system .gg-planner-panel [role="button"] {
+    border-color: rgba(148, 163, 184, 0.34) !important;
+  }
+
+  .gg-theme-system .gg-planner-panel .bg-white,
+  .gg-theme-system .gg-planner-panel .bg-white\/90 {
+    background-color: rgba(15, 23, 42, 0.78) !important;
+  }
+}

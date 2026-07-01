@@ -97,9 +97,9 @@ export default function BetaLaunchPanel({
 
   return (
     <section className="overflow-hidden rounded-[2rem] bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
-      <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="relative bg-slate-950 p-5 text-white sm:p-6">
-          <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-fuchsia-500/25 blur-3xl" />
+      <div className="grid gap-0">
+        <div className="relative bg-slate-950 p-5 text-white sm:p-6 lg:p-7">
+          <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-fuchsia-500/12 blur-3xl" />
           <div className="relative">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-200">Beta Launch</p>
             <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Ready-Check vor dem Testen</h2>
@@ -133,11 +133,11 @@ export default function BetaLaunchPanel({
             </div>
           </div>
         </div>
-        <div className="grid gap-3 p-5 sm:p-6 md:grid-cols-2">
+        <div className="grid gap-3 p-5 sm:p-6 md:grid-cols-2 xl:grid-cols-3">
           {checklist.map((item) => (
             <ChecklistItem key={item.label} {...item} />
           ))}
-          <div className="rounded-2xl bg-violet-50 p-3 text-violet-800 ring-1 ring-violet-100 md:col-span-2">
+          <div className="rounded-2xl bg-violet-50 p-3 text-violet-800 ring-1 ring-violet-100 md:col-span-2 xl:col-span-3">
             <p className="text-sm font-black">Beta-Test-Aufgabe</p>
             <p className="mt-1 text-xs font-semibold leading-5">
               Account erstellen, Profil speichern, Modul + Prüfung anlegen, Lerneinheit abhaken, Theme wechseln, Freund hinzufügen, Bug/Feedback senden, neu laden.

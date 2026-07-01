@@ -43,6 +43,12 @@ const parseTargetEcts = (value: unknown) => {
   return DEFAULT_TARGET_ECTS;
 };
 
+const parseStudyWeekDays = (value: unknown) => {
+  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value.replace(",", ".")) : 6;
+  if (!Number.isFinite(parsed)) return 6;
+  return Math.min(7, Math.max(5, Math.round(parsed)));
+};
+
 const parseSemester = (value: unknown) => {
   if (typeof value === "number" && Number.isFinite(value)) {
     return Math.max(1, Math.round(value));
@@ -143,6 +149,7 @@ const migrateProfile = (
     degreeType: getStringValue(profileObject.degreeType) || "Bachelor",
     currentSemester: parseSemester(profileObject.currentSemester),
     targetEcts: parseTargetEcts(profileObject.targetEcts),
+    studyWeekDays: parseStudyWeekDays(profileObject.studyWeekDays),
     preferredStartMode: getStartMode(profileObject.preferredStartMode),
     onboardingCompleted: profileObject.onboardingCompleted === true,
     avatarDataUrl: getAvatarDataUrl(profileObject.avatarDataUrl),
@@ -186,6 +193,7 @@ export function useGradeGlowProfile(user: AppUser) {
       degreeType: "Bachelor",
       currentSemester: 1,
       targetEcts: DEFAULT_TARGET_ECTS,
+      studyWeekDays: 6,
       preferredStartMode: "manual",
       onboardingCompleted: false,
       avatarDataUrl: "",

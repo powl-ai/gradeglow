@@ -103,6 +103,16 @@ export default function GlowRewardsPanel({
     profile.dailyLoginLastClaimDateKey === yesterdayKey || hasClaimedToday
       ? profile.dailyLoginStreak
       : 0;
+  const nextDailyStreak = hasClaimedToday
+    ? Math.max(loginStreak, 1)
+    : profile.dailyLoginLastClaimDateKey === yesterdayKey
+      ? profile.dailyLoginStreak + 1
+      : 1;
+  const nextDailyStreakBonus = Math.min(
+    25,
+    Math.max(0, nextDailyStreak - 1) * 2,
+  );
+  const nextDailyRewardPoints = 10 + nextDailyStreakBonus;
 
   const doneStudyDayKeys = useMemo(() => getDoneStudyDayKeys(exams), [exams]);
   const latestStudyAt = useMemo(
@@ -257,7 +267,7 @@ export default function GlowRewardsPanel({
         dailyLoginLastClaimDateKey: todayKey,
       });
       setMessage(
-        `+${earnedPoints} Glow Points gesammelt. Daily Streak: ${nextStreak} Tag${nextStreak === 1 ? "" : "e"}.`,
+        `+${earnedPoints} Glow Points gesammelt: 10 Basis + ${streakBonus} Streak-Bonus. Daily Streak: ${nextStreak} Tag${nextStreak === 1 ? "" : "e"}.`,
       );
     } catch {
       setMessage("Reward konnte nicht gespeichert werden.");
@@ -413,7 +423,8 @@ export default function GlowRewardsPanel({
     {
       kind: "appIcon",
       title: "App-Icon",
-      description: "Ändert das In-App-Logo und bereitet spätere Homescreen-Icons vor.",
+      description:
+        "Ändert das In-App-Logo und bereitet spätere Homescreen-Icons vor.",
     },
     {
       kind: "accent",
@@ -538,6 +549,9 @@ export default function GlowRewardsPanel({
               <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
                 <p className="text-xs text-white/70">Daily Login</p>
                 <p className="mt-1 text-2xl font-black">{loginStreak}</p>
+                <p className="mt-1 text-[0.68rem] font-bold text-white/60">
+                  nächster Claim: {nextDailyRewardPoints} GP
+                </p>
               </div>
               <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
                 <p className="text-xs text-white/70">Study Streak</p>
@@ -565,18 +579,25 @@ export default function GlowRewardsPanel({
             </div>
 
             <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <button
-                type="button"
-                className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 shadow-lg shadow-violet-950/20 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto"
-                onClick={claimDailyReward}
-                disabled={hasClaimedToday || isSaving}
-              >
-                {hasClaimedToday
-                  ? "Reward heute abgeholt"
-                  : isSaving
-                    ? "Speichere…"
-                    : "Daily Glow abholen"}
-              </button>
+              <div className="w-full sm:w-auto">
+                <button
+                  type="button"
+                  className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 shadow-lg shadow-violet-950/20 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto"
+                  onClick={claimDailyReward}
+                  disabled={hasClaimedToday || isSaving}
+                >
+                  {hasClaimedToday
+                    ? "Reward heute abgeholt"
+                    : isSaving
+                      ? "Speichere…"
+                      : `Daily Glow abholen (+${nextDailyRewardPoints} GP)`}
+                </button>
+                <p className="mt-2 text-xs font-bold leading-5 text-white/70">
+                  {hasClaimedToday
+                    ? "Morgen steigt dein Streak-Bonus weiter, solange du täglich abholst."
+                    : `10 Basis + ${nextDailyStreakBonus} Streak-Bonus für Tag ${nextDailyStreak}.`}
+                </p>
+              </div>
               <p className="text-xs font-bold text-white/70">
                 {unlockedBadgeCount}/{STREAK_BADGES.length} Abzeichen · heute
                 gelernt: {formatMinutes(todayDoneMinutes)}
@@ -663,7 +684,9 @@ export default function GlowRewardsPanel({
               <p className="mt-2 text-sm leading-6 text-slate-500">
                 Neue Looks kaufst du im Shop. Gekaufte oder Premium-freie Looks
                 findest du getrennt unter „Meine Kosmetik“ und kannst sie dort
-                aktivieren. App-Icons verändern zunächst das In-App-Logo; echte installierte PWA-Icons können je nach Browser erst nach Neuinstallation/Cache-Update wechseln.
+                aktivieren. App-Icons verändern zunächst das In-App-Logo; echte
+                installierte PWA-Icons können je nach Browser erst nach
+                Neuinstallation/Cache-Update wechseln.
               </p>
             </div>
             <span className="self-start rounded-full bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-700 ring-1 ring-violet-100">
@@ -702,7 +725,11 @@ export default function GlowRewardsPanel({
                 }
               >
                 {previewCosmetic?.kind === "appIcon" ? (
-                  <GradeGlowLogo size="lg" tone="light" appIconId={previewAppIconId} />
+                  <GradeGlowLogo
+                    size="lg"
+                    tone="light"
+                    appIconId={previewAppIconId}
+                  />
                 ) : profile.avatarDataUrl ? (
                   <div
                     className="h-14 w-14 rounded-2xl bg-cover bg-center ring-1 ring-white/20"

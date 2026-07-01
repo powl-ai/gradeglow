@@ -41,6 +41,8 @@ type LocalStoredUser = {
 
 const LOCAL_USERS_KEY = "gradeglow-local-users-v1";
 const LOCAL_SESSION_KEY = "gradeglow-local-session-v1";
+const AUTH_SEEN_KEY = "gradeglow-auth-seen-v1";
+const AUTH_PREFERRED_MODE_KEY = "gradeglow-auth-preferred-mode-v1";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
 
@@ -52,7 +54,13 @@ const socialLoginOptions: {
   badge?: string;
 }[] = [
   { provider: "google", label: "Google", icon: "G" },
-  { provider: "apple", label: "Apple", icon: "", disabled: true, badge: "bald" },
+  {
+    provider: "apple",
+    label: "Apple",
+    icon: "",
+    disabled: true,
+    badge: "bald",
+  },
   { provider: "github", label: "GitHub", icon: "⌘" },
 ];
 
@@ -60,7 +68,9 @@ const mapFirebaseUser = (firebaseUser: User): AppUser => ({
   uid: firebaseUser.uid,
   email: firebaseUser.email,
   displayName:
-    firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "GradeGlow User",
+    firebaseUser.displayName ||
+    firebaseUser.email?.split("@")[0] ||
+    "GradeGlow User",
   photoURL: firebaseUser.photoURL,
   provider: "firebase",
 });
@@ -154,9 +164,26 @@ const getAuthErrorMessage = (error: unknown) => {
 
 const isValidEmail = (value: string) => EMAIL_PATTERN.test(value.trim());
 
+const getInitialAuthMode = (): AuthMode => {
+  if (typeof window === "undefined") return "register";
+
+  const preferredMode = localStorage.getItem(AUTH_PREFERRED_MODE_KEY);
+  if (preferredMode === "login" || preferredMode === "register") {
+    return preferredMode;
+  }
+
+  return localStorage.getItem(AUTH_SEEN_KEY) === "true" ? "login" : "register";
+};
+
+const rememberAuthMode = (mode: AuthMode) => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(AUTH_SEEN_KEY, "true");
+  localStorage.setItem(AUTH_PREFERRED_MODE_KEY, mode);
+};
+
 const requiresEmailVerification = (firebaseUser: User) => {
   const hasPasswordProvider = firebaseUser.providerData.some(
-    (provider) => provider.providerId === "password"
+    (provider) => provider.providerId === "password",
   );
 
   return hasPasswordProvider && !firebaseUser.emailVerified;
@@ -167,7 +194,9 @@ const isRedirectFriendlyDevice = () => {
 
   const userAgent = navigator.userAgent.toLowerCase();
   const isMobile = /iphone|ipad|ipod|android/.test(userAgent);
-  const navigatorWithStandalone = navigator as Navigator & { standalone?: boolean };
+  const navigatorWithStandalone = navigator as Navigator & {
+    standalone?: boolean;
+  };
   const isInstalledPwa =
     window.matchMedia("(display-mode: standalone)").matches ||
     window.matchMedia("(display-mode: fullscreen)").matches ||
@@ -179,7 +208,9 @@ const isRedirectFriendlyDevice = () => {
 const shouldFallbackToRedirect = (error: unknown) => {
   const code = getAuthErrorCode(error);
 
-  return code === "auth/popup-blocked" || code === "auth/cancelled-popup-request";
+  return (
+    code === "auth/popup-blocked" || code === "auth/cancelled-popup-request"
+  );
 };
 
 const buildSocialProvider = (providerName: SocialProvider): AuthProvider => {
@@ -207,7 +238,7 @@ export default function AuthGate({ children }: AuthGateProps) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [mode, setMode] = useState<AuthMode>("login");
+  const [mode, setMode] = useState<AuthMode>(getInitialAuthMode);
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -216,7 +247,7 @@ export default function AuthGate({ children }: AuthGateProps) {
   const [infoMessage, setInfoMessage] = useState("");
 
   const title = useMemo(() => {
-    return mode === "login" ? "Willkommen zurück" : "Account erstellen";
+    return mode === "login" ? "Willkommen zurück" : "Kostenlos starten";
   }, [mode]);
 
   useEffect(() => {
@@ -252,6 +283,12 @@ export default function AuthGate({ children }: AuthGateProps) {
     setInfoMessage("");
   };
 
+  const switchMode = (nextMode: AuthMode) => {
+    setMode(nextMode);
+    clearMessages();
+    rememberAuthMode(nextMode);
+  };
+
   const handleLocalAuth = () => {
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedUsername = username.trim();
@@ -264,7 +301,9 @@ export default function AuthGate({ children }: AuthGateProps) {
       }
 
       if (!isValidEmail(normalizedEmail)) {
-        setErrorMessage("Bitte gib eine echte E-Mail-Adresse ein, z. B. name@mail.de.");
+        setErrorMessage(
+          "Bitte gib eine echte E-Mail-Adresse ein, z. B. name@mail.de.",
+        );
         return;
       }
 
@@ -276,7 +315,8 @@ export default function AuthGate({ children }: AuthGateProps) {
       const alreadyExists = users.some(
         (storedUser) =>
           storedUser.email.toLowerCase() === normalizedEmail ||
-          storedUser.username.toLowerCase() === normalizedUsername.toLowerCase()
+          storedUser.username.toLowerCase() ===
+            normalizedUsername.toLowerCase(),
       );
 
       if (alreadyExists) {
@@ -301,6 +341,7 @@ export default function AuthGate({ children }: AuthGateProps) {
       };
 
       saveLocalSession(nextUser);
+      rememberAuthMode("login");
       setUser(nextUser);
       return;
     }
@@ -310,7 +351,7 @@ export default function AuthGate({ children }: AuthGateProps) {
     const matchingUser = users.find(
       (storedUser) =>
         storedUser.email.toLowerCase() === loginIdentifier ||
-        storedUser.username.toLowerCase() === loginIdentifier
+        storedUser.username.toLowerCase() === loginIdentifier,
     );
 
     if (!matchingUser || matchingUser.password !== password) {
@@ -326,6 +367,7 @@ export default function AuthGate({ children }: AuthGateProps) {
     };
 
     saveLocalSession(nextUser);
+    rememberAuthMode("login");
     setUser(nextUser);
   };
 
@@ -343,7 +385,9 @@ export default function AuthGate({ children }: AuthGateProps) {
       const normalizedEmail = email.trim().toLowerCase();
 
       if (!isValidEmail(normalizedEmail)) {
-        setErrorMessage("Bitte gib eine echte E-Mail-Adresse ein, z. B. name@mail.de.");
+        setErrorMessage(
+          "Bitte gib eine echte E-Mail-Adresse ein, z. B. name@mail.de.",
+        );
         return;
       }
 
@@ -366,7 +410,7 @@ export default function AuthGate({ children }: AuthGateProps) {
         const credential = await createUserWithEmailAndPassword(
           auth,
           normalizedEmail,
-          password
+          password,
         );
 
         await updateProfile(credential.user, {
@@ -376,10 +420,10 @@ export default function AuthGate({ children }: AuthGateProps) {
         await sendEmailVerification(credential.user);
         await signOut(auth);
 
-        setMode("login");
+        switchMode("login");
         setPassword("");
         setInfoMessage(
-          `Wir haben eine Bestätigungs-Mail an ${normalizedEmail} geschickt. Öffne den Link und logge dich danach ein.`
+          `Wir haben eine Bestätigungs-Mail an ${normalizedEmail} geschickt. Öffne den Link und logge dich danach ein.`,
         );
         return;
       }
@@ -387,14 +431,16 @@ export default function AuthGate({ children }: AuthGateProps) {
       const credential = await signInWithEmailAndPassword(
         auth,
         normalizedEmail,
-        password
+        password,
       );
+
+      rememberAuthMode("login");
 
       if (!credential.user.emailVerified) {
         await sendEmailVerification(credential.user).catch(() => undefined);
         await signOut(auth);
         setInfoMessage(
-          `Bitte bestätige zuerst deine E-Mail-Adresse. Ich habe den Link gerade nochmal an ${normalizedEmail} geschickt.`
+          `Bitte bestätige zuerst deine E-Mail-Adresse. Ich habe den Link gerade nochmal an ${normalizedEmail} geschickt.`,
         );
       }
     } catch (error) {
@@ -409,7 +455,7 @@ export default function AuthGate({ children }: AuthGateProps) {
 
     if (!auth || !isFirebaseConfigured) {
       setErrorMessage(
-        "Social Login braucht Firebase. Die App läuft gerade im lokalen Demo-Login. Fülle .env.local aus und aktiviere die Anbieter in Firebase."
+        "Social Login braucht Firebase. Die App läuft gerade im lokalen Demo-Login. Fülle .env.local aus und aktiviere die Anbieter in Firebase.",
       );
       return;
     }
@@ -420,17 +466,22 @@ export default function AuthGate({ children }: AuthGateProps) {
       const provider = buildSocialProvider(providerName);
 
       if (isRedirectFriendlyDevice()) {
+        rememberAuthMode("login");
         setInfoMessage("Du wirst zur Anmeldung weitergeleitet…");
         await signInWithRedirect(auth, provider);
         return;
       }
 
       await signInWithPopup(auth, provider);
+      rememberAuthMode("login");
     } catch (error) {
       if (shouldFallbackToRedirect(error)) {
         try {
           const provider = buildSocialProvider(providerName);
-          setInfoMessage("Popup wurde blockiert. Ich öffne stattdessen die Weiterleitungs-Anmeldung…");
+          rememberAuthMode("login");
+          setInfoMessage(
+            "Popup wurde blockiert. Ich öffne stattdessen die Weiterleitungs-Anmeldung…",
+          );
           await signInWithRedirect(auth, provider);
           return;
         } catch (redirectError) {
@@ -491,9 +542,27 @@ export default function AuthGate({ children }: AuthGateProps) {
             </div>
 
             <p className="max-w-2xl text-lg leading-8 text-fuchsia-50/90">
-              Module, Noten, ECTS, Einzelleistungen, Zielnoten und Backups an
-              einem Ort — mit App-Feeling, Login und Cloud-Sync.
+              Starte kostenlos, speichere dein Profil und lege danach Modul +
+              Prüfung an. GradeGlow führt neue Tester Schritt für Schritt durch
+              den ersten Lernplan.
             </p>
+
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-violet-950 shadow-lg shadow-violet-950/20 transition hover:-translate-y-0.5 hover:bg-violet-50"
+                onClick={() => switchMode("register")}
+              >
+                Kostenlos starten
+              </button>
+              <button
+                type="button"
+                className="rounded-2xl bg-white/10 px-5 py-3 text-sm font-black text-white ring-1 ring-white/15 transition hover:-translate-y-0.5 hover:bg-white/15"
+                onClick={() => switchMode("login")}
+              >
+                Ich habe schon ein Konto
+              </button>
+            </div>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
@@ -505,8 +574,8 @@ export default function AuthGate({ children }: AuthGateProps) {
                 <p className="text-sm text-fuchsia-100/80">Backup ready</p>
               </div>
               <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
-                <p className="text-2xl font-black">Beta</p>
-                <p className="text-sm text-fuchsia-100/80">mit Einführung</p>
+                <p className="text-2xl font-black">4 Schritte</p>
+                <p className="text-sm text-fuchsia-100/80">klarer Beta-Start</p>
               </div>
             </div>
 
@@ -535,15 +604,20 @@ export default function AuthGate({ children }: AuthGateProps) {
             <div className="mb-2 inline-flex rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700 sm:mb-3 sm:text-sm">
               {mode === "login" ? "Login" : "Registrierung"}
             </div>
-            <h2 className="text-2xl font-black tracking-tight sm:text-3xl">{title}</h2>
+            <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
+              {title}
+            </h2>
             <p className="mt-1.5 text-sm leading-6 text-slate-500 sm:mt-2">
               {mode === "login"
-                ? "E-Mail bestätigen, einloggen und dann Profil, Module und Prüfung anlegen."
-                : "Nach der Registrierung bekommst du eine Bestätigungs-Mail, bevor der Account genutzt wird."}
+                ? "Logge dich ein, wenn du schon einen Account hast. Neue Tester starten über Registrierung."
+                : "Erstelle deinen Account. Danach führt dich GradeGlow durch Profil, Modul, Prüfung und erste Lernsession."}
             </p>
             <div className="mt-3 rounded-2xl bg-violet-50 p-3 text-sm font-semibold leading-6 text-violet-900 ring-1 ring-violet-100 sm:mt-4 sm:p-4">
               <p className="font-black">Beta-Start in 4 Schritten</p>
-              <p className="mt-1 text-violet-700">Account erstellen → Profil speichern → Modul + Prüfung → Lernsession testen.</p>
+              <p className="mt-1 text-violet-700">
+                Account erstellen → Profil speichern → Modul + Prüfung →
+                Lernsession testen.
+              </p>
             </div>
           </div>
 
@@ -551,30 +625,24 @@ export default function AuthGate({ children }: AuthGateProps) {
             <button
               type="button"
               className={`rounded-xl px-3 py-2.5 text-sm font-bold transition sm:px-4 sm:py-3 ${
-                mode === "login"
-                  ? "bg-white text-slate-950 shadow-sm"
-                  : "text-slate-500 hover:text-slate-900"
-              }`}
-              onClick={() => {
-                setMode("login");
-                clearMessages();
-              }}
-            >
-              Einloggen
-            </button>
-            <button
-              type="button"
-              className={`rounded-xl px-3 py-2.5 text-sm font-bold transition sm:px-4 sm:py-3 ${
                 mode === "register"
                   ? "bg-white text-slate-950 shadow-sm"
                   : "text-slate-500 hover:text-slate-900"
               }`}
-              onClick={() => {
-                setMode("register");
-                clearMessages();
-              }}
+              onClick={() => switchMode("register")}
             >
-              Registrieren
+              Kostenlos starten
+            </button>
+            <button
+              type="button"
+              className={`rounded-xl px-3 py-2.5 text-sm font-bold transition sm:px-4 sm:py-3 ${
+                mode === "login"
+                  ? "bg-white text-slate-950 shadow-sm"
+                  : "text-slate-500 hover:text-slate-900"
+              }`}
+              onClick={() => switchMode("login")}
+            >
+              Einloggen
             </button>
           </div>
 
@@ -603,13 +671,17 @@ export default function AuthGate({ children }: AuthGateProps) {
               <input
                 autoComplete="email"
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100 sm:py-3"
-                inputMode={mode === "login" && !isFirebaseConfigured ? "text" : "email"}
+                inputMode={
+                  mode === "login" && !isFirebaseConfigured ? "text" : "email"
+                }
                 placeholder={
                   mode === "login" && !isFirebaseConfigured
                     ? "deine E-Mail oder dein Benutzername"
                     : "name@mail.de"
                 }
-                type={mode === "login" && !isFirebaseConfigured ? "text" : "email"}
+                type={
+                  mode === "login" && !isFirebaseConfigured ? "text" : "email"
+                }
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
               />
@@ -620,7 +692,9 @@ export default function AuthGate({ children }: AuthGateProps) {
                 Passwort
               </span>
               <input
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                autoComplete={
+                  mode === "login" ? "current-password" : "new-password"
+                }
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100 sm:py-3"
                 placeholder="mindestens 6 Zeichen"
                 type="password"
@@ -649,8 +723,8 @@ export default function AuthGate({ children }: AuthGateProps) {
               {isSubmitting
                 ? "Bitte warten…"
                 : mode === "login"
-                ? "Einloggen"
-                : "Account erstellen"}
+                  ? "Einloggen"
+                  : "Account erstellen"}
             </button>
           </form>
 
@@ -668,7 +742,11 @@ export default function AuthGate({ children }: AuthGateProps) {
                 className="flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:bg-slate-300"
                 onClick={() => handleSocialLogin(option.provider)}
                 disabled={isSubmitting || option.disabled}
-                title={option.disabled ? "Apple Login braucht einen Apple Developer Account und wird später aktiviert." : undefined}
+                title={
+                  option.disabled
+                    ? "Apple Login braucht einen Apple Developer Account und wird später aktiviert."
+                    : undefined
+                }
               >
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs font-black">
                   {option.icon}
@@ -684,9 +762,10 @@ export default function AuthGate({ children }: AuthGateProps) {
           </div>
 
           <p className="mt-3 text-xs leading-5 text-slate-400 sm:mt-4">
-            GitHub läuft über Firebase und GitHub OAuth. Apple bleibt als „bald verfügbar“-Button sichtbar,
-            weil dafür zusätzlich Apple Developer Setup mit Service ID, Team ID und Private Key nötig ist.
-            Auf Mobile/PWA nutzt GradeGlow automatisch Redirect statt Popup.
+            GitHub läuft über Firebase und GitHub OAuth. Apple bleibt als „bald
+            verfügbar“-Button sichtbar, weil dafür zusätzlich Apple Developer
+            Setup mit Service ID, Team ID und Private Key nötig ist. Auf
+            Mobile/PWA nutzt GradeGlow automatisch Redirect statt Popup.
           </p>
 
           <div className="mt-4 flex flex-wrap items-center justify-center gap-3 border-t border-slate-100 pt-4 text-xs font-bold text-slate-400 sm:mt-5">

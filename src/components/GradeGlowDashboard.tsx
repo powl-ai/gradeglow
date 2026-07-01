@@ -1732,6 +1732,9 @@ export default function GradeGlowDashboard({
               setScheduleItems={setScheduleItems}
               isLoaded={isScheduleLoaded}
               syncMessage={scheduleSyncMessage}
+              profile={profile}
+              saveProfile={saveProfile}
+              isProfileLoaded={isProfileLoaded}
             />
           </section>
         )}

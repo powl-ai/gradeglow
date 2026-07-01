@@ -6,7 +6,7 @@ import {
   normalizeScheduleTime,
   sortScheduleItems,
 } from "../lib/gradeglowSchedule";
-import type { UniModule, UniScheduleItem } from "../types";
+import type { GradeGlowProfile, UniModule, UniScheduleItem } from "../types";
 
 type UniSchedulePanelProps = {
   modules: UniModule[];
@@ -14,6 +14,9 @@ type UniSchedulePanelProps = {
   setScheduleItems: Dispatch<SetStateAction<UniScheduleItem[]>>;
   isLoaded: boolean;
   syncMessage: string;
+  profile: GradeGlowProfile;
+  saveProfile: (profile: GradeGlowProfile) => Promise<void>;
+  isProfileLoaded: boolean;
 };
 
 type ScheduleForm = {
@@ -36,6 +39,18 @@ const weekdayOptions = [
   { value: 6, label: "Samstag", short: "Sa" },
   { value: 0, label: "Sonntag", short: "So" },
 ];
+
+const scheduleWeekDayOptions = [
+  { value: 5, label: "Mo–Fr", description: "klassische Uni-Woche" },
+  { value: 6, label: "Mo–Sa", description: "inkl. Samstag" },
+  { value: 7, label: "Mo–So", description: "alle Tage anzeigen" },
+];
+
+const normalizeScheduleWeekDays = (value: unknown) => {
+  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value.replace(",", ".")) : 6;
+  if (!Number.isFinite(parsed)) return 6;
+  return Math.min(7, Math.max(5, Math.round(parsed)));
+};
 
 const colorOptions = [
   {
@@ -98,6 +113,9 @@ export default function UniSchedulePanel({
   setScheduleItems,
   isLoaded,
   syncMessage,
+  profile,
+  saveProfile,
+  isProfileLoaded,
 }: UniSchedulePanelProps) {
   const [form, setForm] = useState<ScheduleForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -109,6 +127,12 @@ export default function UniSchedulePanel({
   const sortedModules = useMemo(
     () => [...modules].sort((a, b) => a.name.localeCompare(b.name)),
     [modules],
+  );
+
+  const scheduleWeekDays = normalizeScheduleWeekDays(profile.studyWeekDays);
+  const visibleWeekdayOptions = useMemo(
+    () => weekdayOptions.slice(0, scheduleWeekDays),
+    [scheduleWeekDays],
   );
 
   const visibleScheduleItems = useMemo(
@@ -134,6 +158,16 @@ export default function UniSchedulePanel({
   const isTimeInvalid =
     Boolean(form.startTime.trim() && !normalizedStartTime) ||
     Boolean(form.endTime.trim() && !normalizedEndTime);
+
+  const updateScheduleWeekDays = async (days: number) => {
+    if (!isProfileLoaded) return;
+    try {
+      await saveProfile({ ...profile, studyWeekDays: normalizeScheduleWeekDays(days) });
+      setMessage(`Stundenplan-Woche auf ${days} Tage gesetzt.`);
+    } catch {
+      setMessage("Stundenplan-Woche konnte nicht gespeichert werden.");
+    }
+  };
 
   const resetForm = () => {
     setForm(emptyForm);
@@ -250,6 +284,29 @@ export default function UniSchedulePanel({
           </div>
         </div>
 
+        <div className="mt-5 rounded-3xl bg-slate-50/80 p-3 ring-1 ring-slate-200">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-400">Uni-Woche</p>
+              <p className="mt-1 text-sm font-bold text-slate-600">Wähle, wie viele Tage dein Stundenplan anzeigen soll. Der Lernplan bleibt davon unabhängig.</p>
+            </div>
+            <div className="grid grid-cols-3 gap-1 rounded-2xl bg-white p-1 ring-1 ring-slate-200">
+              {scheduleWeekDayOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`rounded-xl px-3 py-2 text-xs font-black transition sm:text-sm ${scheduleWeekDays === option.value ? "bg-slate-950 text-white shadow-sm" : "text-slate-500 hover:bg-slate-50"}`}
+                  onClick={() => updateScheduleWeekDays(option.value)}
+                  disabled={!isProfileLoaded}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="rounded-3xl bg-violet-50 p-4 ring-1 ring-violet-100">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-violet-400">
@@ -265,7 +322,7 @@ export default function UniSchedulePanel({
             </p>
             <p className="mt-2 text-3xl font-black text-fuchsia-700">
               {
-                weekdayOptions.filter(
+                visibleWeekdayOptions.filter(
                   (day) => (scheduleByWeekday.get(day.value) ?? []).length > 0,
                 ).length
               }
@@ -370,7 +427,7 @@ export default function UniSchedulePanel({
                   }))
                 }
               >
-                {weekdayOptions.map((day) => (
+                {visibleWeekdayOptions.map((day) => (
                   <option key={day.value} value={day.value}>
                     {day.label}
                   </option>
@@ -490,8 +547,8 @@ export default function UniSchedulePanel({
       )}
 
       <div className="overflow-hidden rounded-3xl bg-white/90 p-3 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-5">
-        <div className="grid gap-3 xl:grid-cols-7">
-          {weekdayOptions.map((day) => {
+        <div className={`grid gap-3 ${scheduleWeekDays === 5 ? "xl:grid-cols-5" : scheduleWeekDays === 6 ? "xl:grid-cols-6" : "xl:grid-cols-7"}`}>
+          {visibleWeekdayOptions.map((day) => {
             const dayItems = scheduleByWeekday.get(day.value) ?? [];
             return (
               <div

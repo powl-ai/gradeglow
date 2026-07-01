@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../lib/firebase";
 import { validPageThemeIds } from "../lib/gradeglowThemes";
-import type { AccentColor, AppUser, GradeGlowProfile, PageThemeId, StartMode, ThemeMode } from "../types";
+import type { AccentColor, AppIconId, AppUser, GradeGlowProfile, PageThemeId, StartMode, ThemeMode } from "../types";
 
 export type ProfileSyncStatus =
   | "local"
@@ -21,6 +21,14 @@ export const DEFAULT_TARGET_ECTS = 180;
 const validStartModes: StartMode[] = ["manual", "stupo", "template", "demo"];
 const validThemeModes: ThemeMode[] = ["system", "light", "dark"];
 const validAccentColors: AccentColor[] = ["violet", "pink", "blue", "emerald", "amber", "cyan", "rose"];
+const validAppIconIds: AppIconId[] = [
+  "default",
+  "app-icon-lavender",
+  "app-icon-matcha",
+  "app-icon-ocean",
+  "app-icon-mocha",
+  "app-icon-rose",
+];
 
 const parseTargetEcts = (value: unknown) => {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
@@ -64,6 +72,9 @@ const getAccentColor = (value: unknown): AccentColor =>
 const getPageThemeId = (value: unknown): PageThemeId =>
   validPageThemeIds.includes(value as PageThemeId) ? (value as PageThemeId) : "default";
 
+const getAppIconId = (value: unknown): AppIconId =>
+  validAppIconIds.includes(value as AppIconId) ? (value as AppIconId) : "default";
+
 const getAvatarDataUrl = (value: unknown) => {
   if (typeof value !== "string") return "";
   const trimmed = value.trim();
@@ -102,6 +113,7 @@ const isMeaningfulProfile = (profile: GradeGlowProfile) =>
       profile.studySharingEnabled ||
       profile.activeAvatarFrameId ||
       profile.activeProfileBannerId ||
+      profile.activeAppIconId !== "default" ||
       profile.activePageThemeId !== "default" ||
       profile.accentColor !== "violet" ||
       profile.glowPoints > 0 ||
@@ -153,6 +165,7 @@ const migrateProfile = (
     totalStudySessionRewards: getPositiveNumberValue(profileObject.totalStudySessionRewards),
     activeAvatarFrameId: getStringValue(profileObject.activeAvatarFrameId),
     activeProfileBannerId: getStringValue(profileObject.activeProfileBannerId),
+    activeAppIconId: getAppIconId(profileObject.activeAppIconId),
     activePageThemeId: getPageThemeId(profileObject.activePageThemeId),
     themeMode: getThemeMode(profileObject.themeMode),
     accentColor: getAccentColor(profileObject.accentColor),
@@ -195,6 +208,7 @@ export function useGradeGlowProfile(user: AppUser) {
       totalStudySessionRewards: 0,
       activeAvatarFrameId: "",
       activeProfileBannerId: "",
+      activeAppIconId: "default",
       activePageThemeId: "default",
       themeMode: "system",
       accentColor: "violet",

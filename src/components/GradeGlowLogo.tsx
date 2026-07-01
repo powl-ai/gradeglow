@@ -1,4 +1,6 @@
 import type { HTMLAttributes } from "react";
+import { getAppIconVisual } from "../lib/glowRewards";
+import type { AppIconId } from "../types";
 
 type LogoSize = "sm" | "md" | "lg";
 type LogoTone = "light" | "dark" | "glass";
@@ -6,6 +8,7 @@ type LogoTone = "light" | "dark" | "glass";
 type GradeGlowLogoProps = HTMLAttributes<HTMLDivElement> & {
   size?: LogoSize;
   tone?: LogoTone;
+  appIconId?: AppIconId | string;
 };
 
 const sizeClasses: Record<LogoSize, string> = {
@@ -23,19 +26,23 @@ const toneClasses: Record<LogoTone, string> = {
 export default function GradeGlowLogo({
   size = "md",
   tone = "light",
+  appIconId = "default",
   className = "",
   ...props
 }: GradeGlowLogoProps) {
+  const iconVisual = getAppIconVisual(appIconId);
+  const usesDefaultIcon = iconVisual.id === "default";
+
   return (
     <div
-      aria-label="GradeGlow Logo"
-      className={`relative flex shrink-0 items-center justify-center overflow-hidden font-black tracking-[-0.14em] ring-1 ${sizeClasses[size]} ${toneClasses[tone]} ${className}`}
+      aria-label={`${iconVisual.label} GradeGlow Logo`}
+      className={`relative flex shrink-0 items-center justify-center overflow-hidden font-black tracking-[-0.14em] ring-1 ${sizeClasses[size]} ${usesDefaultIcon ? toneClasses[tone] : iconVisual.shellClassName} ${className}`}
       {...props}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_18%,rgba(240,171,252,0.95),transparent_32%),linear-gradient(135deg,rgba(124,58,237,0.18),rgba(236,72,153,0.18))]" />
-      <span className="relative translate-x-[-0.04em]">G</span>
-      <span className="relative translate-x-[-0.12em]">G</span>
-      <span className="absolute right-[18%] top-[18%] text-[0.52em] leading-none text-fuchsia-300 drop-shadow-sm">
+      <div className={`absolute inset-0 ${iconVisual.glowClassName}`} />
+      <span className={`relative translate-x-[-0.04em] ${usesDefaultIcon ? "" : iconVisual.glyphClassName}`}>G</span>
+      <span className={`relative translate-x-[-0.12em] ${usesDefaultIcon ? "" : iconVisual.glyphClassName}`}>G</span>
+      <span className={`absolute right-[18%] top-[18%] text-[0.52em] leading-none drop-shadow-sm ${iconVisual.sparkleClassName}`}>
         ✦
       </span>
     </div>

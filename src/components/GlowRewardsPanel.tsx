@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import GradeGlowLogo from "./GradeGlowLogo";
 import {
   GLOW_COSMETICS,
   STREAK_BADGES,
@@ -22,6 +23,7 @@ import type {
   ExamPlanItem,
   GradeGlowProfile,
   PageThemeId,
+  AppIconId,
   PlanLimits,
 } from "../types";
 
@@ -136,6 +138,10 @@ export default function GlowRewardsPanel({
     previewCosmetic?.kind === "pageTheme" && previewCosmetic.pageThemeId
       ? previewCosmetic.pageThemeId
       : profile.activePageThemeId;
+  const previewAppIconId: AppIconId =
+    previewCosmetic?.kind === "appIcon" && previewCosmetic.appIconId
+      ? previewCosmetic.appIconId
+      : profile.activeAppIconId;
   const activeBannerClassName = getProfileBannerClassName(
     profile.activeProfileBannerId,
   );
@@ -358,6 +364,10 @@ export default function GlowRewardsPanel({
           cosmetic.kind === "profileBanner"
             ? cosmetic.id
             : profile.activeProfileBannerId,
+        activeAppIconId:
+          cosmetic.kind === "appIcon" && cosmetic.appIconId
+            ? cosmetic.appIconId
+            : profile.activeAppIconId,
         activePageThemeId:
           cosmetic.kind === "pageTheme" && cosmetic.pageThemeId
             ? (cosmetic.pageThemeId as PageThemeId)
@@ -384,6 +394,7 @@ export default function GlowRewardsPanel({
     (item.kind === "avatarFrame" && item.id === profile.activeAvatarFrameId) ||
     (item.kind === "profileBanner" &&
       item.id === profile.activeProfileBannerId) ||
+    (item.kind === "appIcon" && item.appIconId === profile.activeAppIconId) ||
     (item.kind === "pageTheme" &&
       item.pageThemeId === profile.activePageThemeId);
 
@@ -398,6 +409,11 @@ export default function GlowRewardsPanel({
       kind: "pageTheme",
       title: "Themes",
       description: "Färben die ganze App-Oberfläche.",
+    },
+    {
+      kind: "appIcon",
+      title: "App-Icon",
+      description: "Ändert das In-App-Logo und bereitet spätere Homescreen-Icons vor.",
     },
     {
       kind: "accent",
@@ -440,7 +456,9 @@ export default function GlowRewardsPanel({
                   ? "G"
                   : item.kind === "pageTheme"
                     ? "UI"
-                    : "▣"}
+                    : item.kind === "appIcon"
+                      ? "GG"
+                      : "▣"}
             </span>
           </span>
           <span className="min-w-0 flex-1">
@@ -645,7 +663,7 @@ export default function GlowRewardsPanel({
               <p className="mt-2 text-sm leading-6 text-slate-500">
                 Neue Looks kaufst du im Shop. Gekaufte oder Premium-freie Looks
                 findest du getrennt unter „Meine Kosmetik“ und kannst sie dort
-                aktivieren.
+                aktivieren. App-Icons verändern zunächst das In-App-Logo; echte installierte PWA-Icons können je nach Browser erst nach Neuinstallation/Cache-Update wechseln.
               </p>
             </div>
             <span className="self-start rounded-full bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-700 ring-1 ring-violet-100">
@@ -683,7 +701,9 @@ export default function GlowRewardsPanel({
                     : "shrink-0"
                 }
               >
-                {profile.avatarDataUrl ? (
+                {previewCosmetic?.kind === "appIcon" ? (
+                  <GradeGlowLogo size="lg" tone="light" appIconId={previewAppIconId} />
+                ) : profile.avatarDataUrl ? (
                   <div
                     className="h-14 w-14 rounded-2xl bg-cover bg-center ring-1 ring-white/20"
                     style={{ backgroundImage: `url(${profile.avatarDataUrl})` }}

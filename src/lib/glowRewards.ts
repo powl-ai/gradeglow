@@ -1,6 +1,6 @@
-import type { AccentColor, ExamPlanItem, GradeGlowProfile, PageThemeId } from "../types";
+import type { AccentColor, AppIconId, ExamPlanItem, GradeGlowProfile, PageThemeId } from "../types";
 
-export type GlowCosmeticKind = "accent" | "avatarFrame" | "profileBanner" | "pageTheme";
+export type GlowCosmeticKind = "accent" | "avatarFrame" | "profileBanner" | "pageTheme" | "appIcon";
 
 export type GlowCosmeticItem = {
   id: string;
@@ -11,6 +11,7 @@ export type GlowCosmeticItem = {
   previewClassName: string;
   accentColor?: AccentColor;
   pageThemeId?: PageThemeId;
+  appIconId?: AppIconId;
   premiumOnly?: boolean;
 };
 
@@ -103,6 +104,57 @@ export const GLOW_COSMETICS: GlowCosmeticItem[] = [
     premiumOnly: true,
   },
   {
+    id: "app-icon-lavender",
+    kind: "appIcon",
+    title: "Lavender App Icon",
+    description: "Premium: ersetzt das In-App-Logo durch einen lila App-Icon-Look.",
+    cost: 180,
+    previewClassName: "from-violet-400 via-purple-500 to-fuchsia-500",
+    appIconId: "app-icon-lavender",
+    premiumOnly: true,
+  },
+  {
+    id: "app-icon-matcha",
+    kind: "appIcon",
+    title: "Matcha App Icon",
+    description: "Premium: ruhiges grünes App-Icon für Fokus-Phasen.",
+    cost: 180,
+    previewClassName: "from-lime-300 via-emerald-400 to-teal-600",
+    appIconId: "app-icon-matcha",
+    premiumOnly: true,
+  },
+  {
+    id: "app-icon-ocean",
+    kind: "appIcon",
+    title: "Ocean App Icon",
+    description: "Premium: kühles blaues App-Icon für den klaren Study-Look.",
+    cost: 180,
+    previewClassName: "from-sky-300 via-cyan-400 to-blue-700",
+    appIconId: "app-icon-ocean",
+    premiumOnly: true,
+  },
+  {
+    id: "app-icon-mocha",
+    kind: "appIcon",
+    title: "Mocha App Icon",
+    description: "Premium: warmes Coffeehouse-App-Icon passend zum Mocha Theme.",
+    cost: 180,
+    previewClassName: "from-amber-200 via-orange-300 to-stone-700",
+    appIconId: "app-icon-mocha",
+    premiumOnly: true,
+  },
+  {
+    id: "app-icon-rose",
+    kind: "appIcon",
+    title: "Rose App Icon",
+    description: "Premium: rosé App-Icon für den klassischen GradeGlow-Look.",
+    cost: 180,
+    previewClassName: "from-rose-200 via-pink-400 to-fuchsia-700",
+    appIconId: "app-icon-rose",
+    premiumOnly: true,
+  },
+
+  {
     id: "frame-aurora",
     kind: "avatarFrame",
     title: "Aurora Frame",
@@ -145,6 +197,70 @@ export const STREAK_BADGES: StreakBadge[] = [
 ];
 
 export const normalizePurchasedCosmetics = (ids: string[]) => Array.from(new Set(ids.filter(Boolean)));
+
+export type AppIconVisual = {
+  id: AppIconId;
+  label: string;
+  shellClassName: string;
+  glyphClassName: string;
+  sparkleClassName: string;
+  glowClassName: string;
+};
+
+export const APP_ICON_VISUALS: AppIconVisual[] = [
+  {
+    id: "default",
+    label: "Classic GG",
+    shellClassName: "bg-white text-violet-950 shadow-lg shadow-fuchsia-950/20 ring-white/60",
+    glyphClassName: "text-violet-950",
+    sparkleClassName: "text-fuchsia-300",
+    glowClassName: "bg-[radial-gradient(circle_at_24%_18%,rgba(240,171,252,0.95),transparent_32%),linear-gradient(135deg,rgba(124,58,237,0.18),rgba(236,72,153,0.18))]",
+  },
+  {
+    id: "app-icon-lavender",
+    label: "Lavender",
+    shellClassName: "bg-gradient-to-br from-violet-200 via-purple-200 to-fuchsia-300 text-violet-950 shadow-lg shadow-violet-500/20 ring-white/70",
+    glyphClassName: "text-violet-950",
+    sparkleClassName: "text-white",
+    glowClassName: "bg-[radial-gradient(circle_at_24%_18%,rgba(255,255,255,0.9),transparent_34%)]",
+  },
+  {
+    id: "app-icon-matcha",
+    label: "Matcha",
+    shellClassName: "bg-gradient-to-br from-lime-100 via-emerald-200 to-teal-400 text-emerald-950 shadow-lg shadow-emerald-500/20 ring-white/70",
+    glyphClassName: "text-emerald-950",
+    sparkleClassName: "text-white",
+    glowClassName: "bg-[radial-gradient(circle_at_24%_18%,rgba(236,253,245,0.95),transparent_34%)]",
+  },
+  {
+    id: "app-icon-ocean",
+    label: "Ocean",
+    shellClassName: "bg-gradient-to-br from-sky-100 via-cyan-300 to-blue-700 text-white shadow-lg shadow-sky-500/20 ring-white/70",
+    glyphClassName: "text-white",
+    sparkleClassName: "text-cyan-100",
+    glowClassName: "bg-[radial-gradient(circle_at_24%_18%,rgba(240,249,255,0.65),transparent_34%)]",
+  },
+  {
+    id: "app-icon-mocha",
+    label: "Mocha",
+    shellClassName: "bg-gradient-to-br from-amber-100 via-orange-300 to-stone-700 text-stone-950 shadow-lg shadow-amber-600/20 ring-white/70",
+    glyphClassName: "text-stone-950",
+    sparkleClassName: "text-white",
+    glowClassName: "bg-[radial-gradient(circle_at_24%_18%,rgba(255,251,235,0.9),transparent_34%)]",
+  },
+  {
+    id: "app-icon-rose",
+    label: "Rose",
+    shellClassName: "bg-gradient-to-br from-rose-100 via-pink-300 to-fuchsia-700 text-white shadow-lg shadow-pink-500/20 ring-white/70",
+    glyphClassName: "text-white",
+    sparkleClassName: "text-rose-100",
+    glowClassName: "bg-[radial-gradient(circle_at_24%_18%,rgba(255,241,242,0.82),transparent_34%)]",
+  },
+];
+
+export const getAppIconVisual = (iconId: string) =>
+  APP_ICON_VISUALS.find((icon) => icon.id === iconId) ?? APP_ICON_VISUALS[0];
+
 
 export const STUDY_SESSION_REWARD_MINUTES = 10;
 export const STUDY_SESSION_REWARD_POINTS_PER_STEP = 1;

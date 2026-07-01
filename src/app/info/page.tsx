@@ -90,10 +90,10 @@ export default function InfoPage() {
             <h2 className="mt-1 text-2xl font-black tracking-tight">Verantwortlich für GradeGlow</h2>
             <div className="mt-5 space-y-4 text-sm leading-6 text-slate-600">
               <div className="rounded-2xl bg-violet-50 p-4 ring-1 ring-violet-100">
-                <p className="font-black text-slate-900">[Dein vollständiger Name]</p>
-                <p>[Straße und Hausnummer]</p>
-                <p>[PLZ und Ort]</p>
-                <p>[Land]</p>
+                <p className="font-black text-slate-900">[Paul Matti Vpck]</p>
+                <p>[Binzstraße 61A]</p>
+                <p>[13189 Berlin]</p>
+                <p>[Deutschland]</p>
               </div>
 
               <div>
@@ -101,10 +101,7 @@ export default function InfoPage() {
                 <p>E-Mail: gradeglow.support@icloud.com</p>
               </div>
 
-              <p className="rounded-2xl bg-amber-50 p-4 text-amber-800 ring-1 ring-amber-100">
-                Hinweis: Diese Angaben sind bewusst Platzhalter. Für eine öffentliche App solltest du hier
-                keine Fake-Daten stehen lassen.
-              </p>
+              
             </div>
           </article>
 
@@ -161,11 +158,11 @@ export default function InfoPage() {
             <p className="text-sm font-bold text-violet-700">Entwickler-Checkliste</p>
             <h2 className="mt-1 text-2xl font-black tracking-tight">Vor dem Teilen der App prüfen</h2>
             <ul className="mt-4 space-y-3 text-sm font-semibold leading-6 text-slate-600">
-              <li>□ echte Impressumsdaten eintragen</li>
-              <li>□ Kontaktmail prüfen: gradeglow.support@icloud.com</li>
-              <li>□ Firebase-/Vercel-Projektname prüfen</li>
-              <li>□ Datenexport und Löschung in Einstellungen testen</li>
-              <li>□ Admin-Account in entitlements einmalig auf plan = admin setzen</li>
+              <li>☑ echte Impressumsdaten eintragen</li>
+              <li>☑ Kontaktmail prüfen: gradeglow.support@icloud.com</li>
+              <li>☑ Firebase-/Vercel-Projektname prüfen</li>
+              <li>☑ Datenexport und Löschung in Einstellungen testen</li>
+              <li>☑ Admin-Account in entitlements einmalig auf plan = admin setzen</li>
               <li>□ Seite nach finalem Hosting-Domainwechsel nochmal prüfen</li>
             </ul>
           </article>

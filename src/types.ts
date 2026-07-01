@@ -21,6 +21,14 @@ export type PageThemeId =
   | "theme-ocean-mist"
   | "theme-mocha-latte";
 
+export type AppIconId =
+  | "default"
+  | "app-icon-lavender"
+  | "app-icon-matcha"
+  | "app-icon-ocean"
+  | "app-icon-mocha"
+  | "app-icon-rose";
+
 export type UserPlan = "free" | "premium" | "lifetime" | "admin";
 
 export type GradeGlowEntitlement = {
@@ -72,6 +80,7 @@ export type GradeGlowProfile = {
   totalStudySessionRewards: number;
   activeAvatarFrameId: string;
   activeProfileBannerId: string;
+  activeAppIconId: AppIconId;
   activePageThemeId: PageThemeId;
   themeMode: ThemeMode;
   accentColor: AccentColor;

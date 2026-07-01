@@ -502,7 +502,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
             <div className="relative flex flex-col gap-7 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
                 <div className="mb-5 flex flex-wrap items-center gap-3">
-                  <GradeGlowLogo size="md" tone="light" />
+                  <GradeGlowLogo size="md" tone="light" appIconId={profile.activeAppIconId} />
                   <div className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${syncStyle}`}>
                     {profileSyncMessage}
                   </div>

@@ -1129,7 +1129,7 @@ export default function GradeGlowDashboard({
     return (
       <main className={`gg-themed ${themeClassName} flex min-h-screen items-center justify-center bg-[#fbf7ff] px-4 text-slate-950`} data-accent={profile.accentColor} data-page-theme={effectivePageThemeId} style={themeStyle}>
         <div className="max-w-md rounded-[2rem] bg-white/95 p-6 text-center shadow-sm ring-1 ring-violet-100 backdrop-blur">
-          <GradeGlowLogo size="md" />
+          <GradeGlowLogo size="md" appIconId={profile.activeAppIconId} />
           <p className="mt-5 text-sm font-bold text-violet-700">{profileSyncMessage}</p>
           <h1 className="mt-2 text-2xl font-black tracking-tight">Deine Daten werden geladen…</h1>
           <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
@@ -1367,7 +1367,7 @@ export default function GradeGlowDashboard({
                     aria-label="Menü öffnen"
                     title="Menü öffnen"
                   >
-                    <GradeGlowLogo size="md" tone="light" />
+                    <GradeGlowLogo size="md" tone="light" appIconId={profile.activeAppIconId} />
                     <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[0.68rem] font-black leading-none text-slate-950 shadow-md ring-1 ring-white/50 transition group-hover:scale-105">
                       ☰
                     </span>

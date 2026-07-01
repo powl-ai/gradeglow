@@ -239,7 +239,7 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
             <div className="relative flex flex-col gap-7 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
                 <div className="mb-5 flex flex-wrap items-center gap-3">
-                  <GradeGlowLogo size="md" tone="light" />
+                  <GradeGlowLogo size="md" tone="light" appIconId={profile.activeAppIconId} />
                   <div className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-violet-50 ring-1 ring-white/15">{accessSyncMessage}</div>
                 </div>
                 <p className="text-sm font-bold uppercase tracking-[0.35em] text-fuchsia-200/80">Admin Beta</p>

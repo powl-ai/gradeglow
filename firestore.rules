@@ -79,6 +79,21 @@ service cloud.firestore {
     }
 
     match /users/{userId}/friends/{friendId} {
+      allow read: if isOwner(userId) || isAdmin();
+
+      allow create, update: if isOwner(userId)
+        || isAdmin()
+        || (isSignedIn()
+          && request.auth.uid == friendId
+          && request.resource.data.uid == friendId
+          && request.resource.data.mutualWith == userId);
+
+      allow delete: if isOwner(userId)
+        || isAdmin()
+        || (isSignedIn() && request.auth.uid == friendId && resource.data.uid == friendId);
+    }
+
+    match /users/{userId}/studyCircles/{circleId} {
       allow read, write: if isOwner(userId) || isAdmin();
     }
 
@@ -118,6 +133,35 @@ service cloud.firestore {
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.normalizedCode == codeId;
       allow delete: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+    }
+
+
+    match /studyCircles/{circleId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.id == circleId;
+      allow update, delete: if isSignedIn()
+        && (resource.data.ownerUid == request.auth.uid || isAdmin());
+    }
+
+    match /studyCircles/{circleId}/members/{memberId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
+        && (request.auth.uid == memberId || isAdmin())
+        && request.resource.data.uid == memberId;
+      allow delete: if isSignedIn()
+        && (request.auth.uid == memberId
+          || isAdmin()
+          || get(/databases/$(database)/documents/studyCircles/$(circleId)).data.ownerUid == request.auth.uid);
+    }
+
+    match /studyCircleCodes/{codeId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.normalizedCode == codeId;
+      allow delete: if isSignedIn() && (resource.data.ownerUid == request.auth.uid || isAdmin());
     }
 
     match /studyActivityEvents/{profileId} {

@@ -10,6 +10,7 @@ import {
   onSnapshot,
   serverTimestamp,
   setDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../lib/firebase";
 import {
@@ -45,6 +46,22 @@ export type StudyCircleDebugStatus = {
   checkedAtIso: string;
 };
 
+export type StudyCircleListItem = {
+  id: string;
+  name: string;
+  circleCode: string;
+  ownerUid: string;
+  weeklyGoalMinutes: number;
+  createdAtIso: string;
+  updatedAtIso: string;
+  role?: "owner" | "member";
+};
+
+export type StudyCircleMemberProfile = FriendListItem & {
+  role?: "owner" | "member";
+  joinedAtIso?: string;
+};
+
 type FriendLookupResult = {
   uid: string | null;
   reason: "found" | "empty" | "not-found" | "code-without-uid";
@@ -54,6 +71,8 @@ const PUBLIC_PROFILES_COLLECTION = "publicStudyProfiles";
 const FRIEND_CODES_COLLECTION = "studyFriendCodes";
 const FRIENDS_COLLECTION = "friends";
 const STUDY_ACTIVITY_COLLECTION = "studyActivityEvents";
+const STUDY_CIRCLES_COLLECTION = "studyCircles";
+const STUDY_CIRCLE_CODES_COLLECTION = "studyCircleCodes";
 
 export const buildStudyFriendCode = (uid: string) => {
   const compactUid = uid.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
@@ -67,6 +86,22 @@ export const normalizeStudyFriendCode = (value: string) =>
     .trim()
     .replace(/^code[:\s]*/i, "")
     .replace(/^friend[:\s]*/i, "")
+    .replace(/\s+/g, "")
+    .toUpperCase();
+
+export const buildStudyCircleCode = (circleId: string) => {
+  const compactId = circleId.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  const prefix = compactId.slice(0, 4).padEnd(4, "C");
+  const suffix = compactId.slice(-4).padStart(4, "0");
+  return `GC-${prefix}-${suffix}`;
+};
+
+export const normalizeStudyCircleCode = (value: string) =>
+  value
+    .trim()
+    .replace(/^circle[:\s]*/i, "")
+    .replace(/^clan[:\s]*/i, "")
+    .replace(/^code[:\s]*/i, "")
     .replace(/\s+/g, "")
     .toUpperCase();
 
@@ -238,6 +273,31 @@ const migratePublicActivity = (rawActivity: unknown): PublicStudyActivity | null
   };
 };
 
+const safeIso = (value: unknown) => (typeof value === "string" ? value : "");
+
+const migrateStudyCircle = (circleId: string, rawCircle: unknown): StudyCircleListItem | null => {
+  if (typeof rawCircle !== "object" || rawCircle === null) return null;
+  const record = rawCircle as Record<string, unknown>;
+  const name = typeof record.name === "string" && record.name.trim() ? record.name.trim() : "Study Circle";
+  const circleCode =
+    typeof record.circleCode === "string" && record.circleCode.trim()
+      ? record.circleCode.trim().toUpperCase()
+      : buildStudyCircleCode(circleId);
+
+  return {
+    id: typeof record.id === "string" && record.id.trim() ? record.id.trim() : circleId,
+    name,
+    circleCode,
+    ownerUid: typeof record.ownerUid === "string" ? record.ownerUid : "",
+    weeklyGoalMinutes:
+      typeof record.weeklyGoalMinutes === "number" && Number.isFinite(record.weeklyGoalMinutes)
+        ? Math.max(0, Math.round(record.weeklyGoalMinutes))
+        : 600,
+    createdAtIso: safeIso(record.createdAtIso),
+    updatedAtIso: safeIso(record.updatedAtIso),
+  };
+};
+
 const notifyFriendActivity = (activity: PublicStudyActivity) => {
   if (typeof window === "undefined" || !("Notification" in window) || Notification.permission !== "granted") {
     return;
@@ -292,6 +352,11 @@ type UseStudyFriendsArgs = {
 export function useStudyFriends({ user, profile, exams, limits, profileReady = true }: UseStudyFriendsArgs) {
   const [friends, setFriends] = useState<FriendListItem[]>([]);
   const [friendIds, setFriendIds] = useState<string[]>([]);
+  const [circles, setCircles] = useState<StudyCircleListItem[]>([]);
+  const [activeCircleId, setActiveCircleId] = useState("");
+  const [activeCircle, setActiveCircle] = useState<StudyCircleListItem | null>(null);
+  const [circleMemberMeta, setCircleMemberMeta] = useState<{ uid: string; role: "owner" | "member"; joinedAtIso: string }[]>([]);
+  const [circleMembers, setCircleMembers] = useState<StudyCircleMemberProfile[]>([]);
   const [message, setMessage] = useState("");
   const [isBusy, setIsBusy] = useState(false);
   const [publishMessage, setPublishMessage] = useState("");
@@ -313,6 +378,7 @@ export function useStudyFriends({ user, profile, exams, limits, profileReady = t
 
   const ownFriendCode = useMemo(() => buildStudyFriendCode(user.uid), [user.uid]);
   const maxFriends = limits?.maxFriends ?? Number.POSITIVE_INFINITY;
+  const effectiveActiveCircleId = activeCircleId || circles[0]?.id || "";
 
   const ownPublicProfile = useMemo(
     () => buildPublicProfile(user, profile, exams),
@@ -533,6 +599,134 @@ export function useStudyFriends({ user, profile, exams, limits, profileReady = t
   }, [canUseCloudSocial, friendIds]);
 
   useEffect(() => {
+    if (!canUseCloudSocial || !db) {
+      setCircles([]);
+      setActiveCircle(null);
+      setCircleMembers([]);
+      return undefined;
+    }
+
+    const membershipsRef = collection(db, "users", user.uid, STUDY_CIRCLES_COLLECTION);
+    const unsubscribe = onSnapshot(
+      membershipsRef,
+      (snapshot) => {
+        const nextCircles = snapshot.docs
+          .map((circleDoc) => {
+            const data = circleDoc.data();
+            const circle = migrateStudyCircle(circleDoc.id, {
+              ...data,
+              id: data.circleId || circleDoc.id,
+            });
+            return circle
+              ? {
+                  ...circle,
+                  role: data.role === "owner" ? ("owner" as const) : ("member" as const),
+                }
+              : null;
+          })
+          .filter((circle): circle is StudyCircleListItem & { role: "owner" | "member" } => Boolean(circle))
+          .sort((a, b) => a.name.localeCompare(b.name, "de"));
+
+        setCircles(nextCircles);
+        setActiveCircleId((current) => current || nextCircles[0]?.id || "");
+      },
+      (error) => {
+        if (error instanceof FirebaseError && error.code === "permission-denied") {
+          setMessage("Circles konnten nicht geladen werden. Bitte neue Firestore Rules deployen.");
+          return;
+        }
+
+        setMessage("Circles konnten nicht geladen werden.");
+      },
+    );
+
+    return () => unsubscribe();
+  }, [canUseCloudSocial, user.uid]);
+
+  useEffect(() => {
+    if (!canUseCloudSocial || !db || !effectiveActiveCircleId) {
+      setActiveCircle(null);
+      setCircleMemberMeta([]);
+      setCircleMembers([]);
+      return undefined;
+    }
+
+    const circleRef = doc(db, STUDY_CIRCLES_COLLECTION, effectiveActiveCircleId);
+    const membersRef = collection(db, STUDY_CIRCLES_COLLECTION, effectiveActiveCircleId, "members");
+
+    const unsubscribeCircle = onSnapshot(
+      circleRef,
+      (circleSnapshot) => {
+        const nextCircle = circleSnapshot.exists()
+          ? migrateStudyCircle(effectiveActiveCircleId, circleSnapshot.data())
+          : circles.find((circle) => circle.id === effectiveActiveCircleId) ?? null;
+        setActiveCircle(nextCircle);
+      },
+      () => setMessage("Circle-Daten konnten nicht geladen werden."),
+    );
+
+    const unsubscribeMembers = onSnapshot(
+      membersRef,
+      (snapshot) => {
+        const nextMeta = snapshot.docs
+          .map((memberDoc) => {
+            const data = memberDoc.data();
+            const uid = typeof data.uid === "string" && data.uid.trim() ? data.uid.trim() : memberDoc.id;
+            if (!uid) return null;
+            return {
+              uid,
+              role: data.role === "owner" ? "owner" as const : "member" as const,
+              joinedAtIso: typeof data.joinedAtIso === "string" ? data.joinedAtIso : "",
+            };
+          })
+          .filter((member): member is { uid: string; role: "owner" | "member"; joinedAtIso: string } => Boolean(member));
+
+        setCircleMemberMeta(nextMeta);
+      },
+      () => setMessage("Circle-Mitglieder konnten nicht geladen werden."),
+    );
+
+    return () => {
+      unsubscribeCircle();
+      unsubscribeMembers();
+    };
+  }, [canUseCloudSocial, circles, effectiveActiveCircleId]);
+
+  useEffect(() => {
+    if (!canUseCloudSocial || !db || circleMemberMeta.length === 0) {
+      setCircleMembers([]);
+      return undefined;
+    }
+
+    setCircleMembers((currentMembers) =>
+      currentMembers.filter((member) => circleMemberMeta.some((meta) => meta.uid === member.uid)),
+    );
+
+    const unsubscribes = circleMemberMeta.map((meta) =>
+      onSnapshot(
+        doc(db!, PUBLIC_PROFILES_COLLECTION, meta.uid),
+        (profileSnapshot) => {
+          const nextMember = profileSnapshot.exists()
+            ? migratePublicProfile(meta.uid, profileSnapshot.data()) ?? buildMissingFriend(meta.uid)
+            : buildMissingFriend(meta.uid);
+
+          setCircleMembers((currentMembers) =>
+            sortFriends([
+              ...currentMembers.filter((member) => member.uid !== meta.uid),
+              { ...nextMember, role: meta.role, joinedAtIso: meta.joinedAtIso },
+            ]) as StudyCircleMemberProfile[],
+          );
+        },
+        () => undefined,
+      ),
+    );
+
+    return () => {
+      unsubscribes.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [canUseCloudSocial, circleMemberMeta]);
+
+  useEffect(() => {
     if (!canUseCloudSocial || !db || friendIds.length === 0 || !profile.friendActivityNotificationsEnabled) {
       return undefined;
     }
@@ -655,14 +849,31 @@ export function useStudyFriends({ user, profile, exams, limits, profileReady = t
         return;
       }
 
-      await setDoc(doc(db, "users", user.uid, FRIENDS_COLLECTION, friendId), {
+      const batch = writeBatch(db);
+      const ownFriendRef = doc(db, "users", user.uid, FRIENDS_COLLECTION, friendId);
+      const reciprocalFriendRef = doc(db, "users", friendId, FRIENDS_COLLECTION, user.uid);
+
+      batch.set(ownFriendRef, {
         uid: friendId,
         friendCode: publicProfile.friendCode,
         displayNameSnapshot: publicProfile.displayName,
         addedAt: serverTimestamp(),
-        version: 4,
+        mutualWith: user.uid,
+        source: "friend_code",
+        version: 5,
       });
-      setMessage(`${publicProfile.displayName} hinzugefügt.`);
+      batch.set(reciprocalFriendRef, {
+        uid: user.uid,
+        friendCode: ownFriendCode,
+        displayNameSnapshot: ownPublicProfile.displayName,
+        addedAt: serverTimestamp(),
+        mutualWith: friendId,
+        source: "reciprocal_friend_code",
+        version: 5,
+      });
+
+      await batch.commit();
+      setMessage(`${publicProfile.displayName} hinzugefügt. Ihr seid jetzt gegenseitig befreundet.`);
     } catch (error) {
       setMessage(getFriendErrorMessage(error));
     } finally {
@@ -677,10 +888,169 @@ export function useStudyFriends({ user, profile, exams, limits, profileReady = t
     setMessage("");
 
     try {
-      await deleteDoc(doc(db, "users", user.uid, FRIENDS_COLLECTION, friendId));
-      setMessage("Freund entfernt.");
+      const batch = writeBatch(db);
+      batch.delete(doc(db, "users", user.uid, FRIENDS_COLLECTION, friendId));
+      batch.delete(doc(db, "users", friendId, FRIENDS_COLLECTION, user.uid));
+      await batch.commit();
+      setMessage("Freundschaft entfernt.");
     } catch {
       setMessage("Freund konnte nicht entfernt werden.");
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const createCircle = async (circleName: string) => {
+    if (!canUseCloudSocial || !db) {
+      setMessage("Circles funktionieren aktuell nur mit Firebase-Login.");
+      return;
+    }
+
+    const name = circleName.trim() || `${ownPublicProfile.displayName}s Study Circle`;
+    setIsBusy(true);
+    setMessage("");
+
+    try {
+      const circleRef = doc(collection(db, STUDY_CIRCLES_COLLECTION));
+      const circleCode = buildStudyCircleCode(circleRef.id);
+      const circleCodeRef = doc(db, STUDY_CIRCLE_CODES_COLLECTION, circleCode);
+      const memberRef = doc(db, STUDY_CIRCLES_COLLECTION, circleRef.id, "members", user.uid);
+      const ownMembershipRef = doc(db, "users", user.uid, STUDY_CIRCLES_COLLECTION, circleRef.id);
+      const batch = writeBatch(db);
+      const baseCircleData = {
+        id: circleRef.id,
+        name,
+        circleCode,
+        normalizedCode: circleCode,
+        ownerUid: user.uid,
+        weeklyGoalMinutes: 600,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdAtIso: nowIso(),
+        updatedAtIso: nowIso(),
+        version: 1,
+      };
+
+      batch.set(circleRef, baseCircleData);
+      batch.set(circleCodeRef, {
+        circleId: circleRef.id,
+        circleCode,
+        normalizedCode: circleCode,
+        circleNameSnapshot: name,
+        ownerUid: user.uid,
+        updatedAt: serverTimestamp(),
+        version: 1,
+      });
+      batch.set(memberRef, {
+        uid: user.uid,
+        role: "owner",
+        displayNameSnapshot: ownPublicProfile.displayName,
+        joinedAt: serverTimestamp(),
+        joinedAtIso: nowIso(),
+        version: 1,
+      });
+      batch.set(ownMembershipRef, {
+        ...baseCircleData,
+        circleId: circleRef.id,
+        role: "owner",
+        joinedAt: serverTimestamp(),
+        joinedAtIso: nowIso(),
+      });
+
+      await batch.commit();
+      setActiveCircleId(circleRef.id);
+      setMessage(`${name} erstellt. Teile den Circle-Code mit deiner Lerngruppe.`);
+    } catch (error) {
+      setMessage(getFriendErrorMessage(error));
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const joinCircle = async (circleCodeInput: string) => {
+    if (!canUseCloudSocial || !db) {
+      setMessage("Circles funktionieren aktuell nur mit Firebase-Login.");
+      return;
+    }
+
+    const normalizedCode = normalizeStudyCircleCode(circleCodeInput);
+    if (!normalizedCode) {
+      setMessage("Füge zuerst einen Circle-Code ein.");
+      return;
+    }
+
+    setIsBusy(true);
+    setMessage("");
+
+    try {
+      const codeSnapshot = await getDoc(doc(db, STUDY_CIRCLE_CODES_COLLECTION, normalizedCode));
+      if (!codeSnapshot.exists()) {
+        setMessage("Kein Circle für diesen Code gefunden.");
+        return;
+      }
+
+      const codeData = codeSnapshot.data();
+      const circleId = typeof codeData.circleId === "string" ? codeData.circleId : "";
+      if (!circleId) {
+        setMessage("Circle-Code gefunden, aber ohne gültige Circle-ID.");
+        return;
+      }
+
+      if (circles.some((circle) => circle.id === circleId)) {
+        setActiveCircleId(circleId);
+        setMessage("Du bist bereits in diesem Circle.");
+        return;
+      }
+
+      const circleSnapshot = await getDoc(doc(db, STUDY_CIRCLES_COLLECTION, circleId));
+      const circle = circleSnapshot.exists() ? migrateStudyCircle(circleId, circleSnapshot.data()) : null;
+      if (!circle) {
+        setMessage("Circle konnte nicht geladen werden.");
+        return;
+      }
+
+      const batch = writeBatch(db);
+      batch.set(doc(db, STUDY_CIRCLES_COLLECTION, circleId, "members", user.uid), {
+        uid: user.uid,
+        role: "member",
+        displayNameSnapshot: ownPublicProfile.displayName,
+        joinedAt: serverTimestamp(),
+        joinedAtIso: nowIso(),
+        version: 1,
+      });
+      batch.set(doc(db, "users", user.uid, STUDY_CIRCLES_COLLECTION, circleId), {
+        ...circle,
+        circleId,
+        role: "member",
+        joinedAt: serverTimestamp(),
+        joinedAtIso: nowIso(),
+      });
+
+      await batch.commit();
+      setActiveCircleId(circleId);
+      setMessage(`Du bist ${circle.name} beigetreten.`);
+    } catch (error) {
+      setMessage(getFriendErrorMessage(error));
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const leaveCircle = async (circleId: string) => {
+    if (!canUseCloudSocial || !db || !circleId) return;
+
+    setIsBusy(true);
+    setMessage("");
+
+    try {
+      const batch = writeBatch(db);
+      batch.delete(doc(db, STUDY_CIRCLES_COLLECTION, circleId, "members", user.uid));
+      batch.delete(doc(db, "users", user.uid, STUDY_CIRCLES_COLLECTION, circleId));
+      await batch.commit();
+      setActiveCircleId("");
+      setMessage("Circle verlassen.");
+    } catch {
+      setMessage("Circle konnte nicht verlassen werden.");
     } finally {
       setIsBusy(false);
     }
@@ -690,6 +1060,10 @@ export function useStudyFriends({ user, profile, exams, limits, profileReady = t
     canUseCloudSocial,
     ownPublicProfile,
     friends,
+    circles,
+    activeCircleId: effectiveActiveCircleId,
+    activeCircle,
+    circleMembers,
     friendCode: ownFriendCode,
     legacyFriendCode: user.uid,
     debugStatus,
@@ -698,5 +1072,9 @@ export function useStudyFriends({ user, profile, exams, limits, profileReady = t
     isBusy,
     addFriend,
     removeFriend,
+    setActiveCircleId,
+    createCircle,
+    joinCircle,
+    leaveCircle,
   };
 }

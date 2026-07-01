@@ -292,6 +292,8 @@ export default function StudyFriendsPanel({
   isProfileLoaded = true,
 }: StudyFriendsPanelProps) {
   const [friendCodeInput, setFriendCodeInput] = useState("");
+  const [circleNameInput, setCircleNameInput] = useState("");
+  const [circleJoinCodeInput, setCircleJoinCodeInput] = useState("");
   const [friendSearch, setFriendSearch] = useState("");
   const [isSavingSharing, setIsSavingSharing] = useState(false);
   const [isSavingPrivacy, setIsSavingPrivacy] = useState(false);
@@ -304,6 +306,10 @@ export default function StudyFriendsPanel({
     canUseCloudSocial,
     ownPublicProfile,
     friends,
+    circles,
+    activeCircleId,
+    activeCircle,
+    circleMembers,
     friendCode,
     legacyFriendCode,
     debugStatus,
@@ -312,6 +318,10 @@ export default function StudyFriendsPanel({
     isBusy,
     addFriend,
     removeFriend,
+    setActiveCircleId,
+    createCircle,
+    joinCircle,
+    leaveCircle,
   } = useStudyFriends({
     user,
     profile,
@@ -328,6 +338,19 @@ export default function StudyFriendsPanel({
     });
   }, [friends, ownPublicProfile]);
 
+  const circleLeaderboardRows = useMemo<CircleRow[]>(() => {
+    const rows = circleMembers.length > 0 ? circleMembers : [{ ...ownPublicProfile, isSelf: true }];
+    return rows
+      .map((row) => ({ ...row, isSelf: row.uid === user.uid }))
+      .sort((a, b) => {
+        const weekDiff = b.thisWeekDoneMinutes - a.thisWeekDoneMinutes;
+        if (weekDiff !== 0) return weekDiff;
+        return b.totalDoneMinutes - a.totalDoneMinutes;
+      });
+  }, [circleMembers, ownPublicProfile, user.uid]);
+
+  const gameRows = activeCircle ? circleLeaderboardRows : leaderboardRows;
+
   const filteredFriends = useMemo(() => {
     const normalizedSearch = friendSearch.trim().toLowerCase();
     if (!normalizedSearch) return friends;
@@ -339,14 +362,14 @@ export default function StudyFriendsPanel({
     );
   }, [friendSearch, friends]);
 
-  const sharedCircleWeekMinutes = leaderboardRows.reduce(
+  const sharedCircleWeekMinutes = gameRows.reduce(
     (sum, row) => sum + (row.shareStudyTime ? row.thisWeekDoneMinutes : 0),
     0,
   );
   const ownWeekMinutes = ownPublicProfile.shareStudyTime
     ? ownPublicProfile.thisWeekDoneMinutes
     : 0;
-  const circleGoalMinutes = Math.max(180, leaderboardRows.length * 120);
+  const circleGoalMinutes = activeCircle?.weeklyGoalMinutes || Math.max(180, gameRows.length * 120);
   const circleGoalProgress = Math.min(
     100,
     Math.round((sharedCircleWeekMinutes / circleGoalMinutes) * 100),
@@ -356,7 +379,7 @@ export default function StudyFriendsPanel({
     100,
     Math.round((ownWeekMinutes / focusQuestMinutes) * 100),
   );
-  const nextRival = leaderboardRows.find(
+  const nextRival = gameRows.find(
     (row) =>
       !row.isSelf &&
       row.shareStudyTime &&
@@ -420,6 +443,29 @@ export default function StudyFriendsPanel({
     if (!isProfileLoaded) return;
     await addFriend(friendCodeInput);
     setFriendCodeInput("");
+  };
+
+  const handleCreateCircle = async () => {
+    if (!isProfileLoaded) return;
+    await createCircle(circleNameInput);
+    setCircleNameInput("");
+  };
+
+  const handleJoinCircle = async () => {
+    if (!isProfileLoaded) return;
+    await joinCircle(circleJoinCodeInput);
+    setCircleJoinCodeInput("");
+  };
+
+  const copyCircleCode = async () => {
+    if (!activeCircle?.circleCode) return;
+    setCopyMessage("");
+    try {
+      await navigator.clipboard.writeText(activeCircle.circleCode);
+      setCopyMessage("Circle-Code kopiert.");
+    } catch {
+      setCopyMessage("Kopieren nicht möglich — Circle-Code manuell markieren.");
+    }
   };
 
   const copyFriendCode = async () => {
@@ -610,6 +656,119 @@ export default function StudyFriendsPanel({
           </div>
 
           <div className="mt-4 rounded-[1.5rem] bg-white p-4 ring-1 ring-slate-200">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-500">
+                  Study Circle v2
+                </p>
+                <h3 className="mt-1 text-lg font-black tracking-tight text-slate-950">
+                  Dein Clan für Lernwochen
+                </h3>
+                <p className="mt-1 max-w-2xl text-xs font-semibold leading-5 text-slate-500">
+                  Erstelle einen Circle-Code für deine Lerngruppe. Alle, die den Code haben,
+                  können beitreten und im gemeinsamen Wochenziel mitlernen. Einzelne Freundescodes
+                  erstellen jetzt automatisch eine gegenseitige Freundschaft.
+                </p>
+              </div>
+              {activeCircle && (
+                <button
+                  type="button"
+                  className="rounded-2xl bg-rose-50 px-4 py-2.5 text-xs font-black text-rose-700 ring-1 ring-rose-100 transition hover:bg-rose-100 disabled:opacity-50"
+                  onClick={() => void leaveCircle(activeCircle.id)}
+                  disabled={isBusy}
+                >
+                  Circle verlassen
+                </button>
+              )}
+            </div>
+
+            <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr]">
+              <div className="rounded-3xl bg-violet-50 p-4 ring-1 ring-violet-100">
+                <p className="text-xs font-black text-violet-700">Aktiver Circle</p>
+                {circles.length > 0 ? (
+                  <>
+                    <select
+                      className="field-input mt-2 bg-white"
+                      value={activeCircleId}
+                      onChange={(event) => setActiveCircleId(event.target.value)}
+                    >
+                      {circles.map((circle) => (
+                        <option key={circle.id} value={circle.id}>
+                          {circle.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="mt-3 rounded-2xl bg-white p-3 ring-1 ring-violet-100">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm font-black text-slate-950">
+                            {activeCircle?.name || "Study Circle"}
+                          </p>
+                          <p className="mt-1 text-xs font-bold text-slate-500">
+                            {circleMembers.length} Mitglied(er) · Wochenziel {formatStudyMinutes(circleGoalMinutes)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className="rounded-2xl bg-violet-700 px-3 py-2 text-xs font-black text-white transition hover:bg-violet-800"
+                          onClick={copyCircleCode}
+                        >
+                          Code kopieren
+                        </button>
+                      </div>
+                      <p className="mt-2 break-all text-sm font-black tracking-wide text-violet-700">
+                        {activeCircle?.circleCode}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <p className="mt-2 rounded-2xl bg-white p-3 text-sm font-bold leading-5 text-slate-600 ring-1 ring-violet-100">
+                    Noch kein Clan aktiv. Erstelle einen Circle oder tritt per Code einer Lerngruppe bei.
+                  </p>
+                )}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                  <span className="text-xs font-black text-slate-600">Circle erstellen</span>
+                  <input
+                    className="field-input mt-2 bg-white"
+                    placeholder="z. B. BWL Lerncrew"
+                    value={circleNameInput}
+                    onChange={(event) => setCircleNameInput(event.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="mt-3 w-full rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-800 disabled:opacity-50"
+                    onClick={handleCreateCircle}
+                    disabled={!isProfileLoaded || !canUseCloudSocial || isBusy}
+                  >
+                    Circle erstellen
+                  </button>
+                </label>
+
+                <label className="block rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                  <span className="text-xs font-black text-slate-600">Circle-Code beitreten</span>
+                  <input
+                    className="field-input mt-2 bg-white"
+                    placeholder="GC-ABCD-1234"
+                    value={circleJoinCodeInput}
+                    onChange={(event) => setCircleJoinCodeInput(event.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="mt-3 w-full rounded-2xl bg-violet-700 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-800 disabled:opacity-50"
+                    onClick={handleJoinCircle}
+                    disabled={!isProfileLoaded || !canUseCloudSocial || isBusy || !circleJoinCodeInput.trim()}
+                  >
+                    Beitreten
+                  </button>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-[1.5rem] bg-white p-4 ring-1 ring-slate-200">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-500">
@@ -760,15 +919,15 @@ export default function StudyFriendsPanel({
           <div>
             <p className="text-sm font-bold text-fuchsia-200">Leaderboard</p>
             <h3 className="text-xl font-black tracking-tight">
-              Wer hat diese Woche gelernt?
+              {activeCircle ? `${activeCircle.name}: Wochenrang` : "Wer hat diese Woche gelernt?"}
             </h3>
           </div>
           <p className="text-sm font-semibold text-slate-400">
-            sortiert nach geteilter Lernzeit
+            {activeCircle ? "Circle-Mitglieder · sortiert nach geteilter Lernzeit" : "sortiert nach geteilter Lernzeit"}
           </p>
         </div>
         <div className="grid gap-3 lg:grid-cols-2">
-          {leaderboardRows.map((row, index) => (
+          {(activeCircle ? circleLeaderboardRows : leaderboardRows).map((row, index) => (
             <LeaderboardCard
               key={`${row.uid}-${row.isSelf ? "self" : "friend"}`}
               row={row}

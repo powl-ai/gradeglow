@@ -57,3 +57,16 @@ Apple Login ist etwas aufwendiger und braucht normalerweise einen Apple Develope
 ## Warum der Service Worker wichtig ist
 
 `public/sw.js` darf `/__/auth/` nicht cachen oder abfangen. Sonst können Google/Apple/GitHub Redirects in der PWA oder auf Mobile hängen bleiben.
+
+## Firebase Bestätigungs-E-Mail auf GradeGlow umstellen
+
+Wenn in Verifizierungs-E-Mails `project-...-Team` steht, kommt das nicht aus dem Next.js-Code. Stelle in der Firebase Console Folgendes ein:
+
+1. Firebase Console öffnen.
+2. Authentication → Settings/Sign-in method bzw. Templates öffnen.
+3. Public-facing project name / öffentliche App-Bezeichnung auf `GradeGlow` setzen.
+4. Support-E-Mail auf `gradeglow.support@icloud.com` setzen.
+5. Unter Templates die E-Mail-Adresse-Bestätigung prüfen und bei Bedarf Betreff/Text anpassen.
+6. Optional später: eigene Auth-Mail-Domain konfigurieren, damit Auth-Mails stärker nach GradeGlow aussehen.
+
+Das muss einmalig in Firebase geändert werden; ein normaler Vercel-Deploy reicht dafür nicht.

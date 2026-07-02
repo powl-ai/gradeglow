@@ -680,7 +680,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                     <button
                       key={option.id}
                       type="button"
-                      className={`rounded-2xl p-3 text-left ring-1 transition hover:-translate-y-0.5 ${isEnabled ? "bg-violet-50 text-slate-950 ring-violet-200" : "bg-white text-slate-500 ring-slate-200"}`}
+                      className={`gg-readable-option-card rounded-2xl p-3 text-left ring-1 transition hover:-translate-y-0.5 ${isEnabled ? "is-active" : ""}`}
                       onClick={() => toggleFeaturePreference(option.id)}
                     >
                       <span className="flex items-center justify-between gap-3">
@@ -689,7 +689,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                           {isEnabled ? "aktiv" : "aus"}
                         </span>
                       </span>
-                      <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{option.description}</span>
+                      <span className="gg-readable-option-description mt-1 block text-xs font-semibold leading-5">{option.description}</span>
                     </button>
                   );
                 })}

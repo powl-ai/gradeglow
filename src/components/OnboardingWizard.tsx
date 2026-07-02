@@ -67,6 +67,8 @@ const featurePreferenceOptions: { id: GradeGlowFeatureId; title: string; descrip
   { id: "rewards", title: "GlowPoints", description: "Daily Glow und Kosmetik" },
 ];
 
+const ONBOARDING_DEFAULT_FEATURE_IDS: GradeGlowFeatureId[] = ["insights", "schedule", "rewards"];
+
 const parseNumber = (value: string) => Number(value.replace(",", "."));
 
 export default function OnboardingWizard({
@@ -89,9 +91,13 @@ export default function OnboardingWizard({
     profile.preferredStartMode || "manual",
   );
   const [message, setMessage] = useState("");
-  const [enabledFeatureIds, setEnabledFeatureIds] = useState<GradeGlowFeatureId[]>(
-    profile.enabledFeatureIds.length > 0 ? profile.enabledFeatureIds : [...DEFAULT_ENABLED_FEATURE_IDS],
-  );
+  const [enabledFeatureIds, setEnabledFeatureIds] = useState<GradeGlowFeatureId[]>(() => {
+    if (profile.onboardingCompleted && profile.enabledFeatureIds.length > 0) {
+      return profile.enabledFeatureIds;
+    }
+
+    return [...ONBOARDING_DEFAULT_FEATURE_IDS];
+  });
   const [isSaving, setIsSaving] = useState(false);
 
   const selectedOption = useMemo(
@@ -179,6 +185,12 @@ export default function OnboardingWizard({
 
   const finishOnboarding = async (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
+
+    if (step === 1) {
+      setStep(2);
+      return;
+    }
+
     setMessage("");
 
     if (!displayName.trim()) {
@@ -349,8 +361,19 @@ export default function OnboardingWizard({
               </div>
 
               <div className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                <p className="text-sm font-black text-slate-950">Welche Bereiche brauchst du?</p>
-                <p className="mt-1 text-sm leading-6 text-slate-500">Du kannst alles später im Profil ändern. Überblick, Module und Prüfungen bleiben immer aktiv.</p>
+                <p className="text-sm font-black text-slate-950">Welche Bereiche brauchst du wirklich?</p>
+                <p className="mt-1 text-sm leading-6 text-slate-500">Wähle bewusst aus. Überblick, Module und Prüfungen bleiben immer sichtbar; alles andere kannst du später im Profil ändern.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200" onClick={() => setEnabledFeatureIds(["insights", "schedule", "rewards"])}>
+                    Empfohlen
+                  </button>
+                  <button type="button" className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200" onClick={() => setEnabledFeatureIds([...DEFAULT_ENABLED_FEATURE_IDS])}>
+                    Alles aktivieren
+                  </button>
+                  <button type="button" className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200" onClick={() => setEnabledFeatureIds([])}>
+                    Minimal starten
+                  </button>
+                </div>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   {featurePreferenceOptions.map((option) => {
                     const isEnabled = enabledFeatureIds.includes(option.id);
@@ -358,7 +381,7 @@ export default function OnboardingWizard({
                       <button
                         key={option.id}
                         type="button"
-                        className={`rounded-2xl p-3 text-left ring-1 transition hover:-translate-y-0.5 ${isEnabled ? "bg-violet-50 text-slate-950 ring-violet-200" : "bg-white text-slate-500 ring-slate-200"}`}
+                        className={`gg-readable-option-card rounded-2xl p-3 text-left ring-1 transition hover:-translate-y-0.5 ${isEnabled ? "is-active" : ""}`}
                         onClick={() => toggleFeaturePreference(option.id)}
                       >
                         <span className="flex items-center justify-between gap-3">
@@ -367,7 +390,7 @@ export default function OnboardingWizard({
                             {isEnabled ? "aktiv" : "aus"}
                           </span>
                         </span>
-                        <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{option.description}</span>
+                        <span className="gg-readable-option-description mt-1 block text-xs font-semibold leading-5">{option.description}</span>
                       </button>
                     );
                   })}

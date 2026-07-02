@@ -44,15 +44,13 @@ const ToggleRow = ({
 }) => (
   <button
     type="button"
-    className={`flex w-full items-start justify-between gap-4 rounded-2xl p-3 text-left ring-1 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 ${
-      checked ? "bg-violet-50 ring-violet-100" : "bg-slate-50 ring-slate-200"
-    }`}
+    className={`gg-readable-option-card flex w-full items-start justify-between gap-4 rounded-2xl p-3 text-left ring-1 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 ${checked ? "is-active" : ""}`}
     onClick={onToggle}
     disabled={disabled}
   >
     <span>
-      <span className="block text-sm font-black text-slate-950">{title}</span>
-      <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{description}</span>
+      <span className="block text-sm font-black">{title}</span>
+      <span className="gg-readable-option-description mt-1 block text-xs font-semibold leading-5">{description}</span>
     </span>
     <span
       className={`mt-0.5 flex h-7 w-12 shrink-0 items-center rounded-full p-1 transition ${

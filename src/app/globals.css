@@ -1182,3 +1182,45 @@ details > summary::-webkit-details-marker {
     color: #f8fafc !important;
   }
 }
+
+/* Onboarding UI fix: readable option cards in Standard/Dark/System themes. */
+.gg-readable-option-card {
+  background: color-mix(in srgb, var(--gg-surface) 88%, white 12%) !important;
+  color: var(--gg-app-text) !important;
+  --tw-ring-color: var(--gg-border) !important;
+  border-color: var(--gg-border) !important;
+}
+
+.gg-readable-option-card.is-active {
+  background: color-mix(in srgb, var(--gg-accent-50) 70%, var(--gg-surface) 30%) !important;
+  color: var(--gg-app-text) !important;
+  --tw-ring-color: var(--gg-accent-200) !important;
+}
+
+.gg-readable-option-card .gg-readable-option-description {
+  color: color-mix(in srgb, var(--gg-muted) 88%, var(--gg-app-text) 12%) !important;
+}
+
+.gg-theme-dark .gg-readable-option-card,
+.gg-theme-dark .gg-readable-option-card.is-active {
+  background: color-mix(in srgb, var(--gg-surface-soft) 82%, white 8%) !important;
+  color: #f8fafc !important;
+  --tw-ring-color: rgba(226, 232, 240, 0.24) !important;
+}
+
+.gg-theme-dark .gg-readable-option-card .gg-readable-option-description {
+  color: rgba(226, 232, 240, 0.84) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .gg-theme-system .gg-readable-option-card,
+  .gg-theme-system .gg-readable-option-card.is-active {
+    background: color-mix(in srgb, var(--gg-surface-soft) 82%, white 8%) !important;
+    color: #f8fafc !important;
+    --tw-ring-color: rgba(226, 232, 240, 0.24) !important;
+  }
+
+  .gg-theme-system .gg-readable-option-card .gg-readable-option-description {
+    color: rgba(226, 232, 240, 0.84) !important;
+  }
+}

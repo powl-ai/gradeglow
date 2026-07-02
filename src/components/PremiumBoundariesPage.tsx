@@ -74,7 +74,7 @@ export default function PremiumBoundariesPage({ user, onLogout }: { user: AppUse
             <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-700 ring-1 ring-amber-100">Payments noch nicht aktiv</span>
           </div>
 
-          <div className="mt-5 overflow-hidden rounded-3xl ring-1 ring-slate-200">
+          <div className="gg-premium-table-desktop mt-5 overflow-hidden rounded-3xl ring-1 ring-slate-200">
             <div className="grid grid-cols-4 bg-slate-950 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-white">
               <p>Feature</p>
               <p>Free</p>
@@ -98,10 +98,49 @@ export default function PremiumBoundariesPage({ user, onLogout }: { user: AppUse
               })}
             </div>
           </div>
+
+          <div className="gg-premium-mobile-cards mt-4 hidden gap-3">
+            {premiumBoundaryRows.map((row) => {
+              const access = getFeatureAccess(row.featureId, entitlement, limits);
+              return (
+                <article key={row.featureId} className="rounded-2xl bg-white/80 p-3 text-sm ring-1 ring-slate-200">
+                  <p className="font-black text-slate-950">{row.title}</p>
+                  <p className="mt-1 text-xs font-bold text-violet-700">{access.label}</p>
+                  <div className="mt-3 grid gap-2 text-xs font-semibold text-slate-600">
+                    <p><span className="font-black text-slate-900">Free:</span> {row.free}</p>
+                    <p><span className="font-black text-slate-900">Plus:</span> {row.plus}</p>
+                    <p><span className="font-black text-slate-900">Beta/Admin:</span> {row.beta}</p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+
+        <section className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+          <p className="text-sm font-bold text-violet-700">Monetarisierung</p>
+          <h2 className="mt-1 text-2xl font-black tracking-tight">Plus zuerst, Ads nur vorsichtig.</h2>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl bg-violet-50 p-4 ring-1 ring-violet-100">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-500">Empfohlen</p>
+              <h3 className="mt-2 font-black">GradeGlow Plus</h3>
+              <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">Später Abo oder Einmalkauf für unbegrenzte Nutzung, Themes, Export und Circle-Insights.</p>
+            </div>
+            <div className="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-100">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-600">Optional</p>
+              <h3 className="mt-2 font-black">Sponsor Cards</h3>
+              <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">Wenn Werbung, dann nur als klare, ruhige Karten im Free-Bereich. Nicht im Timer und nicht über Buttons.</p>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Noch aus</p>
+              <h3 className="mt-2 font-black">Keine echten Ads aktiv</h3>
+              <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">AdSense/AdMob, Consent, Datenschutz und Platzierungen bleiben vorbereitet, aber noch nicht live.</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-2">          <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
             <p className="text-sm font-bold text-violet-700">Paywall-Status</p>
             <h2 className="mt-1 text-2xl font-black tracking-tight">Noch keine echte Zahlung.</h2>
             <p className="mt-3 text-sm font-semibold leading-6 text-slate-500">GradeGlow zeigt Premium-Vorteile nur vorbereitend an. Vor echten Zahlungen müssen Impressum, Datenschutz, Support-Prozess, Widerrufs-/AGB-Themen und Zahlungsanbieter final geprüft werden.</p>

@@ -2429,3 +2429,92 @@ button,
   font-weight: 800;
   line-height: 1.45;
 }
+
+/* PWA shell cleanup + monetization prep -----------------------------------
+   Mobile should not behave like a sticky web dashboard. The header stays in
+   document flow, the tabbar owns the bottom safe area, and premium tables turn
+   into cards on small screens. */
+@media (max-width: 1023px) {
+  body {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .gg-app-shell {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.55rem) !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4.85rem) !important;
+  }
+
+  .gg-mobile-appbar {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    z-index: 12 !important;
+    margin: 0 0 0.45rem !important;
+    transform: none !important;
+  }
+
+  .gg-mobile-tabbar {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    min-height: calc(env(safe-area-inset-bottom, 0px) + 3.25rem) !important;
+    border-radius: 1.15rem 1.15rem 0 0 !important;
+    padding: 0.22rem 0.42rem calc(env(safe-area-inset-bottom, 0px) + 0.14rem) !important;
+    background: rgba(15, 23, 42, 0.96) !important;
+    box-shadow: 0 -16px 34px rgba(15, 23, 42, 0.20) !important;
+  }
+
+  .gg-mobile-tabbar a {
+    min-height: 2.05rem !important;
+    padding: 0.22rem 0.18rem !important;
+  }
+
+  .gg-premium-table-desktop {
+    display: none !important;
+  }
+
+  .gg-premium-mobile-cards {
+    display: grid !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .gg-premium-mobile-cards {
+    display: none !important;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 1023px) {
+  html,
+  body,
+  .gg-themed {
+    background: var(--gg-app-bg, #fbf7ff) !important;
+  }
+
+  .gg-app-shell {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.35rem) !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 3.75rem) !important;
+  }
+
+  .gg-mobile-appbar {
+    margin-top: 0 !important;
+  }
+
+  .gg-mobile-tabbar {
+    min-height: calc(env(safe-area-inset-bottom, 0px) + 2.95rem) !important;
+    padding-top: 0.14rem !important;
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.1rem) !important;
+  }
+
+  .gg-mobile-tabbar a {
+    min-height: 1.9rem !important;
+  }
+}
+
+.gg-plan-legacy-timer {
+  display: none !important;
+}

@@ -1665,7 +1665,7 @@ export default function GradeGlowDashboard({
                   {globalTimerModeLabel} · {formatCompactDuration(globalTimerElapsedSeconds)} aktiv{globalTimerExam ? ` · ${globalTimerExam.title}` : ""}
                 </p>
               </div>
-              <Link href="/exams" className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-black text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-50">
+              <Link href="/timer" className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-black text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-50">
                 Timer öffnen
               </Link>
             </div>

@@ -267,16 +267,6 @@ const formatMinutes = (minutes: number) => {
   return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
 };
 
-const formatTimer = (seconds: number) => {
-  const safeSeconds = Math.max(0, seconds);
-  const hours = Math.floor(safeSeconds / 3600);
-  const minutes = Math.floor((safeSeconds % 3600) / 60);
-  const rest = safeSeconds % 60;
-  const mm = String(minutes).padStart(2, "0");
-  const ss = String(rest).padStart(2, "0");
-  return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`;
-};
-
 const formatTimeInputFromDate = (date: Date) =>
   `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 
@@ -1110,9 +1100,7 @@ export default function GradeGlowPlanner({
     });
   };
 
-  const discardStudyTimer = () => {
-    setActiveTimer(null);
-  };
+
 
   const stopStudyTimer = (finishReason: "manual" | "auto" = "manual") => {
     if (!activeTimer) return;
@@ -1191,7 +1179,6 @@ export default function GradeGlowPlanner({
   const activeTimerLimitMinutes = activeTimer ? getActiveTimerLimitMinutes(activeTimer, activeTimerExam) : 0;
   const activeTimerLimitSeconds = activeTimerLimitMinutes * 60;
   const timerElapsedSeconds = activeTimer ? Math.max(0, Math.floor((timerNow - activeTimer.startedAt) / 1000)) : 0;
-  const timerDisplaySeconds = activeTimer?.mode === "stopwatch" ? timerElapsedSeconds : Math.max(0, activeTimerLimitSeconds - timerElapsedSeconds);
   const timerLimitReached = Boolean(activeTimer && activeTimerLimitSeconds > 0 && timerElapsedSeconds >= activeTimerLimitSeconds);
 
   useEffect(() => {
@@ -1295,7 +1282,7 @@ export default function GradeGlowPlanner({
           <button type="button" className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200" onClick={() => setShowHiddenItems((show) => !show)}>
             {showHiddenItems ? "Versteckte ausblenden" : `Versteckte anzeigen (${hiddenCount})`}
           </button>
-          <div className="grid gap-2 rounded-3xl bg-slate-950 p-2 text-white ring-1 ring-slate-900 sm:grid-cols-[minmax(150px,1fr)_minmax(150px,1fr)_minmax(140px,1fr)_minmax(150px,0.8fr)_auto] sm:items-center">
+          <div className="gg-plan-legacy-timer hidden">
             <select
               className="min-w-0 rounded-2xl border border-white/10 bg-white/10 px-3 py-3 text-sm font-black text-white outline-none"
               value={timerExamIdValue}
@@ -1360,7 +1347,7 @@ export default function GradeGlowPlanner({
               Timer starten
             </button>
           </div>
-          {timerMode === "focus" && !activeTimer && (
+          {false && timerMode === "focus" && !activeTimer && (
             <div className="flex flex-wrap gap-2">
               {focusTimerPresets.map((minutes) => (
                 <button
@@ -1376,20 +1363,8 @@ export default function GradeGlowPlanner({
           )}
         </div>
 
-        {activeTimer && (
-          <div className="mt-4 rounded-3xl bg-slate-950 p-4 text-white shadow-xl shadow-violet-950/10 ring-1 ring-white/10 sm:flex sm:items-center sm:justify-between sm:gap-4">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-200">{getTimerModeLabel(activeTimer.mode)} läuft</p>
-              <p className="mt-1 text-xl font-black">{formatTimer(timerDisplaySeconds)}</p>
-              <p className="mt-1 text-sm text-slate-300">{activeTimer.title}</p>
-              <p className="mt-1 text-xs font-semibold text-slate-400">{activeTimer.mode === "stopwatch" ? `läuft weiter bis max. ${formatMinutes(activeTimerLimitMinutes)}` : `${formatMinutes(activeTimerLimitMinutes)} Zielzeit · danach Auto-Speichern`}</p>
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-0 sm:flex">
-              <button type="button" className="rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-black text-slate-950" onClick={() => stopStudyTimer("manual")}>Speichern</button>
-              <button type="button" className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-black text-white ring-1 ring-white/10" onClick={discardStudyTimer}>Verwerfen</button>
-            </div>
-          </div>
-        )}
+        {/* Timer controls live on /timer now. */}
+
 
 
         <div className="mt-4 rounded-3xl bg-slate-50 p-3 ring-1 ring-slate-200 sm:p-4">

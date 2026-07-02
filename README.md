@@ -209,3 +209,13 @@ Siehe `BETA_PREMIUM_SOCIAL_MOBILE_UPDATE.md`.
 - Study Circle Profile haben Beta-Badges und ein öffentliches Profilmodal.
 - Admin Feedback kann erledigte/archivierte Meldungen wieder anzeigen.
 - Mobile/PWA CSS wurde kompakter gemacht.
+
+
+### Letzter Patch: Mobile Social Notifications
+
+- App-Version: `beta-2026-07-02-mobile-social-notifications`
+- Mobile/PWA-Schrift, Felder, Buttons und Karten kompakter gemacht.
+- Study-Circle-Leaderboard-Einträge öffnen jetzt Profile mit Badges.
+- In-App-Toast ergänzt, wenn dich jemand als Freund hinzufügt.
+- Keine Firestore Rules oder Functions geändert.
+

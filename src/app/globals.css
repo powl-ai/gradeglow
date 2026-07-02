@@ -1348,3 +1348,192 @@ button,
     min-height: 100dvh;
   }
 }
+
+/* Mobile social notifications pass ---------------------------------------
+   This pass is intentionally stronger than the earlier cosmetic polish: on
+   iPhone/PWA the app should feel compact, scannable and native instead of a
+   zoomed desktop page. */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+
+  .gg-themed {
+    line-height: 1.35;
+  }
+
+  .gg-themed main,
+  main.gg-themed {
+    padding-inline: max(env(safe-area-inset-left, 0px), 0.65rem) max(env(safe-area-inset-right, 0px), 0.65rem) !important;
+  }
+
+  .gg-themed .p-8,
+  .gg-themed .p-7,
+  .gg-themed .p-6 {
+    padding: 1rem !important;
+  }
+
+  .gg-themed .p-5,
+  .gg-themed .p-4 {
+    padding: 0.85rem !important;
+  }
+
+  .gg-themed .px-6,
+  .gg-themed .px-5,
+  .gg-themed .px-4 {
+    padding-left: 0.85rem !important;
+    padding-right: 0.85rem !important;
+  }
+
+  .gg-themed .py-4,
+  .gg-themed .py-3 {
+    padding-top: 0.62rem !important;
+    padding-bottom: 0.62rem !important;
+  }
+
+  .gg-themed .gap-5,
+  .gg-themed .gap-4 {
+    gap: 0.75rem !important;
+  }
+
+  .gg-themed .mt-6,
+  .gg-themed .mt-5 {
+    margin-top: 0.9rem !important;
+  }
+
+  .gg-themed .space-y-5 > :not([hidden]) ~ :not([hidden]),
+  .gg-themed .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.85rem !important;
+  }
+
+  .gg-themed .text-base {
+    font-size: 0.95rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .gg-themed .text-sm {
+    font-size: 0.82rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .gg-themed .text-xs {
+    font-size: 0.72rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .gg-themed .text-\[0\.68rem\],
+  .gg-themed .text-\[0\.65rem\],
+  .gg-themed .text-\[0\.62rem\] {
+    font-size: 0.64rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .gg-themed .field-input,
+  .gg-themed input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  .gg-themed select,
+  .gg-themed textarea {
+    min-height: 2.35rem !important;
+    padding: 0.48rem 0.64rem !important;
+    border-radius: 0.72rem !important;
+    font-size: 15px !important;
+    line-height: 1.25 !important;
+  }
+
+  .gg-themed textarea {
+    min-height: 4.3rem !important;
+  }
+
+  .gg-themed button,
+  .gg-themed a[role="button"],
+  .gg-themed .soft-button {
+    min-height: 2.25rem !important;
+    border-radius: 0.9rem !important;
+  }
+
+  .gg-themed .h-14.w-14,
+  .gg-themed .h-12.w-12 {
+    height: 2.55rem !important;
+    width: 2.55rem !important;
+    border-radius: 0.9rem !important;
+  }
+
+  .gg-themed .h-10.w-10 {
+    height: 2.25rem !important;
+    width: 2.25rem !important;
+    border-radius: 0.75rem !important;
+  }
+
+  .gg-themed [class*="rounded-\["],
+  .gg-themed .rounded-3xl,
+  .gg-themed .rounded-2xl {
+    border-radius: 1rem !important;
+  }
+
+  .gg-themed .leading-6 {
+    line-height: 1.45 !important;
+  }
+
+  .gg-themed .tracking-\[0\.16em\],
+  .gg-themed .tracking-\[0\.14em\],
+  .gg-themed .tracking-\[0\.12em\] {
+    letter-spacing: 0.08em !important;
+  }
+
+  .gg-themed .fixed.left-1\/2.top-3 {
+    top: calc(env(safe-area-inset-top, 0px) + 0.6rem) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  html {
+    font-size: 13.25px;
+  }
+
+  .gg-themed .grid {
+    min-width: 0;
+  }
+
+  .gg-themed .text-4xl {
+    font-size: 1.62rem !important;
+  }
+
+  .gg-themed .text-3xl {
+    font-size: 1.38rem !important;
+  }
+
+  .gg-themed .text-2xl {
+    font-size: 1.18rem !important;
+  }
+
+  .gg-themed .text-xl {
+    font-size: 1.03rem !important;
+  }
+
+  .gg-themed .field-input,
+  .gg-themed input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  .gg-themed select,
+  .gg-themed textarea {
+    font-size: 14.5px !important;
+  }
+}
+
+/* Safer readable cards in themed dark/system-dark variants. */
+.gg-theme-dark .bg-white,
+.gg-theme-dark .bg-slate-50,
+.gg-theme-dark .bg-violet-50,
+.gg-theme-dark .bg-emerald-50,
+.gg-theme-dark .bg-amber-50,
+.gg-theme-dark .bg-rose-50 {
+  --tw-ring-color: color-mix(in srgb, var(--gg-border) 85%, white 15%) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .gg-theme-system .bg-white,
+  .gg-theme-system .bg-slate-50,
+  .gg-theme-system .bg-violet-50,
+  .gg-theme-system .bg-emerald-50,
+  .gg-theme-system .bg-amber-50,
+  .gg-theme-system .bg-rose-50 {
+    --tw-ring-color: color-mix(in srgb, var(--gg-border) 85%, white 15%) !important;
+  }
+}

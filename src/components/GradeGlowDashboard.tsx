@@ -1249,14 +1249,18 @@ export default function GradeGlowDashboard({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-black">
-                {friendActivityToast.status === "started"
-                  ? `${friendActivityToast.displayName} lernt gerade`
-                  : `${friendActivityToast.displayName} hat gelernt`}
+                {friendActivityToast.status === "friend_added"
+                  ? friendActivityToast.title
+                  : friendActivityToast.status === "started"
+                    ? `${friendActivityToast.displayName} lernt gerade`
+                    : `${friendActivityToast.displayName} hat gelernt`}
               </p>
               <p className="mt-0.5 truncate text-xs font-semibold text-slate-300">
-                {friendActivityToast.status === "completed" && friendActivityToast.durationMinutes > 0
-                  ? `${friendActivityToast.durationMinutes} min · ${friendActivityToast.title}`
-                  : friendActivityToast.title}
+                {friendActivityToast.status === "friend_added"
+                  ? "Ihr seid jetzt im Study Circle verbunden."
+                  : friendActivityToast.status === "completed" && friendActivityToast.durationMinutes > 0
+                    ? `${friendActivityToast.durationMinutes} min · ${friendActivityToast.title}`
+                    : friendActivityToast.title}
               </p>
             </div>
             <button

@@ -867,23 +867,31 @@ export function useStudyFriends({ user, profile, exams, limits, profileReady = t
       const ownFriendRef = doc(db, "users", user.uid, FRIENDS_COLLECTION, friendId);
       const reciprocalFriendRef = doc(db, "users", friendId, FRIENDS_COLLECTION, user.uid);
 
+      const addedAtIso = nowIso();
+
       batch.set(ownFriendRef, {
         uid: friendId,
         friendCode: publicProfile.friendCode,
         displayNameSnapshot: publicProfile.displayName,
         addedAt: serverTimestamp(),
+        addedAtIso,
+        addedByUid: user.uid,
+        addedByDisplayNameSnapshot: ownPublicProfile.displayName,
         mutualWith: user.uid,
         source: "friend_code",
-        version: 5,
+        version: 6,
       });
       batch.set(reciprocalFriendRef, {
         uid: user.uid,
         friendCode: ownFriendCode,
         displayNameSnapshot: ownPublicProfile.displayName,
         addedAt: serverTimestamp(),
+        addedAtIso,
+        addedByUid: user.uid,
+        addedByDisplayNameSnapshot: ownPublicProfile.displayName,
         mutualWith: friendId,
         source: "reciprocal_friend_code",
-        version: 5,
+        version: 6,
       });
 
       await batch.commit();

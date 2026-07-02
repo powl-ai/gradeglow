@@ -12,7 +12,7 @@ export type FriendActivityToastData = {
   uid: string;
   displayName: string;
   title: string;
-  status: "started" | "completed";
+  status: "started" | "completed" | "friend_added";
   durationMinutes: number;
   updatedAtIso: string;
 };
@@ -47,6 +47,7 @@ export function useFriendActivityToast(user: AppUser, profile: GradeGlowProfile)
   const [friendIds, setFriendIds] = useState<string[]>([]);
   const [toast, setToast] = useState<FriendActivityToastData | null>(null);
   const seenActivityRef = useRef<Record<string, string>>({});
+  const hasHydratedFriendListRef = useRef(false);
   const canUseFriendActivity =
     user.provider === "firebase" &&
     isFirebaseConfigured &&
@@ -56,8 +57,11 @@ export function useFriendActivityToast(user: AppUser, profile: GradeGlowProfile)
   useEffect(() => {
     if (!canUseFriendActivity || !db) {
       setFriendIds([]);
+      hasHydratedFriendListRef.current = false;
       return undefined;
     }
+
+    hasHydratedFriendListRef.current = false;
 
     const unsubscribe = onSnapshot(
       collection(db, "users", user.uid, FRIENDS_COLLECTION),
@@ -66,6 +70,36 @@ export function useFriendActivityToast(user: AppUser, profile: GradeGlowProfile)
           .map((friendDoc) => friendDoc.id)
           .filter((id) => id && id !== user.uid);
         setFriendIds(ids);
+
+        if (!hasHydratedFriendListRef.current) {
+          hasHydratedFriendListRef.current = true;
+          return;
+        }
+
+        const addedFriendChange = snapshot
+          .docChanges()
+          .find((change) => change.type === "added" && change.doc.id !== user.uid);
+
+        if (!addedFriendChange) return;
+
+        const data = addedFriendChange.doc.data() as Record<string, unknown>;
+        const displayName =
+          typeof data.displayNameSnapshot === "string" && data.displayNameSnapshot.trim()
+            ? data.displayNameSnapshot.trim()
+            : "Jemand";
+        const addedAtIso =
+          typeof data.addedAtIso === "string" && data.addedAtIso.trim()
+            ? data.addedAtIso.trim()
+            : new Date().toISOString();
+
+        setToast({
+          uid: addedFriendChange.doc.id,
+          displayName,
+          title: `${displayName} hat dich hinzugefügt`,
+          status: "friend_added",
+          durationMinutes: 0,
+          updatedAtIso: addedAtIso,
+        });
       },
       () => undefined,
     );

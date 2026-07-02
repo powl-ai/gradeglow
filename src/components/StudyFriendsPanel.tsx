@@ -173,8 +173,12 @@ const SubjectBars = ({ profile }: { profile: PublicStudyProfile }) => {
   );
 };
 
-const LeaderboardCard = ({ row, rank }: { row: CircleRow; rank: number }) => (
-  <div className="flex min-w-0 items-center gap-3 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10">
+const LeaderboardCard = ({ row, rank, onOpen }: { row: CircleRow; rank: number; onOpen: () => void }) => (
+  <button
+    type="button"
+    className="flex min-w-0 items-center gap-3 rounded-3xl bg-white/10 p-4 text-left ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/40"
+    onClick={onOpen}
+  >
     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-sm font-black text-slate-950">
       #{rank}
     </div>
@@ -193,6 +197,12 @@ const LeaderboardCard = ({ row, rank }: { row: CircleRow; rank: number }) => (
       <p className="truncate text-xs font-semibold text-white/75">
         {row.degreeProgram || "Kein Studiengang sichtbar"}
       </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <BadgeList badgeIds={row.badgeIds} compact />
+        <span className="rounded-full bg-white/10 px-2 py-1 text-[0.62rem] font-black text-white/75 ring-1 ring-white/10">
+          Profil öffnen
+        </span>
+      </div>
     </div>
     <div className="shrink-0 text-right">
       <p className="text-xs font-semibold text-white/70">diese Woche</p>
@@ -200,7 +210,7 @@ const LeaderboardCard = ({ row, rank }: { row: CircleRow; rank: number }) => (
         {formatSharedMinutes(row, row.thisWeekDoneMinutes)}
       </p>
     </div>
-  </div>
+  </button>
 );
 
 const StatusDot = ({
@@ -1230,6 +1240,7 @@ export default function StudyFriendsPanel({
               key={`${row.uid}-${row.isSelf ? "self" : "friend"}`}
               row={row}
               rank={index + 1}
+              onOpen={() => setSelectedProfile(row)}
             />
           ))}
         </div>

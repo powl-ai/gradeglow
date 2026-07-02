@@ -197,6 +197,14 @@ const ACTIVE_TIMER_STORAGE_KEY = "gradeglow-active-study-timer-v1";
 const QUICK_RAIL_SCROLL_STORAGE_KEY = "gradeglow-quick-rail-scroll-left-v1";
 const WELCOME_QUERY_PARAM = "welcome";
 
+const mobileTabItems: Array<{ href: string; label: string; icon: string; match: DashboardPage[] }> = [
+  { href: "/", label: "Home", icon: "⌂", match: ["overview"] },
+  { href: "/exams", label: "Plan", icon: "▦", match: ["exams", "planning", "schedule"] },
+  { href: "/exams#timer", label: "Timer", icon: "▶", match: ["exams"] },
+  { href: "/friends", label: "Circle", icon: "●", match: ["friends"] },
+  { href: "/settings", label: "Profil", icon: "◌", match: [] },
+];
+
 type StoredActiveStudyTimer = {
   examId: string;
   sessionId: string | null;
@@ -1080,6 +1088,19 @@ export default function GradeGlowDashboard({
   });
   const activeNavItem =
     dashboardNavItems.find((item) => item.id === page) ?? dashboardNavItems[0];
+  const upcomingMobileExams = exams
+    .filter((exam) => exam.status !== "done" && !exam.isHidden)
+    .sort((a, b) => a.examDate.localeCompare(b.examDate));
+  const nextMobileExam = upcomingMobileExams[0] ?? null;
+  const openStudySessionsCount = exams.reduce(
+    (count, exam) => count + exam.studySessions.filter((session) => !session.isDone && !session.isHidden).length,
+    0,
+  );
+  const doneStudySessionsCount = exams.reduce(
+    (count, exam) => count + exam.studySessions.filter((session) => session.isDone && !session.isHidden).length,
+    0,
+  );
+  const mobilePageKicker = page === "overview" ? "Heute" : activeNavItem.label;
   const globalTimerExam = globalTimer ? exams.find((exam) => exam.id === globalTimer.examId) ?? null : null;
   const globalTimerElapsedSeconds = globalTimer ? Math.max(0, Math.floor((globalTimerNow - globalTimer.startedAt) / 1000)) : 0;
   const globalTimerModeLabel = globalTimer?.mode === "pomodoro" ? "Pomodoro" : globalTimer?.mode === "stopwatch" ? "Stoppuhr" : "Fokus-Timer";
@@ -1397,8 +1418,29 @@ export default function GradeGlowDashboard({
         </div>
       )}
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-3 pb-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] sm:gap-6 sm:px-6 lg:px-8 lg:pb-8 lg:pt-[calc(env(safe-area-inset-top,0px)+2rem)]">
-        <header className="overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl shadow-violet-950/20 ring-1 ring-white/10">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+4.8rem)] pt-[calc(env(safe-area-inset-top,0px)+0.7rem)] sm:gap-6 sm:px-6 lg:px-8 lg:pb-8 lg:pt-[calc(env(safe-area-inset-top,0px)+2rem)]">
+        <header className="gg-mobile-appbar lg:hidden">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              className="gg-mobile-icon-button shrink-0"
+              onClick={() => setIsNavigationOpen(true)}
+              aria-label="Menü öffnen"
+            >
+              ☰
+            </button>
+            <div className="min-w-0">
+              <p className="gg-mobile-kicker">{mobilePageKicker}</p>
+              <h1 className="truncate text-[1rem] font-black tracking-tight text-slate-950">{activeNavItem.label}</h1>
+            </div>
+          </div>
+          <Link href="/settings" className="flex min-w-0 items-center gap-2 rounded-full bg-white/80 py-1 pl-1 pr-2 text-[0.7rem] font-black text-slate-700 ring-1 ring-violet-100">
+            {renderAvatar("flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-100 text-[0.75rem] font-black text-violet-700")}
+            <span className="max-w-[5.4rem] truncate">{userLabel}</span>
+          </Link>
+        </header>
+
+        <header className="hidden overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl shadow-violet-950/20 ring-1 ring-white/10 lg:block">
           <div className="relative p-4 sm:p-7 lg:p-8">
             <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-fuchsia-500/25 blur-3xl" />
             <div className="absolute -bottom-24 left-16 h-72 w-72 rounded-full bg-violet-500/30 blur-3xl" />
@@ -1543,7 +1585,7 @@ export default function GradeGlowDashboard({
         <nav
           ref={quickRailRef}
           onScroll={handleQuickRailScroll}
-          className="no-scrollbar sticky top-[calc(env(safe-area-inset-top,0px)+0.5rem)] z-30 w-full max-w-full overflow-x-auto overscroll-x-contain rounded-[1.6rem] border border-white/70 bg-white/75 p-2 shadow-lg shadow-violet-100/60 backdrop-blur-xl"
+          className="no-scrollbar sticky top-[calc(env(safe-area-inset-top,0px)+0.5rem)] z-30 hidden w-full max-w-full overflow-x-auto overscroll-x-contain rounded-[1.6rem] border border-white/70 bg-white/75 p-2 shadow-lg shadow-violet-100/60 backdrop-blur-xl lg:block"
           aria-label="GradeGlow Schnellnavigation"
         >
           <div className="flex w-max max-w-none items-center gap-2 pr-3">
@@ -1602,9 +1644,43 @@ export default function GradeGlowDashboard({
 
         {page === "overview" && (
           <>
+            <section className="gg-mobile-home lg:hidden">
+              <div className="gg-mobile-hero-card">
+                <div>
+                  <p className="gg-mobile-kicker text-white/70">Heute im Fokus</p>
+                  <h2 className="mt-1 text-[1.1rem] font-black text-white">{nextMobileExam ? nextMobileExam.title : "Lernplan starten"}</h2>
+                  <p className="mt-1 text-[0.72rem] font-semibold leading-4 text-white/65">
+                    {globalTimer
+                      ? `${globalTimerModeLabel} läuft · ${formatCompactDuration(globalTimerElapsedSeconds)}`
+                      : nextMobileExam
+                        ? `${nextMobileExam.examDate}${nextMobileExam.moduleName ? ` · ${nextMobileExam.moduleName}` : ""}`
+                        : "Lege eine Prüfung an und GradeGlow baut dir den Plan."}
+                  </p>
+                </div>
+                <Link href="/exams" className="rounded-full bg-white px-3 py-2 text-[0.72rem] font-black text-slate-950">Öffnen</Link>
+              </div>
+
+              <div className="gg-mobile-stat-list">
+                <div className="gg-mobile-stat-row"><span>Schnitt</span><strong>{analytics.average > 0 ? formatGrade(analytics.average) : "—"}</strong></div>
+                <div className="gg-mobile-stat-row"><span>ECTS</span><strong>{analytics.passedEcts}/{totalTargetEcts}</strong></div>
+                <div className="gg-mobile-stat-row"><span>Offene Sessions</span><strong>{openStudySessionsCount}</strong></div>
+                <div className="gg-mobile-stat-row"><span>Erledigt</span><strong>{doneStudySessionsCount}</strong></div>
+              </div>
+
+              <div className="gg-mobile-progress-card">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-black text-slate-950">Studienfortschritt</p>
+                  <p className="text-[0.72rem] font-black text-violet-700">{analytics.progress.toFixed(0)}%</p>
+                </div>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200">
+                  <div className="h-full rounded-full gg-overview-progress" style={{ width: `${Math.min(analytics.progress, 100)}%` }} />
+                </div>
+              </div>
+            </section>
+
             <section
               id="overview"
-              className="scroll-mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+              className="hidden scroll-mt-6 gap-4 md:grid md:grid-cols-2 xl:grid-cols-4"
             >
               <div className="rounded-3xl bg-white/80 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur">
                 <div className="flex items-start justify-between gap-4">
@@ -2881,7 +2957,7 @@ export default function GradeGlowDashboard({
           />
         )}
 
-        <footer className="flex flex-col items-center justify-between gap-3 pb-2 text-xs font-bold text-slate-400 sm:flex-row">
+        <footer className="hidden flex-col items-center justify-between gap-3 pb-2 text-xs font-bold text-slate-400 sm:flex-row lg:flex">
           <span>GradeGlow Prototype</span>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link href="/feedback" className="transition hover:text-violet-700">Feedback</Link>
@@ -2892,6 +2968,18 @@ export default function GradeGlowDashboard({
           </div>
         </footer>
       </div>
+
+      <nav className="gg-mobile-tabbar lg:hidden" aria-label="GradeGlow App Navigation">
+        {mobileTabItems.map((item) => {
+          const isActive = item.match.includes(page);
+          return (
+            <Link key={`${item.href}-${item.label}`} href={item.href} className={isActive ? "is-active" : ""}>
+              <span className="gg-mobile-tab-icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </main>
   );
 }

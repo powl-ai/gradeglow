@@ -1852,3 +1852,166 @@ button,
     font-size: 12px !important;
   }
 }
+
+/* Native mobile shell: mobile should feel like an app, not like a squeezed desktop page. */
+@media (max-width: 1023px) {
+  .gg-themed {
+    --gg-mobile-surface: rgba(255, 255, 255, 0.86);
+    --gg-mobile-border: rgba(139, 92, 246, 0.16);
+  }
+
+  .gg-mobile-appbar {
+    position: sticky;
+    top: max(env(safe-area-inset-top, 0px), 0.35rem);
+    z-index: 35;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.55rem;
+    min-height: 2.8rem;
+    border: 1px solid var(--gg-mobile-border);
+    border-radius: 1.1rem;
+    background: var(--gg-mobile-surface);
+    padding: 0.4rem 0.48rem;
+    box-shadow: 0 12px 28px rgba(88, 28, 135, 0.10);
+    backdrop-filter: blur(18px);
+  }
+
+  .gg-mobile-icon-button {
+    display: inline-flex;
+    height: 2rem;
+    width: 2rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.82rem;
+    background: rgba(15, 23, 42, 0.94);
+    color: white;
+    font-size: 0.88rem;
+    font-weight: 900;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+  }
+
+  .gg-mobile-kicker {
+    font-size: 0.62rem !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.13em !important;
+    line-height: 1 !important;
+    text-transform: uppercase;
+    color: rgb(124, 58, 237);
+  }
+
+  .gg-mobile-home {
+    display: grid;
+    gap: 0.62rem;
+  }
+
+  .gg-mobile-hero-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+    border-radius: 1.15rem;
+    background: linear-gradient(135deg, rgb(15, 23, 42), rgb(88, 28, 135));
+    padding: 0.82rem;
+    box-shadow: 0 16px 36px rgba(88, 28, 135, 0.16);
+  }
+
+  .gg-mobile-stat-list,
+  .gg-mobile-progress-card {
+    border: 1px solid var(--gg-mobile-border);
+    border-radius: 1.05rem;
+    background: rgba(255, 255, 255, 0.90);
+    padding: 0.52rem;
+    box-shadow: 0 10px 24px rgba(88, 28, 135, 0.08);
+    backdrop-filter: blur(14px);
+  }
+
+  .gg-mobile-stat-list {
+    display: grid;
+    gap: 0.18rem;
+  }
+
+  .gg-mobile-stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border-radius: 0.72rem;
+    padding: 0.42rem 0.5rem;
+    background: rgba(248, 250, 252, 0.86);
+  }
+
+  .gg-mobile-stat-row span {
+    font-size: 0.72rem !important;
+    font-weight: 800 !important;
+    color: rgb(100, 116, 139) !important;
+  }
+
+  .gg-mobile-stat-row strong {
+    font-size: 0.88rem !important;
+    font-weight: 950 !important;
+    letter-spacing: -0.03em;
+    color: rgb(15, 23, 42) !important;
+  }
+
+  .gg-mobile-tabbar {
+    position: fixed;
+    left: 0.55rem;
+    right: 0.55rem;
+    bottom: max(env(safe-area-inset-bottom, 0px), 0.48rem);
+    z-index: 45;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.18rem;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 1.2rem;
+    background: rgba(15, 23, 42, 0.88);
+    padding: 0.28rem;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
+    backdrop-filter: blur(22px);
+  }
+
+  .gg-mobile-tabbar a {
+    display: flex;
+    min-height: 2.45rem !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.12rem;
+    border-radius: 0.88rem !important;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.58rem !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    text-decoration: none;
+  }
+
+  .gg-mobile-tabbar a.is-active {
+    background: rgba(255, 255, 255, 0.94);
+    color: rgb(15, 23, 42);
+  }
+
+  .gg-mobile-tab-icon {
+    font-size: 0.95rem !important;
+    line-height: 1 !important;
+  }
+
+  /* App-style list density for the long mobile pages. */
+  .gg-themed section:not(.gg-mobile-home),
+  .gg-themed article,
+  .gg-themed form,
+  .gg-themed [class*="rounded-3xl"],
+  .gg-themed [class*="rounded-[2rem]"] {
+    scroll-margin-top: 4.2rem;
+  }
+
+  .gg-themed .grid.md\:grid-cols-2,
+  .gg-themed .grid.lg\:grid-cols-2,
+  .gg-themed .grid.xl\:grid-cols-4 {
+    gap: 0.55rem !important;
+  }
+
+  .gg-themed footer {
+    display: none !important;
+  }
+}

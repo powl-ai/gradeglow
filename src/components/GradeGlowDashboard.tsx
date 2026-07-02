@@ -62,6 +62,7 @@ export type DashboardPage =
   | "insights"
   | "friends"
   | "exams"
+  | "timer"
   | "planning"
   | "schedule"
   | "modules"
@@ -116,9 +117,17 @@ const dashboardNavItems: DashboardNavItem[] = [
   {
     id: "exams",
     href: "/exams",
-    label: "Prüfungen",
+    label: "Plan",
     description: "Prüfungsplaner und Lernplan",
     emoji: "🗓️",
+  },
+  {
+    id: "timer",
+    href: "/timer",
+    label: "Timer",
+    description: "Fokus-Timer und aktive Lernsessions",
+    emoji: "▶",
+    navHidden: true,
   },
   {
     id: "schedule",
@@ -199,8 +208,8 @@ const WELCOME_QUERY_PARAM = "welcome";
 
 const mobileTabItems: Array<{ href: string; label: string; icon: string; match: DashboardPage[] }> = [
   { href: "/", label: "Home", icon: "⌂", match: ["overview"] },
-  { href: "/exams", label: "Plan", icon: "▦", match: ["exams", "planning", "schedule"] },
-  { href: "/exams#timer", label: "Timer", icon: "▶", match: ["exams"] },
+  { href: "/exams", label: "Plan", icon: "▦", match: ["exams"] },
+  { href: "/timer", label: "Timer", icon: "▶", match: ["timer"] },
   { href: "/friends", label: "Circle", icon: "●", match: ["friends"] },
   { href: "/settings", label: "Profil", icon: "◌", match: [] },
 ];
@@ -1418,7 +1427,7 @@ export default function GradeGlowDashboard({
         </div>
       )}
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+4.8rem)] pt-[calc(env(safe-area-inset-top,0px)+0.7rem)] sm:gap-6 sm:px-6 lg:px-8 lg:pb-8 lg:pt-[calc(env(safe-area-inset-top,0px)+2rem)]">
+      <div className="gg-app-shell mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+4.8rem)] pt-[calc(env(safe-area-inset-top,0px)+0.7rem)] sm:gap-6 sm:px-6 lg:px-8 lg:pb-8 lg:pt-[calc(env(safe-area-inset-top,0px)+2rem)]">
         <header className="gg-mobile-appbar lg:hidden">
           <div className="flex min-w-0 items-center gap-2">
             <button
@@ -1631,15 +1640,39 @@ export default function GradeGlowDashboard({
         )}
 
         {page === "overview" && (
-          <BetaLaunchPanel
-            user={user}
-            moduleCount={modules.length}
-            examCount={exams.length}
-            studyCircleReady={profile.studySharingEnabled}
-            profileReady={isProfileLoaded}
-            profileComplete={profileComplete}
-            cloudMessages={betaCloudMessages}
-          />
+          <>
+            <div className="hidden lg:block">
+              <BetaLaunchPanel
+                user={user}
+                moduleCount={modules.length}
+                examCount={exams.length}
+                studyCircleReady={profile.studySharingEnabled}
+                profileReady={isProfileLoaded}
+                profileComplete={profileComplete}
+                cloudMessages={betaCloudMessages}
+              />
+            </div>
+            <details className="gg-mobile-collapsible lg:hidden">
+              <summary>
+                <span>
+                  <span className="gg-mobile-kicker">Beta</span>
+                  Ready-Check
+                </span>
+                <strong>{profileComplete ? "OK" : "Offen"}</strong>
+              </summary>
+              <div className="gg-mobile-collapsible-body">
+                <BetaLaunchPanel
+                  user={user}
+                  moduleCount={modules.length}
+                  examCount={exams.length}
+                  studyCircleReady={profile.studySharingEnabled}
+                  profileReady={isProfileLoaded}
+                  profileComplete={profileComplete}
+                  cloudMessages={betaCloudMessages}
+                />
+              </div>
+            </details>
+          </>
         )}
 
         {page === "overview" && (
@@ -1757,16 +1790,30 @@ export default function GradeGlowDashboard({
               </div>
             </section>
 
-            <PlanUsagePanel
-              plan={entitlement.plan}
-              limits={limits}
-              modulesCount={modules.length}
-              examsCount={exams.length}
-            />
+            <div className="hidden lg:block">
+              <PlanUsagePanel
+                plan={entitlement.plan}
+                limits={limits}
+                modulesCount={modules.length}
+                examsCount={exams.length}
+              />
+            </div>
 
-            <BetaNoticeCard compact />
+            <details className="gg-mobile-collapsible lg:hidden">
+              <summary><span><span className="gg-mobile-kicker">Limits</span>Free Nutzung</span><strong>›</strong></summary>
+              <div className="gg-mobile-collapsible-body">
+                <PlanUsagePanel
+                  plan={entitlement.plan}
+                  limits={limits}
+                  modulesCount={modules.length}
+                  examsCount={exams.length}
+                />
+              </div>
+            </details>
 
-            <section className="rounded-3xl bg-white/85 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+            <div className="hidden lg:block"><BetaNoticeCard compact /></div>
+
+            <section className="hidden rounded-3xl bg-white/85 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6 lg:block">
               <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
                 <div>
                   <p className="text-sm font-bold text-violet-700">
@@ -1789,9 +1836,23 @@ export default function GradeGlowDashboard({
               </div>
             </section>
 
-            {enabledFeatureIds.has("rewards") && <GlowRewardsPanel profile={profile} exams={exams} saveProfile={saveProfile} limits={limits} planLabel={planLabels[entitlement.plan]} />}
+            {enabledFeatureIds.has("rewards") && (
+              <details className="gg-mobile-collapsible lg:hidden">
+                <summary><span><span className="gg-mobile-kicker">Glow</span>Belohnungen</span><strong>›</strong></summary>
+                <div className="gg-mobile-collapsible-body">
+                  <GlowRewardsPanel profile={profile} exams={exams} saveProfile={saveProfile} limits={limits} planLabel={planLabels[entitlement.plan]} />
+                </div>
+              </details>
+            )}
+            {enabledFeatureIds.has("rewards") && (
+              <div className="hidden lg:block"><GlowRewardsPanel profile={profile} exams={exams} saveProfile={saveProfile} limits={limits} planLabel={planLabels[entitlement.plan]} /></div>
+            )}
 
-            <PwaInstallCard />
+            <details className="gg-mobile-collapsible lg:hidden">
+              <summary><span><span className="gg-mobile-kicker">PWA</span>Installieren & Update</span><strong>›</strong></summary>
+              <div className="gg-mobile-collapsible-body"><PwaInstallCard /></div>
+            </details>
+            <div className="hidden lg:block"><PwaInstallCard /></div>
           </>
         )}
 
@@ -1842,7 +1903,7 @@ export default function GradeGlowDashboard({
           </section>
         )}
 
-        {page === "exams" && (
+        {(page === "exams" || page === "timer") && (
           <section id="exams" className="scroll-mt-6">
             <GradeGlowPlanner
               modules={modules}

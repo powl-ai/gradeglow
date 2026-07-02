@@ -2015,3 +2015,185 @@ button,
     display: none !important;
   }
 }
+
+/* Mobile app simplify: bottom-tab-only navigation and collapsed secondary content. */
+@media (max-width: 1023px) {
+  html {
+    font-size: 13px;
+  }
+
+  body {
+    padding-top: 0 !important;
+  }
+
+  .gg-app-shell {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 4.25rem) !important;
+    padding-left: max(env(safe-area-inset-left, 0px), 0.62rem) !important;
+    padding-right: max(env(safe-area-inset-right, 0px), 0.62rem) !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.9rem) !important;
+    gap: 0.72rem !important;
+  }
+
+  .gg-themed nav[aria-label="GradeGlow Schnellnavigation"] {
+    display: none !important;
+  }
+
+  .gg-mobile-appbar {
+    position: fixed !important;
+    top: calc(env(safe-area-inset-top, 0px) + 0.55rem) !important;
+    left: max(env(safe-area-inset-left, 0px), 0.7rem) !important;
+    right: max(env(safe-area-inset-right, 0px), 0.7rem) !important;
+    min-height: 2.55rem !important;
+    border-radius: 1rem !important;
+    padding: 0.34rem 0.44rem !important;
+    z-index: 60 !important;
+  }
+
+  @supports (padding: max(0px)) {
+    .gg-mobile-appbar {
+      top: max(calc(env(safe-area-inset-top, 0px) + 0.55rem), 0.95rem) !important;
+    }
+  }
+
+  .gg-mobile-appbar h1 {
+    font-size: 0.86rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .gg-mobile-appbar a[href="/settings"] {
+    max-width: 5.4rem !important;
+    padding-right: 0.45rem !important;
+  }
+
+  .gg-mobile-icon-button {
+    height: 1.86rem !important;
+    width: 1.86rem !important;
+    border-radius: 0.76rem !important;
+  }
+
+  .gg-mobile-tabbar {
+    left: max(env(safe-area-inset-left, 0px), 0px) !important;
+    right: max(env(safe-area-inset-right, 0px), 0px) !important;
+    bottom: 0 !important;
+    min-height: calc(env(safe-area-inset-bottom, 0px) + 3.85rem) !important;
+    align-items: start !important;
+    border-right: 0 !important;
+    border-bottom: 0 !important;
+    border-left: 0 !important;
+    border-radius: 1.15rem 1.15rem 0 0 !important;
+    padding: 0.28rem 0.4rem calc(env(safe-area-inset-bottom, 0px) + 0.32rem) !important;
+    box-shadow: 0 -12px 34px rgba(15, 23, 42, 0.20) !important;
+  }
+
+  .gg-mobile-tabbar a {
+    min-height: 2.42rem !important;
+    border-radius: 0.86rem !important;
+    font-size: 0.56rem !important;
+  }
+
+  .gg-mobile-tabbar a.is-active {
+    background: rgba(255,255,255,0.96) !important;
+  }
+
+  .gg-mobile-tab-icon {
+    font-size: 0.86rem !important;
+  }
+
+  .gg-mobile-collapsible {
+    border: 1px solid rgba(139, 92, 246, 0.16);
+    border-radius: 1.05rem;
+    background: rgba(255,255,255,0.88);
+    box-shadow: 0 10px 24px rgba(88, 28, 135, 0.08);
+    overflow: hidden;
+  }
+
+  .gg-mobile-collapsible > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+    padding: 0.72rem 0.78rem;
+    color: rgb(15, 23, 42);
+    font-size: 0.82rem;
+    font-weight: 950;
+    list-style: none;
+  }
+
+  .gg-mobile-collapsible > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .gg-mobile-collapsible > summary strong {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    border-radius: 999px;
+    background: rgba(139, 92, 246, 0.10);
+    padding: 0.24rem 0.45rem;
+    color: rgb(109, 40, 217);
+    font-size: 0.66rem;
+    font-weight: 950;
+  }
+
+  .gg-mobile-collapsible-body {
+    border-top: 1px solid rgba(139, 92, 246, 0.12);
+    padding: 0.55rem;
+  }
+
+  .gg-mobile-collapsible-body > * {
+    margin: 0 !important;
+  }
+
+  .gg-mobile-collapsible-body .rounded-3xl,
+  .gg-mobile-collapsible-body [class*="rounded-[2rem]"] {
+    border-radius: 1rem !important;
+  }
+
+  .gg-mobile-home {
+    gap: 0.56rem !important;
+  }
+
+  .gg-mobile-hero-card {
+    border-radius: 1.05rem !important;
+    padding: 0.72rem !important;
+  }
+
+  .gg-mobile-stat-list,
+  .gg-mobile-progress-card {
+    border-radius: 0.95rem !important;
+    padding: 0.45rem !important;
+  }
+
+  .gg-mobile-stat-row {
+    padding: 0.36rem 0.46rem !important;
+  }
+
+  .gg-themed .fixed.bottom-4.right-4 {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 4.65rem) !important;
+  }
+
+  .gg-themed .rounded-3xl,
+  .gg-themed [class*="rounded-[2rem]"] {
+    border-radius: 1.05rem !important;
+  }
+
+  .gg-themed .p-6,
+  .gg-themed .p-5,
+  .gg-themed .sm\:p-6,
+  .gg-themed .sm\:p-5 {
+    padding: 0.78rem !important;
+  }
+
+  .gg-themed .gap-6,
+  .gg-themed .gap-5,
+  .gg-themed .gap-4 {
+    gap: 0.65rem !important;
+  }
+
+  .gg-themed .mt-6,
+  .gg-themed .mt-5,
+  .gg-themed .mt-4 {
+    margin-top: 0.62rem !important;
+  }
+}

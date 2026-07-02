@@ -160,3 +160,13 @@ Aktueller Stand: `beta-2026-07-02-social-branding-readiness`. Details stehen in 
 - Circle erstellen, Circle-Code beitreten und Freundescode hinzufügen sind kompakter zusammengeführt.
 - `/info` enthält jetzt eine Firebase-Auth-Mail-Branding-Checkliste für das `project-...-Team`-Problem.
 - Capacitor/App-Store-Vorbereitung ist in `CAPACITOR_APP_STORE_READINESS.md` dokumentiert, aber noch nicht aktiv ausgerollt.
+
+## Update: Onboarding & Account-Löschung Fix
+
+Aktueller Stand: `beta-2026-07-02-onboarding-delete-fix`. Details stehen in `BETA_ONBOARDING_DELETE_FIX.md`.
+
+- Onboarding Step 1 kann durch Enter/Return nicht mehr automatisch weitergeschaltet oder abgeschlossen werden.
+- Step 2 startet ohne automatisch bestätigte Feature-Basisauswahl.
+- Setup-Abschluss ist erst nach bewusster Feature-Auswahl möglich.
+- Account-Löschung führt vor dem Löschen eine Firebase-Re-Authentifizierung aus.
+- E-Mail/Passwort-Accounts bekommen ein Passwortfeld, Google-Accounts öffnen automatisch die Google-Bestätigung.

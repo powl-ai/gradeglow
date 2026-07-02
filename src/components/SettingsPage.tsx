@@ -5,7 +5,15 @@ import GradeGlowLogo from "./GradeGlowLogo";
 import NotificationSettingsCard from "./NotificationSettingsCard";
 import BetaNoticeCard from "./BetaNoticeCard";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { deleteUser, updateProfile } from "firebase/auth";
+import {
+  EmailAuthProvider,
+  GoogleAuthProvider,
+  deleteUser,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  updateProfile,
+  type User,
+} from "firebase/auth";
 import { collection, deleteDoc, doc, getDoc, getDocs, query, where, writeBatch } from "firebase/firestore";
 import { auth, db, isFirebaseConfigured } from "../lib/firebase";
 import { DEFAULT_ENABLED_FEATURE_IDS, DEFAULT_TARGET_ECTS, useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
@@ -164,6 +172,77 @@ const clearLocalGradeGlowData = (uid: string) => {
   localStorage.removeItem(LOCAL_SESSION_KEY);
 };
 
+const getFirebaseErrorCode = (error: unknown) => {
+  if (typeof error !== "object" || error === null) return "";
+  const maybeCode = (error as { code?: unknown }).code;
+  return typeof maybeCode === "string" ? maybeCode : "";
+};
+
+const getAccountDeletionProviderIds = (currentUser: User | null | undefined) =>
+  currentUser?.providerData.map((provider) => provider.providerId).filter(Boolean) ?? [];
+
+const isPasswordAccount = (currentUser: User | null | undefined) => {
+  const providerIds = getAccountDeletionProviderIds(currentUser);
+  return providerIds.includes("password") || (providerIds.length === 0 && Boolean(currentUser?.email));
+};
+
+const isGoogleAccount = (currentUser: User | null | undefined) =>
+  getAccountDeletionProviderIds(currentUser).includes("google.com");
+
+const reauthenticateBeforeAccountDeletion = async (currentUser: User, password: string) => {
+  if (isGoogleAccount(currentUser)) {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    await reauthenticateWithPopup(currentUser, provider);
+    return;
+  }
+
+  if (isPasswordAccount(currentUser)) {
+    const email = currentUser.email;
+    if (!email) throw new Error("gradeglow-email-missing");
+    if (!password.trim()) throw new Error("gradeglow-password-required");
+
+    await reauthenticateWithCredential(
+      currentUser,
+      EmailAuthProvider.credential(email, password),
+    );
+  }
+};
+
+const deleteStudyCircleAccountData = async (uid: string) => {
+  if (!db) return;
+  const firestore = db;
+
+  const userMembershipSnapshot = await getDocs(collection(firestore, "users", uid, "studyCircles")).catch(() => null);
+  if (userMembershipSnapshot) {
+    await Promise.allSettled(
+      userMembershipSnapshot.docs.map((membershipDoc) =>
+        deleteDoc(doc(firestore, "studyCircles", membershipDoc.id, "members", uid)),
+      ),
+    );
+  }
+
+  const ownedCircleSnapshot = await getDocs(
+    query(collection(firestore, "studyCircles"), where("ownerUid", "==", uid)),
+  ).catch(() => null);
+
+  if (ownedCircleSnapshot) {
+    for (const circleDoc of ownedCircleSnapshot.docs) {
+      const circle = circleDoc.data();
+      const circleCode = typeof circle.circleCode === "string" ? circle.circleCode : "";
+      const normalizedCode = typeof circle.normalizedCode === "string" ? circle.normalizedCode : circleCode;
+
+      await deleteCollectionDocs(["studyCircles", circleDoc.id, "members"]).catch(() => undefined);
+      if (normalizedCode) {
+        await deleteDoc(doc(firestore, "studyCircleCodes", normalizedCode)).catch(() => undefined);
+      }
+      await deleteDoc(circleDoc.ref).catch(() => undefined);
+    }
+  }
+
+  await deleteCollectionDocs(["users", uid, "studyCircles"]).catch(() => undefined);
+};
+
 export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   const {
     profile,
@@ -190,6 +269,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   const [formMessage, setFormMessage] = useState("");
   const [dangerMessage, setDangerMessage] = useState("");
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleteAccountPassword, setDeleteAccountPassword] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeletingData, setIsDeletingData] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -367,6 +447,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
 
     try {
       if (user.provider === "firebase" && isFirebaseConfigured && db) {
+        await deleteStudyCircleAccountData(user.uid);
         await deleteCollectionDocs(["users", user.uid, "modules"]);
         await deleteCollectionDocs(["users", user.uid, "exams"]);
         await deleteCollectionDocs(["users", user.uid, "schedule"]);
@@ -375,9 +456,11 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
         await deleteCollectionDocs(["users", user.uid, "notificationSettings"]);
         await deleteCollectionDocs(["users", user.uid, "notifications"]);
         await deleteQueryDocs("feedback", "ownerUid", user.uid);
+        await deleteQueryDocs("diagnostics", "ownerUid", user.uid).catch(() => undefined);
         await deleteQueryDocs("studyFriendCodes", "uid", user.uid).catch(() => undefined);
         await deleteDoc(doc(db, "users", user.uid, "gradeglow", "settings")).catch(() => undefined);
         await deleteDoc(doc(db, "users", user.uid, "gradeglow", "dashboard")).catch(() => undefined);
+        await deleteDoc(doc(db, "users", user.uid)).catch(() => undefined);
         await deleteDoc(doc(db, "publicStudyProfiles", user.uid)).catch(() => undefined);
         await deleteDoc(doc(db, "studyActivityEvents", user.uid)).catch(() => undefined);
       }
@@ -403,6 +486,10 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
 
     try {
       if (user.provider === "firebase" && auth?.currentUser) {
+        const currentUser = auth.currentUser;
+
+        await reauthenticateBeforeAccountDeletion(currentUser, deleteAccountPassword);
+        await deleteStudyCircleAccountData(user.uid);
         await deleteCollectionDocs(["users", user.uid, "modules"]);
         await deleteCollectionDocs(["users", user.uid, "exams"]);
         await deleteCollectionDocs(["users", user.uid, "schedule"]);
@@ -411,23 +498,35 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
         await deleteCollectionDocs(["users", user.uid, "notificationSettings"]);
         await deleteCollectionDocs(["users", user.uid, "notifications"]);
         await deleteQueryDocs("feedback", "ownerUid", user.uid);
+        await deleteQueryDocs("diagnostics", "ownerUid", user.uid).catch(() => undefined);
         await deleteQueryDocs("studyFriendCodes", "uid", user.uid).catch(() => undefined);
         await deleteDoc(doc(db!, "users", user.uid, "gradeglow", "settings")).catch(() => undefined);
         await deleteDoc(doc(db!, "users", user.uid, "gradeglow", "dashboard")).catch(() => undefined);
+        await deleteDoc(doc(db!, "users", user.uid)).catch(() => undefined);
         await deleteDoc(doc(db!, "publicStudyProfiles", user.uid)).catch(() => undefined);
         await deleteDoc(doc(db!, "studyActivityEvents", user.uid)).catch(() => undefined);
         clearLocalGradeGlowData(user.uid);
-        await deleteUser(auth.currentUser);
+        await deleteUser(currentUser);
         return;
       }
 
       clearLocalGradeGlowData(user.uid);
       removeLocalUser(user.uid);
       await onLogout();
-    } catch {
-      setDangerMessage(
-        "Account konnte nicht gelöscht werden. Bei Firebase musst du dich aus Sicherheitsgründen eventuell neu einloggen und es direkt danach erneut versuchen.",
-      );
+    } catch (error) {
+      const code = getFirebaseErrorCode(error);
+
+      if (error instanceof Error && error.message === "gradeglow-password-required") {
+        setDangerMessage("Gib bitte dein Passwort ein, damit Firebase die Account-Löschung direkt bestätigen kann.");
+      } else if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
+        setDangerMessage("Passwort stimmt nicht. Bitte erneut eingeben und Account direkt danach löschen.");
+      } else if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+        setDangerMessage("Google-Bestätigung wurde abgebrochen. Öffne sie erneut und bestätige die Account-Löschung.");
+      } else if (code === "auth/requires-recent-login") {
+        setDangerMessage("Firebase verlangt eine frische Bestätigung. Nutze das Passwortfeld oder bestätige den Google-Login und lösche direkt danach erneut.");
+      } else {
+        setDangerMessage("Account konnte nicht vollständig gelöscht werden. Exportiere zur Sicherheit deine Daten und versuche es direkt nach einer erneuten Anmeldung nochmal.");
+      }
     } finally {
       setIsDeletingAccount(false);
     }
@@ -468,6 +567,10 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
       setIsRestartingOnboarding(false);
     }
   };
+
+  const accountDeletionCurrentUser = auth?.currentUser;
+  const needsPasswordForAccountDeletion = user.provider === "firebase" && isPasswordAccount(accountDeletionCurrentUser);
+  const canUseGoogleReauthForAccountDeletion = user.provider === "firebase" && isGoogleAccount(accountDeletionCurrentUser);
 
   const themeClassName = getThemeClassName(themeMode);
   const effectivePageThemeId = getEffectivePageThemeId(activePageThemeId, limits.premiumThemes);
@@ -922,13 +1025,37 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
               </div>
 
               <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-xs font-semibold leading-5 text-amber-800 ring-1 ring-amber-100">
-                Hinweis: Account-Löschung bei Firebase kann einen frischen Login verlangen. Wenn es nicht klappt, kurz abmelden, neu anmelden und direkt nochmal löschen. Für Support: gradeglow.support@icloud.com
+                Hinweis: Firebase verlangt bei Account-Löschung eine frische Sicherheitsbestätigung. GradeGlow fragt dafür direkt dein Passwort ab oder öffnet bei Google-Login automatisch die Google-Bestätigung. Für Support: gradeglow.support@icloud.com
               </div>
 
               <label className="mt-4 block">
                 <span className="mb-1.5 block text-sm font-bold text-slate-700">Zur Bestätigung LÖSCHEN eintippen</span>
                 <input className="field-input" value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value)} placeholder="LÖSCHEN" />
               </label>
+
+              {needsPasswordForAccountDeletion && (
+                <label className="mt-4 block">
+                  <span className="mb-1.5 block text-sm font-bold text-slate-700">Passwort für die direkte Account-Löschung</span>
+                  <input
+                    className="field-input"
+                    type="password"
+                    autoComplete="current-password"
+                    value={deleteAccountPassword}
+                    onChange={(event) => setDeleteAccountPassword(event.target.value)}
+                    placeholder="Firebase Login-Passwort"
+                  />
+                  <span className="mt-1.5 block text-xs font-semibold leading-5 text-slate-500">
+                    Firebase verlangt für sensible Aktionen eine frische Bestätigung. Mit dem Passwort kann GradeGlow den Account ohne manuelles Aus- und Einloggen entfernen.
+                  </span>
+                </label>
+              )}
+
+              {canUseGoogleReauthForAccountDeletion && (
+                <div className="mt-4 rounded-2xl bg-blue-50 p-4 text-xs font-semibold leading-5 text-blue-800 ring-1 ring-blue-100">
+                  Bei Google-Accounts öffnet sich beim Löschen automatisch ein Google-Fenster zur Sicherheitsbestätigung. Danach löscht GradeGlow die App-Daten und den Firebase-Login in einem Schritt.
+                </div>
+              )}
+
               {dangerMessage && <p className="mt-3 rounded-2xl bg-rose-50 p-3 text-sm font-bold text-rose-700 ring-1 ring-rose-100">{dangerMessage}</p>}
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
                 <button type="button" className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-700 ring-1 ring-rose-100 disabled:opacity-50" onClick={handleDeleteAppData} disabled={isDeletingData || isDeletingAccount}>

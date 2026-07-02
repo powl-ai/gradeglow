@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { useMemo, useState } from "react";
-import type { Dispatch, FormEvent, SetStateAction } from "react";
+import type { Dispatch, FormEvent, KeyboardEvent, SetStateAction } from "react";
 import type { AppUser, ExamPlanItem, GradeGlowFeatureId, GradeGlowProfile, StartMode, UniModule } from "../types";
 import { DEFAULT_ENABLED_FEATURE_IDS, DEFAULT_TARGET_ECTS } from "../hooks/useGradeGlowProfile";
 import GradeGlowLogo from "./GradeGlowLogo";
@@ -96,8 +96,11 @@ export default function OnboardingWizard({
       return profile.enabledFeatureIds;
     }
 
-    return [...ONBOARDING_DEFAULT_FEATURE_IDS];
+    return [];
   });
+  const [featureSetupChoice, setFeatureSetupChoice] = useState<
+    "recommended" | "all" | "minimal" | "custom" | null
+  >(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const selectedOption = useMemo(
@@ -183,26 +186,50 @@ export default function OnboardingWizard({
     await batch.commit();
   };
 
-  const finishOnboarding = async (event?: FormEvent<HTMLFormElement>) => {
-    event?.preventDefault();
-
-    if (step === 1) {
-      setStep(2);
-      return;
-    }
-
+  const validateStepOne = () => {
     setMessage("");
 
     if (!displayName.trim()) {
       setMessage("Bitte gib einen Namen ein, damit dein Dashboard personalisiert ist.");
-      setStep(1);
-      return;
+      return false;
     }
 
     const parsedEcts = parseNumber(targetEcts);
     if (!Number.isFinite(parsedEcts) || parsedEcts < 30 || parsedEcts > 400) {
       setMessage("Bitte gib realistische Ziel-ECTS ein, z. B. 180.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const continueToFeatureSelection = () => {
+    if (!validateStepOne()) return;
+    setStep(2);
+  };
+
+  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (step !== 2) return;
+    void finishOnboarding();
+  };
+
+  const handleFormKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
+    if (step === 1 && event.key === "Enter") {
+      event.preventDefault();
+    }
+  };
+
+  const finishOnboarding = async () => {
+    setMessage("");
+
+    if (!validateStepOne()) {
       setStep(1);
+      return;
+    }
+
+    if (!featureSetupChoice) {
+      setMessage("Bitte wähle Empfohlen, Alles aktivieren, Minimal starten oder einzelne Bereiche aus.");
       return;
     }
 
@@ -221,7 +248,13 @@ export default function OnboardingWizard({
     }
   };
 
+  const applyFeaturePreset = (choice: "recommended" | "all" | "minimal", nextIds: GradeGlowFeatureId[]) => {
+    setFeatureSetupChoice(choice);
+    setEnabledFeatureIds(Array.from(new Set(nextIds)));
+  };
+
   const toggleFeaturePreference = (featureId: GradeGlowFeatureId) => {
+    setFeatureSetupChoice("custom");
     setEnabledFeatureIds((current) =>
       current.includes(featureId)
         ? current.filter((item) => item !== featureId)
@@ -281,7 +314,11 @@ export default function OnboardingWizard({
           </div>
         </section>
 
-        <form className="rounded-[2rem] bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-7" onSubmit={finishOnboarding}>
+        <form
+          className="rounded-[2rem] bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-7"
+          onSubmit={handleFormSubmit}
+          onKeyDown={handleFormKeyDown}
+        >
           {step === 1 ? (
             <div className="space-y-5">
               <div>
@@ -361,16 +398,23 @@ export default function OnboardingWizard({
               </div>
 
               <div className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                <p className="text-sm font-black text-slate-950">Welche Bereiche brauchst du wirklich?</p>
-                <p className="mt-1 text-sm leading-6 text-slate-500">Wähle bewusst aus. Überblick, Module und Prüfungen bleiben immer sichtbar; alles andere kannst du später im Profil ändern.</p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-sm font-black text-slate-950">Welche Bereiche brauchst du wirklich?</p>
+                    <p className="mt-1 text-sm leading-6 text-slate-500">Wähle bewusst aus. Überblick, Module und Prüfungen bleiben immer sichtbar; alles andere kannst du später im Profil ändern.</p>
+                  </div>
+                  <span className={`w-fit rounded-full px-3 py-1 text-[0.7rem] font-black ring-1 ${featureSetupChoice ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-amber-50 text-amber-700 ring-amber-100"}`}>
+                    {featureSetupChoice ? "Auswahl gesetzt" : "Noch keine Auswahl"}
+                  </span>
+                </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200" onClick={() => setEnabledFeatureIds(["insights", "schedule", "rewards"])}>
+                  <button type="button" className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200" onClick={() => applyFeaturePreset("recommended", ONBOARDING_DEFAULT_FEATURE_IDS)}>
                     Empfohlen
                   </button>
-                  <button type="button" className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200" onClick={() => setEnabledFeatureIds([...DEFAULT_ENABLED_FEATURE_IDS])}>
+                  <button type="button" className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200" onClick={() => applyFeaturePreset("all", DEFAULT_ENABLED_FEATURE_IDS)}>
                     Alles aktivieren
                   </button>
-                  <button type="button" className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200" onClick={() => setEnabledFeatureIds([])}>
+                  <button type="button" className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200" onClick={() => applyFeaturePreset("minimal", [])}>
                     Minimal starten
                   </button>
                 </div>
@@ -411,12 +455,12 @@ export default function OnboardingWizard({
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               {step === 2 && (
-                <button type="button" className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-black text-slate-700" onClick={() => setStep(1)}>
+                <button type="button" className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-black text-slate-700" onClick={() => { setMessage(""); setStep(1); }}>
                   Zurück
                 </button>
               )}
               {step === 1 ? (
-                <button type="button" className="rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200" onClick={() => setStep(2)}>
+                <button type="button" className="rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200" onClick={continueToFeatureSelection}>
                   Weiter
                 </button>
               ) : (

@@ -23,6 +23,7 @@ import { useFriendActivityToast } from "../hooks/useFriendActivityToast";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { formatLimit, planLabels } from "../lib/gradeglowAccess";
+import { publishStudyActivity } from "../lib/studyActivity";
 import { getAvatarFrameWrapperClassName, getProfileBannerClassName } from "../lib/glowRewards";
 import { getEffectivePageThemeId, getPageThemeStyle, getThemeClassName } from "../lib/gradeglowThemes";
 import {
@@ -38,6 +39,7 @@ import type {
   ModuleStatus,
   StatusFilter,
   UniModule,
+  StudySessionItem,
 } from "../types";
 
 type AssessmentInput = {
@@ -244,6 +246,10 @@ const readStoredActiveStudyTimer = (): StoredActiveStudyTimer | null => {
   }
 };
 
+const getTodayDateKey = () => new Date().toISOString().slice(0, 10);
+
+const formatTimeInputFromDate = (date: Date) => `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+
 const formatCompactDuration = (seconds: number) => {
   const safeSeconds = Math.max(0, Math.floor(seconds));
   const hours = Math.floor(safeSeconds / 3600);
@@ -309,6 +315,9 @@ export default function GradeGlowDashboard({
 
   const [globalTimer, setGlobalTimer] = useState<StoredActiveStudyTimer | null>(null);
   const [globalTimerNow, setGlobalTimerNow] = useState(() => Date.now());
+  const [standaloneTimerExamId, setStandaloneTimerExamId] = useState("");
+  const [standaloneTimerMode, setStandaloneTimerMode] = useState<StoredActiveStudyTimer["mode"]>("focus");
+  const [standaloneTimerMinutes, setStandaloneTimerMinutes] = useState("30");
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const quickRailRef = useRef<HTMLElement | null>(null);
@@ -1113,6 +1122,78 @@ export default function GradeGlowDashboard({
   const globalTimerExam = globalTimer ? exams.find((exam) => exam.id === globalTimer.examId) ?? null : null;
   const globalTimerElapsedSeconds = globalTimer ? Math.max(0, Math.floor((globalTimerNow - globalTimer.startedAt) / 1000)) : 0;
   const globalTimerModeLabel = globalTimer?.mode === "pomodoro" ? "Pomodoro" : globalTimer?.mode === "stopwatch" ? "Stoppuhr" : "Fokus-Timer";
+  const standaloneTimerExam = exams.find((exam) => exam.id === standaloneTimerExamId) ?? exams.find((exam) => exam.status !== "done" && !exam.isHidden) ?? exams[0] ?? null;
+  const standaloneTimerGoalMinutes = standaloneTimerMode === "pomodoro" ? 25 : standaloneTimerMode === "stopwatch" ? 300 : Math.max(1, Math.min(300, Math.round(Number(standaloneTimerMinutes) || 30)));
+  const standaloneTimerLimitSeconds = globalTimer ? Math.max(1, globalTimer.goalMinutes) * 60 : standaloneTimerGoalMinutes * 60;
+  const standaloneTimerDisplaySeconds = globalTimer?.mode === "stopwatch"
+    ? globalTimerElapsedSeconds
+    : Math.max(0, standaloneTimerLimitSeconds - globalTimerElapsedSeconds);
+
+  const startStandaloneTimer = () => {
+    if (!standaloneTimerExam) return;
+    const title = standaloneTimerExam.moduleName || standaloneTimerExam.title || "Freie Lernzeit";
+    const nextTimer: StoredActiveStudyTimer = {
+      examId: standaloneTimerExam.id,
+      sessionId: null,
+      title,
+      startedAt: Date.now(),
+      mode: standaloneTimerMode,
+      goalMinutes: standaloneTimerGoalMinutes,
+    };
+    setGlobalTimer(nextTimer);
+    setGlobalTimerNow(Date.now());
+    if (typeof window !== "undefined") window.localStorage.setItem(ACTIVE_TIMER_STORAGE_KEY, JSON.stringify(nextTimer));
+    void publishStudyActivity({
+      user,
+      profile,
+      status: "started",
+      title,
+      examId: standaloneTimerExam.id,
+      sessionId: null,
+      startedAtIso: new Date(nextTimer.startedAt).toISOString(),
+    });
+  };
+
+  const discardStandaloneTimer = () => {
+    setGlobalTimer(null);
+    if (typeof window !== "undefined") window.localStorage.removeItem(ACTIVE_TIMER_STORAGE_KEY);
+  };
+
+  const saveStandaloneTimer = () => {
+    if (!globalTimer) return;
+    const startedAt = new Date(globalTimer.startedAt);
+    const completedAt = new Date();
+    const minutes = Math.max(1, Math.min(globalTimer.goalMinutes || 300, Math.round((completedAt.getTime() - startedAt.getTime()) / 60_000)));
+    const sessionId = crypto.randomUUID();
+    const session: StudySessionItem = {
+      id: sessionId,
+      examId: globalTimer.examId,
+      title: `Timer-Lernzeit · ${globalTimer.title}`,
+      dateKey: getTodayDateKey(),
+      time: formatTimeInputFromDate(startedAt),
+      durationMinutes: minutes,
+      focus: "Per Timer erfasste Lernzeit",
+      notes: `${globalTimerModeLabel}: ${minutes} min am ${startedAt.toLocaleDateString("de-DE")}`,
+      isDone: true,
+      isHidden: false,
+      isManual: true,
+      startedAtIso: startedAt.toISOString(),
+      completedAtIso: completedAt.toISOString(),
+    };
+    setExams((current) => current.map((exam) => exam.id === globalTimer.examId ? { ...exam, studySessions: [...exam.studySessions, session].sort((a, b) => `${a.dateKey} ${a.time}`.localeCompare(`${b.dateKey} ${b.time}`)) } : exam));
+    void publishStudyActivity({
+      user,
+      profile,
+      status: "completed",
+      title: globalTimer.title,
+      examId: globalTimer.examId,
+      sessionId,
+      durationMinutes: minutes,
+      startedAtIso: startedAt.toISOString(),
+      completedAtIso: completedAt.toISOString(),
+    });
+    discardStandaloneTimer();
+  };
 
   const selectedModule =
     selectedModuleId !== null
@@ -1903,7 +1984,7 @@ export default function GradeGlowDashboard({
           </section>
         )}
 
-        {(page === "exams" || page === "timer") && (
+        {page === "exams" && (
           <section id="exams" className="scroll-mt-6">
             <GradeGlowPlanner
               modules={modules}
@@ -1918,6 +1999,73 @@ export default function GradeGlowDashboard({
               saveProfile={saveProfile}
               isProfileLoaded={isProfileLoaded}
             />
+          </section>
+        )}
+
+        {page === "timer" && (
+          <section id="timer" className="gg-timer-only-page scroll-mt-6">
+            <div className="gg-timer-card">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="gg-mobile-kicker">Fokus</p>
+                  <h2>Timer</h2>
+                  <p className="gg-timer-subtitle">Nur Dauer, Fach und Start. Planung bleibt im Plan-Tab.</p>
+                </div>
+                {globalTimer && <span className="gg-timer-live-pill">läuft</span>}
+              </div>
+
+              <div className="gg-timer-display">
+                <span>{globalTimer ? formatCompactDuration(standaloneTimerDisplaySeconds) : `${standaloneTimerGoalMinutes}:00`}</span>
+                <small>{globalTimer ? `${globalTimerModeLabel} · ${globalTimer.title}` : "bereit"}</small>
+              </div>
+
+              {!globalTimer && (
+                <div className="gg-timer-form">
+                  <label>
+                    <span>Fach / Prüfung</span>
+                    <select value={standaloneTimerExam?.id ?? ""} onChange={(event) => setStandaloneTimerExamId(event.target.value)} disabled={!exams.length}>
+                      {exams.length === 0 && <option>Erst Prüfung im Plan anlegen</option>}
+                      {exams.map((exam) => (
+                        <option key={exam.id} value={exam.id}>{exam.moduleName || exam.title}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Modus</span>
+                    <select value={standaloneTimerMode} onChange={(event) => setStandaloneTimerMode(event.target.value as StoredActiveStudyTimer["mode"])}>
+                      <option value="focus">Fokus-Timer</option>
+                      <option value="pomodoro">Pomodoro · 25 min</option>
+                      <option value="stopwatch">Stoppuhr</option>
+                    </select>
+                  </label>
+                  {standaloneTimerMode === "focus" && (
+                    <div>
+                      <span className="gg-timer-label">Dauer</span>
+                      <div className="gg-timer-presets">
+                        {[15, 25, 30, 45, 60, 90].map((minutes) => (
+                          <button key={minutes} type="button" className={standaloneTimerGoalMinutes === minutes ? "is-active" : ""} onClick={() => setStandaloneTimerMinutes(String(minutes))}>{minutes}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="gg-timer-actions">
+                {globalTimer ? (
+                  <>
+                    <button type="button" className="gg-timer-primary" onClick={saveStandaloneTimer}>Speichern</button>
+                    <button type="button" className="gg-timer-secondary" onClick={discardStandaloneTimer}>Verwerfen</button>
+                  </>
+                ) : (
+                  <button type="button" className="gg-timer-primary" onClick={startStandaloneTimer} disabled={!standaloneTimerExam}>Timer starten</button>
+                )}
+              </div>
+            </div>
+
+            <div className="gg-timer-hint">
+              Gespeicherte Timer landen automatisch als erledigte Lernzeit im passenden Fach. Lernblöcke verschieben und abhaken machst du weiter unter Plan.
+            </div>
           </section>
         )}
 

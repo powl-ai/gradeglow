@@ -2197,3 +2197,235 @@ button,
     margin-top: 0.62rem !important;
   }
 }
+
+/* Mobile app shell v2: header in document flow, real timer tab, lower PWA tabbar. */
+@media (max-width: 1023px) {
+  .gg-app-shell {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.7rem) !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.15rem) !important;
+  }
+
+  .gg-mobile-appbar {
+    position: sticky !important;
+    top: calc(env(safe-area-inset-top, 0px) + 0.35rem) !important;
+    left: auto !important;
+    right: auto !important;
+    margin-bottom: 0.12rem !important;
+    min-height: 2.35rem !important;
+    padding: 0.28rem 0.38rem !important;
+    border-radius: 0.95rem !important;
+    z-index: 38 !important;
+  }
+
+  .gg-mobile-appbar h1 {
+    font-size: 0.78rem !important;
+  }
+
+  .gg-mobile-icon-button {
+    height: 1.7rem !important;
+    width: 1.7rem !important;
+    border-radius: 0.68rem !important;
+  }
+
+  .gg-mobile-appbar a[href="/settings"] {
+    max-width: 4.35rem !important;
+    gap: 0.25rem !important;
+    padding: 0.12rem 0.38rem 0.12rem 0.12rem !important;
+  }
+
+  .gg-mobile-appbar a[href="/settings"] span:last-child {
+    max-width: 2.2rem !important;
+  }
+
+  .gg-mobile-tabbar {
+    bottom: 0 !important;
+    min-height: calc(env(safe-area-inset-bottom, 0px) + 3.35rem) !important;
+    padding: 0.2rem 0.34rem calc(env(safe-area-inset-bottom, 0px) + 0.18rem) !important;
+    border-radius: 1rem 1rem 0 0 !important;
+  }
+
+  .gg-mobile-tabbar a {
+    min-height: 2.08rem !important;
+    border-radius: 0.78rem !important;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 1023px) {
+  body,
+  .gg-themed {
+    background-color: rgb(250, 245, 255) !important;
+  }
+
+  .gg-app-shell {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4.45rem) !important;
+  }
+
+  .gg-mobile-tabbar {
+    min-height: calc(env(safe-area-inset-bottom, 0px) + 3.2rem) !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.08rem) !important;
+  }
+}
+
+.gg-timer-only-page {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.gg-timer-card {
+  border: 1px solid rgba(139, 92, 246, 0.16);
+  border-radius: 1.35rem;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1rem;
+  box-shadow: 0 16px 36px rgba(88, 28, 135, 0.10);
+  backdrop-filter: blur(18px);
+}
+
+.gg-timer-card h2 {
+  margin-top: 0.1rem;
+  font-size: clamp(1.35rem, 7vw, 2.8rem);
+  font-weight: 950;
+  letter-spacing: -0.06em;
+  color: rgb(15, 23, 42);
+}
+
+.gg-timer-subtitle {
+  margin-top: 0.2rem;
+  max-width: 28rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: rgb(100, 116, 139);
+}
+
+.gg-timer-live-pill {
+  border-radius: 999px;
+  background: rgb(16, 185, 129);
+  padding: 0.32rem 0.55rem;
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.gg-timer-display {
+  margin-top: 0.9rem;
+  display: grid;
+  place-items: center;
+  border-radius: 1.2rem;
+  background: linear-gradient(135deg, rgb(15, 23, 42), rgb(88, 28, 135));
+  padding: 1.3rem 1rem;
+  color: white;
+}
+
+.gg-timer-display span {
+  font-size: clamp(2.7rem, 18vw, 6rem);
+  font-weight: 950;
+  letter-spacing: -0.08em;
+  line-height: 0.95;
+}
+
+.gg-timer-display small {
+  margin-top: 0.55rem;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.gg-timer-form {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.gg-timer-form label {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.gg-timer-form label span,
+.gg-timer-label {
+  font-size: 0.66rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(100, 116, 139);
+}
+
+.gg-timer-form select {
+  min-height: 2.55rem;
+  width: 100%;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: rgba(248,250,252,0.92);
+  padding: 0 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 850;
+  color: rgb(15, 23, 42);
+}
+
+.gg-timer-presets {
+  margin-top: 0.35rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.gg-timer-presets button {
+  border-radius: 999px;
+  background: rgb(248, 250, 252);
+  padding: 0.58rem 0.35rem;
+  color: rgb(71, 85, 105);
+  font-size: 0.78rem;
+  font-weight: 950;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.24);
+}
+
+.gg-timer-presets button.is-active {
+  background: rgb(124, 58, 237);
+  color: white;
+}
+
+.gg-timer-actions {
+  margin-top: 0.9rem;
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.gg-timer-actions button:only-child {
+  grid-column: 1 / -1;
+}
+
+.gg-timer-primary,
+.gg-timer-secondary {
+  min-height: 2.75rem;
+  border-radius: 0.95rem;
+  font-size: 0.86rem;
+  font-weight: 950;
+}
+
+.gg-timer-primary {
+  background: rgb(15, 23, 42);
+  color: white;
+}
+
+.gg-timer-primary:disabled {
+  opacity: 0.42;
+}
+
+.gg-timer-secondary {
+  background: rgb(248, 250, 252);
+  color: rgb(71, 85, 105);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.24);
+}
+
+.gg-timer-hint {
+  border-radius: 1rem;
+  background: rgba(237, 233, 254, 0.64);
+  padding: 0.78rem;
+  color: rgb(91, 33, 182);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.45;
+}

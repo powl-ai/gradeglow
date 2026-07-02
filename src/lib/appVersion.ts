@@ -1,3 +1,3 @@
-export const GRADEGLOW_APP_VERSION = "beta-2026-07-02-mobile-app-simplify";
+export const GRADEGLOW_APP_VERSION = "beta-2026-07-02-mobile-shell-timer-fix";
 
 export const GRADEGLOW_SUPPORT_EMAIL = "gradeglow.support@icloud.com";

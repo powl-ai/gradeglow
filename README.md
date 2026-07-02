@@ -151,3 +151,12 @@ Der Bereich `/exams` enthält jetzt zusätzlich einen Monats-/Wochenkalender. Pr
 ## Beta Launch Ready
 
 Aktueller Stand: `beta-2026-06-26-launch`. Details stehen in `BETA_LAUNCH_READY_UPDATE.md`.
+
+## Update: Social Polish + Branding Readiness
+
+Aktueller Stand: `beta-2026-07-02-social-branding-readiness`. Details stehen in `BETA_SOCIAL_BRANDING_READINESS_UPDATE.md`.
+
+- Study Circle v2 wurde im Bereich „Codes & Einladungen“ klarer gegliedert.
+- Circle erstellen, Circle-Code beitreten und Freundescode hinzufügen sind kompakter zusammengeführt.
+- `/info` enthält jetzt eine Firebase-Auth-Mail-Branding-Checkliste für das `project-...-Team`-Problem.
+- Capacitor/App-Store-Vorbereitung ist in `CAPACITOR_APP_STORE_READINESS.md` dokumentiert, aber noch nicht aktiv ausgerollt.

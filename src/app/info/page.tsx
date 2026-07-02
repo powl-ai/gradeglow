@@ -30,6 +30,14 @@ const storageItems = [
   },
 ];
 
+const firebaseBrandingSteps = [
+  "Firebase Console öffnen und das GradeGlow-Projekt auswählen.",
+  "Project Settings / Allgemein prüfen: public-facing name bzw. App-Name auf GradeGlow setzen.",
+  "Authentication → Templates öffnen und Verifizierungs-/Reset-Mail prüfen.",
+  "Sender name, Reply-to und optional Action URL bzw. Custom Domain auf GradeGlow/gradeglow.support@icloud.com abstimmen.",
+  "Danach mit einem neuen Testaccount eine Verifizierungs-Mail auslösen.",
+];
+
 export default function InfoPage() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950">
@@ -165,6 +173,18 @@ export default function InfoPage() {
               <li>☑ Admin-Account in entitlements einmalig auf plan = admin setzen</li>
               <li>□ Seite nach finalem Hosting-Domainwechsel nochmal prüfen</li>
             </ul>
+
+            <div className="mt-5 rounded-3xl bg-violet-50 p-4 ring-1 ring-violet-100">
+              <p className="text-sm font-black text-violet-800">Firebase Auth-Mail-Branding</p>
+              <p className="mt-1 text-xs font-semibold leading-5 text-violet-700">
+                Falls in Verifizierungs-Mails noch project-…-Team steht, kommt das aus Firebase Authentication und nicht aus dem GradeGlow-Code.
+              </p>
+              <ol className="mt-3 list-decimal space-y-2 pl-5 text-xs font-semibold leading-5 text-slate-700">
+                {firebaseBrandingSteps.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+            </div>
           </article>
         </section>
       </div>

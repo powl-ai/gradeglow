@@ -642,9 +642,16 @@ export default function StudyFriendsPanel({
                   <div className="mt-3 rounded-2xl bg-white p-3 text-slate-950 ring-1 ring-white/20">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <p className="text-sm font-black">
-                          {activeCircle?.name || "Study Circle"}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-black">
+                            {activeCircle?.name || "Study Circle"}
+                          </p>
+                          {activeCircle?.role && (
+                            <span className="rounded-full bg-violet-50 px-2 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] text-violet-700 ring-1 ring-violet-100">
+                              {activeCircle.role === "owner" ? "Owner" : "Member"}
+                            </span>
+                          )}
+                        </div>
                         <p className="mt-1 text-xs font-bold text-slate-500">
                           {circleMembers.length} Mitglied(er) · Wochenziel {formatStudyMinutes(circleGoalMinutes)}
                         </p>
@@ -657,7 +664,7 @@ export default function StudyFriendsPanel({
                         Code kopieren
                       </button>
                     </div>
-                    <p className="mt-2 break-all text-sm font-black tracking-wide text-violet-700">
+                    <p className="mt-2 break-all rounded-2xl bg-violet-50 p-3 text-sm font-black tracking-wide text-violet-700 ring-1 ring-violet-100">
                       {activeCircle?.circleCode}
                     </p>
                   </div>
@@ -669,52 +676,52 @@ export default function StudyFriendsPanel({
               )}
             </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="block rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
-                <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-300">
-                  Circle erstellen
-                </span>
-                <input
-                  className="field-input mt-3 border-white/10 bg-white text-slate-950"
-                  placeholder="z. B. BWL Lerncrew"
-                  value={circleNameInput}
-                  onChange={(event) => setCircleNameInput(event.target.value)}
-                />
-                <button
-                  type="button"
-                  className="mt-3 w-full rounded-2xl bg-white px-4 py-2.5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-violet-50 disabled:opacity-50"
-                  onClick={handleCreateCircle}
-                  disabled={!isProfileLoaded || !canUseCloudSocial || isBusy}
-                >
-                  Circle erstellen
-                </button>
-              </label>
-
-              <label className="block rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
-                <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-300">
-                  Circle-Code beitreten
-                </span>
-                <input
-                  className="field-input mt-3 border-white/10 bg-white text-slate-950"
-                  placeholder="GC-ABCD-1234"
-                  value={circleJoinCodeInput}
-                  onChange={(event) => setCircleJoinCodeInput(event.target.value)}
-                />
-                <button
-                  type="button"
-                  className="mt-3 w-full rounded-2xl bg-violet-600 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-500 disabled:opacity-50"
-                  onClick={handleJoinCircle}
-                  disabled={!isProfileLoaded || !canUseCloudSocial || isBusy || !circleJoinCodeInput.trim()}
-                >
-                  Beitreten
-                </button>
-              </label>
+            <div className="mt-4 rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                Schnellcheck
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
+                  <p className="text-[0.68rem] font-black uppercase tracking-[0.12em] text-slate-400">
+                    Schritt 1
+                  </p>
+                  <p className="mt-1 text-xs font-bold leading-5 text-slate-200">
+                    Sharing aktivieren und eigenen Code kopieren.
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
+                  <p className="text-[0.68rem] font-black uppercase tracking-[0.12em] text-slate-400">
+                    Schritt 2
+                  </p>
+                  <p className="mt-1 text-xs font-bold leading-5 text-slate-200">
+                    Freundescode oder Circle-Code rechts einfügen.
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
+                  <p className="text-[0.68rem] font-black uppercase tracking-[0.12em] text-slate-400">
+                    Schritt 3
+                  </p>
+                  <p className="mt-1 text-xs font-bold leading-5 text-slate-200">
+                    Leaderboard, Wochenziel und Privacy getrennt testen.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <div className="rounded-[2rem] bg-slate-50 p-4 ring-1 ring-slate-200 sm:p-5">
-          <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
+          <div className="mb-4">
+            <p className="text-sm font-bold text-violet-700">Codes & Einladungen</p>
+            <h3 className="text-xl font-black tracking-tight text-slate-950">
+              Freunde oder Circle hinzufügen
+            </h3>
+            <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">
+              Ein Code reicht: Freundschaften werden gegenseitig angelegt, Circles bündeln die Wochenmissionen.
+            </p>
+          </div>
+
+          <form className="grid gap-3 lg:grid-cols-[1fr_auto]" onSubmit={(event) => { event.preventDefault(); void handleAddFriend(); }}>
             <label className="block">
               <span className="mb-1.5 block text-sm font-bold text-slate-700">
                 Freundescode einfügen
@@ -727,9 +734,8 @@ export default function StudyFriendsPanel({
               />
             </label>
             <button
-              type="button"
+              type="submit"
               className="self-end rounded-2xl bg-violet-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-100 transition hover:-translate-y-0.5 hover:bg-violet-800 disabled:opacity-50"
-              onClick={handleAddFriend}
               disabled={
                 !isProfileLoaded ||
                 !canUseCloudSocial ||
@@ -739,6 +745,64 @@ export default function StudyFriendsPanel({
             >
               Hinzufügen
             </button>
+          </form>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            <form
+              className="rounded-3xl bg-white p-4 ring-1 ring-slate-200"
+              onSubmit={(event) => { event.preventDefault(); void handleCreateCircle(); }}
+            >
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-violet-500">
+                Neuen Circle erstellen
+              </p>
+              <label className="mt-3 block">
+                <span className="sr-only">Circle-Name</span>
+                <input
+                  className="field-input bg-slate-50"
+                  placeholder="z. B. BWL Lerncrew"
+                  value={circleNameInput}
+                  onChange={(event) => setCircleNameInput(event.target.value)}
+                />
+              </label>
+              <p className="mt-2 text-xs font-semibold leading-5 text-slate-500">
+                Leeres Feld nutzt automatisch deinen Namen.
+              </p>
+              <button
+                type="submit"
+                className="mt-3 w-full rounded-2xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-800 disabled:opacity-50"
+                disabled={!isProfileLoaded || !canUseCloudSocial || isBusy}
+              >
+                Circle erstellen
+              </button>
+            </form>
+
+            <form
+              className="rounded-3xl bg-white p-4 ring-1 ring-slate-200"
+              onSubmit={(event) => { event.preventDefault(); void handleJoinCircle(); }}
+            >
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-violet-500">
+                Per Circle-Code beitreten
+              </p>
+              <label className="mt-3 block">
+                <span className="sr-only">Circle-Code</span>
+                <input
+                  className="field-input bg-slate-50"
+                  placeholder="GC-ABCD-1234"
+                  value={circleJoinCodeInput}
+                  onChange={(event) => setCircleJoinCodeInput(event.target.value)}
+                />
+              </label>
+              <p className="mt-2 text-xs font-semibold leading-5 text-slate-500">
+                Nach dem Beitritt erscheint der Circle links als aktiver Clan.
+              </p>
+              <button
+                type="submit"
+                className="mt-3 w-full rounded-2xl bg-violet-700 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-800 disabled:opacity-50"
+                disabled={!isProfileLoaded || !canUseCloudSocial || isBusy || !circleJoinCodeInput.trim()}
+              >
+                Beitreten
+              </button>
+            </form>
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-3">

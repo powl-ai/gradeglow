@@ -166,10 +166,23 @@ const resizeAvatarFile = (file: File) =>
   });
 
 const clearLocalGradeGlowData = (uid: string) => {
-  localStorage.removeItem(getUserModulesStorageKey(uid));
-  localStorage.removeItem(getUserExamsStorageKey(uid));
-  localStorage.removeItem(`${PROFILE_STORAGE_KEY}-${uid}`);
-  localStorage.removeItem(LOCAL_SESSION_KEY);
+  const keysToRemove = new Set<string>([
+    getUserModulesStorageKey(uid),
+    getUserExamsStorageKey(uid),
+    `${PROFILE_STORAGE_KEY}-${uid}`,
+    LOCAL_SESSION_KEY,
+  ]);
+
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (!key) continue;
+    if (key.includes(uid) || key.startsWith("gradeglow-active-study-timer") || key.startsWith("gradeglow-quick-rail")) {
+      keysToRemove.add(key);
+    }
+  }
+
+  keysToRemove.forEach((key) => localStorage.removeItem(key));
+  sessionStorage.removeItem("gradeglow-quick-rail-scroll-left-v1");
 };
 
 const getFirebaseErrorCode = (error: unknown) => {
@@ -276,6 +289,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   const [isExportingData, setIsExportingData] = useState(false);
   const [isCreatingDeleteRequest, setIsCreatingDeleteRequest] = useState(false);
   const [isRestartingOnboarding, setIsRestartingOnboarding] = useState(false);
+  const [dangerStep, setDangerStep] = useState("");
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -443,14 +457,18 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     }
 
     setDangerMessage("");
+    setDangerStep("Bereite Datenlöschung vor…");
     setIsDeletingData(true);
 
     try {
       if (user.provider === "firebase" && isFirebaseConfigured && db) {
+        setDangerStep("Entferne Study-Circle-Daten…");
         await deleteStudyCircleAccountData(user.uid);
+        setDangerStep("Lösche Module, Prüfungen und Stundenplan…");
         await deleteCollectionDocs(["users", user.uid, "modules"]);
         await deleteCollectionDocs(["users", user.uid, "exams"]);
         await deleteCollectionDocs(["users", user.uid, "schedule"]);
+        setDangerStep("Lösche Freunde, Benachrichtigungen und öffentliche Profile…");
         await deleteCollectionDocs(["users", user.uid, "friends"]);
         await deleteCollectionDocs(["users", user.uid, "notificationTokens"]);
         await deleteCollectionDocs(["users", user.uid, "notificationSettings"]);
@@ -465,12 +483,17 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
         await deleteDoc(doc(db, "studyActivityEvents", user.uid)).catch(() => undefined);
       }
 
+      setDangerStep("Leere lokale App-Daten und melde ab…");
       clearLocalGradeGlowData(user.uid);
+      setDeleteConfirmation("");
+      setDeleteAccountPassword("");
       setDangerMessage("App-Daten gelöscht. Du wirst abgemeldet.");
       await onLogout();
+      window.location.assign("/");
     } catch {
       setDangerMessage("Daten konnten nicht vollständig gelöscht werden. Prüfe Firebase-Regeln oder melde dich neu an.");
     } finally {
+      setDangerStep("");
       setIsDeletingData(false);
     }
   };
@@ -482,13 +505,16 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     }
 
     setDangerMessage("");
+    setDangerStep("Bereite Account-Löschung vor…");
     setIsDeletingAccount(true);
 
     try {
       if (user.provider === "firebase" && auth?.currentUser) {
         const currentUser = auth.currentUser;
 
+        setDangerStep("Bestätige Firebase-Sicherheit…");
         await reauthenticateBeforeAccountDeletion(currentUser, deleteAccountPassword);
+        setDangerStep("Lösche GradeGlow App-Daten…");
         await deleteStudyCircleAccountData(user.uid);
         await deleteCollectionDocs(["users", user.uid, "modules"]);
         await deleteCollectionDocs(["users", user.uid, "exams"]);
@@ -505,14 +531,18 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
         await deleteDoc(doc(db!, "users", user.uid)).catch(() => undefined);
         await deleteDoc(doc(db!, "publicStudyProfiles", user.uid)).catch(() => undefined);
         await deleteDoc(doc(db!, "studyActivityEvents", user.uid)).catch(() => undefined);
+        setDangerStep("Entferne Firebase Login-Account…");
         clearLocalGradeGlowData(user.uid);
         await deleteUser(currentUser);
+        window.location.assign("/");
         return;
       }
 
+      setDangerStep("Entferne lokalen Account…");
       clearLocalGradeGlowData(user.uid);
       removeLocalUser(user.uid);
       await onLogout();
+      window.location.assign("/");
     } catch (error) {
       const code = getFirebaseErrorCode(error);
 
@@ -524,10 +554,13 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
         setDangerMessage("Google-Bestätigung wurde abgebrochen. Öffne sie erneut und bestätige die Account-Löschung.");
       } else if (code === "auth/requires-recent-login") {
         setDangerMessage("Firebase verlangt eine frische Bestätigung. Nutze das Passwortfeld oder bestätige den Google-Login und lösche direkt danach erneut.");
+      } else if (code === "auth/network-request-failed") {
+        setDangerMessage("Netzwerkfehler. Bitte Verbindung prüfen und Account-Löschung erneut starten.");
       } else {
         setDangerMessage("Account konnte nicht vollständig gelöscht werden. Exportiere zur Sicherheit deine Daten und versuche es direkt nach einer erneuten Anmeldung nochmal.");
       }
     } finally {
+      setDangerStep("");
       setIsDeletingAccount(false);
     }
   };
@@ -1056,7 +1089,8 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                 </div>
               )}
 
-              {dangerMessage && <p className="mt-3 rounded-2xl bg-rose-50 p-3 text-sm font-bold text-rose-700 ring-1 ring-rose-100">{dangerMessage}</p>}
+              {dangerStep && <p className="mt-3 rounded-2xl bg-slate-950 p-3 text-sm font-bold text-white ring-1 ring-slate-900">{dangerStep}</p>}
+              {dangerMessage && <p className={`mt-3 rounded-2xl p-3 text-sm font-bold ring-1 ${dangerMessage.includes("gelöscht") ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-rose-50 text-rose-700 ring-rose-100"}`}>{dangerMessage}</p>}
               <div className="mt-4 grid gap-2 sm:grid-cols-2">
                 <button type="button" className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-700 ring-1 ring-rose-100 disabled:opacity-50" onClick={handleDeleteAppData} disabled={isDeletingData || isDeletingAccount}>
                   {isDeletingData ? "Lösche…" : "App-Daten löschen"}

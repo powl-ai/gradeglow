@@ -17,7 +17,10 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "GradeGlow",
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: {
+    telephone: false,
   },
   icons: {
     icon: [

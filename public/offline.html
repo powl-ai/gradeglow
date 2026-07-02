@@ -56,6 +56,11 @@
         color: #64748b;
         line-height: 1.7;
       }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
       a {
         display: inline-flex;
         margin-top: 24px;
@@ -66,6 +71,10 @@
         text-decoration: none;
         font-weight: 800;
       }
+      a + a {
+        background: rgba(15, 23, 42, 0.08);
+        color: #0f172a;
+      }
     </style>
   </head>
   <body>
@@ -74,9 +83,9 @@
       <h1>GradeGlow ist gerade offline.</h1>
       <p>
         Die App-Dateien sind gespeichert. Verbinde dich wieder mit dem Internet,
-        damit Login und Cloud-Sync weiterlaufen können.
+        damit Login, Cloud-Sync und Account-Aktionen weiterlaufen können.
       </p>
-      <a href="/">Erneut versuchen</a>
+      <div class="actions"><a href="/">Erneut versuchen</a><a href="/diagnostics">Diagnose öffnen</a></div>
     </main>
   </body>
 </html>

@@ -35,7 +35,7 @@ export type NewFeedbackInput = {
 
 const validFeedbackTypes: FeedbackType[] = ["bug", "feedback", "feature_request", "delete_request", "beta_note"];
 const validFeedbackStatuses: FeedbackStatus[] = ["open", "reviewing", "planned", "done", "closed"];
-const validFeedbackPriorities: FeedbackPriority[] = ["low", "normal", "high"];
+const validFeedbackPriorities: FeedbackPriority[] = ["low", "normal", "high", "critical"];
 
 const getStringValue = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
@@ -139,6 +139,25 @@ export async function updateFeedbackStatusForAdmin(
   await updateDoc(doc(db, "feedback", feedbackId), {
     status,
     adminNote: adminNote.trim().slice(0, 2000),
+    updatedAtIso: new Date().toISOString(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function updateFeedbackForAdmin(
+  feedbackId: string,
+  input: {
+    status: FeedbackStatus;
+    priority: FeedbackPriority;
+    adminNote: string;
+  },
+) {
+  if (!db || !isFirebaseConfigured) throw new Error("firebase-not-configured");
+
+  await updateDoc(doc(db, "feedback", feedbackId), {
+    status: input.status,
+    priority: input.priority,
+    adminNote: input.adminNote.trim().slice(0, 2000),
     updatedAtIso: new Date().toISOString(),
     updatedAt: serverTimestamp(),
   });

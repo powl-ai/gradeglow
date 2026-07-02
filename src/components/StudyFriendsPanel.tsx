@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatStudyMinutes } from "../lib/studyStats";
 import { formatLimit, planLabels } from "../lib/gradeglowAccess";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
@@ -24,6 +24,8 @@ type StudyFriendsPanelProps = {
 type CircleRow = PublicStudyProfile & {
   isSelf?: boolean;
   isMissing?: boolean;
+  role?: "owner" | "member";
+  joinedAtIso?: string;
 };
 
 type ShareSettingKey =
@@ -295,6 +297,7 @@ export default function StudyFriendsPanel({
   const [circleNameInput, setCircleNameInput] = useState("");
   const [circleJoinCodeInput, setCircleJoinCodeInput] = useState("");
   const [friendSearch, setFriendSearch] = useState("");
+  const [goalInput, setGoalInput] = useState("600");
   const [isSavingSharing, setIsSavingSharing] = useState(false);
   const [isSavingPrivacy, setIsSavingPrivacy] = useState(false);
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
@@ -321,6 +324,7 @@ export default function StudyFriendsPanel({
     setActiveCircleId,
     createCircle,
     joinCircle,
+    updateCircleWeeklyGoal,
     leaveCircle,
   } = useStudyFriends({
     user,
@@ -350,6 +354,13 @@ export default function StudyFriendsPanel({
   }, [circleMembers, ownPublicProfile, user.uid]);
 
   const gameRows = activeCircle ? circleLeaderboardRows : leaderboardRows;
+
+  const isActiveCircleOwner = activeCircle?.ownerUid === user.uid;
+
+  useEffect(() => {
+    if (!activeCircle) return;
+    setGoalInput(String(activeCircle.weeklyGoalMinutes || 600));
+  }, [activeCircle]);
 
   const filteredFriends = useMemo(() => {
     const normalizedSearch = friendSearch.trim().toLowerCase();
@@ -457,6 +468,13 @@ export default function StudyFriendsPanel({
     setCircleJoinCodeInput("");
   };
 
+  const handleUpdateCircleGoal = async () => {
+    if (!activeCircle) return;
+    const parsedGoal = Number(goalInput.replace(/[^0-9]/g, ""));
+    if (!Number.isFinite(parsedGoal) || parsedGoal <= 0) return;
+    await updateCircleWeeklyGoal(activeCircle.id, parsedGoal);
+  };
+
   const copyCircleCode = async () => {
     if (!activeCircle?.circleCode) return;
     setCopyMessage("");
@@ -465,6 +483,18 @@ export default function StudyFriendsPanel({
       setCopyMessage("Circle-Code kopiert.");
     } catch {
       setCopyMessage("Kopieren nicht möglich — Circle-Code manuell markieren.");
+    }
+  };
+
+  const copyCircleInvite = async () => {
+    if (!activeCircle?.circleCode) return;
+    setCopyMessage("");
+    const inviteText = `Hey, tritt meinem GradeGlow Study Circle „${activeCircle.name}“ bei. Circle-Code: ${activeCircle.circleCode}`;
+    try {
+      await navigator.clipboard.writeText(inviteText);
+      setCopyMessage("Einladung kopiert.");
+    } catch {
+      setCopyMessage("Einladung konnte nicht kopiert werden — Code manuell markieren.");
     }
   };
 
@@ -656,17 +686,55 @@ export default function StudyFriendsPanel({
                           {circleMembers.length} Mitglied(er) · Wochenziel {formatStudyMinutes(circleGoalMinutes)}
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        className="rounded-2xl bg-slate-950 px-3 py-2 text-xs font-black text-white transition hover:bg-violet-800"
-                        onClick={copyCircleCode}
-                      >
-                        Code kopieren
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="rounded-2xl bg-slate-950 px-3 py-2 text-xs font-black text-white transition hover:bg-violet-800"
+                          onClick={copyCircleCode}
+                        >
+                          Code kopieren
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-2xl bg-violet-50 px-3 py-2 text-xs font-black text-violet-700 ring-1 ring-violet-100 transition hover:bg-violet-100"
+                          onClick={copyCircleInvite}
+                        >
+                          Einladung kopieren
+                        </button>
+                      </div>
                     </div>
                     <p className="mt-2 break-all rounded-2xl bg-violet-50 p-3 text-sm font-black tracking-wide text-violet-700 ring-1 ring-violet-100">
                       {activeCircle?.circleCode}
                     </p>
+
+                    {isActiveCircleOwner && (
+                      <form
+                        className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void handleUpdateCircleGoal();
+                        }}
+                      >
+                        <label className="block">
+                          <span className="mb-1 block text-xs font-black uppercase tracking-[0.12em] text-slate-400">
+                            Wochenziel in Minuten
+                          </span>
+                          <input
+                            className="field-input bg-slate-50"
+                            inputMode="numeric"
+                            value={goalInput}
+                            onChange={(event) => setGoalInput(event.target.value)}
+                          />
+                        </label>
+                        <button
+                          type="submit"
+                          className="self-end rounded-2xl bg-slate-950 px-4 py-3 text-xs font-black text-white transition hover:bg-violet-800 disabled:opacity-50"
+                          disabled={!isProfileLoaded || isBusy || !goalInput.trim()}
+                        >
+                          Ziel speichern
+                        </button>
+                      </form>
+                    )}
                   </div>
                 </>
               ) : (
@@ -901,13 +969,62 @@ export default function StudyFriendsPanel({
             </div>
           </div>
 
+          {activeCircle && circleLeaderboardRows.length > 0 && (
+            <div className="mt-4 rounded-[1.5rem] bg-white p-4 ring-1 ring-slate-200">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-500">
+                    Mitglieder
+                  </p>
+                  <h3 className="mt-1 text-lg font-black tracking-tight text-slate-950">
+                    Wer gerade im Circle ist
+                  </h3>
+                </div>
+                <span className="self-start rounded-full bg-slate-50 px-3 py-1 text-[0.68rem] font-black text-slate-500 ring-1 ring-slate-200">
+                  {circleLeaderboardRows.length} Mitglied(er)
+                </span>
+              </div>
+
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {circleLeaderboardRows.map((member) => (
+                  <div
+                    key={`member-${member.uid}`}
+                    className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
+                  >
+                    <Avatar image={member.avatarDataUrl} label={member.displayName} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-black text-slate-950">
+                          {member.displayName}
+                        </p>
+                        {member.isSelf && (
+                          <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[0.62rem] font-black text-violet-700 ring-1 ring-violet-100">
+                            Du
+                          </span>
+                        )}
+                      </div>
+                      <p className="truncate text-xs font-bold text-slate-500">
+                        {member.role === "owner" ? "Owner" : "Member"} · {formatSharedMinutes(member, member.thisWeekDoneMinutes)} diese Woche
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {(message || copyMessage || publishMessage) && (
             <p className="mt-3 rounded-2xl bg-white p-3 text-sm font-bold text-slate-600 ring-1 ring-slate-200">
               {message || copyMessage || publishMessage}
             </p>
           )}
 
-          <StudyCircleStatusCard status={debugStatus} />
+          <details className="mt-4 rounded-[1.5rem] bg-white p-4 ring-1 ring-slate-200">
+            <summary className="cursor-pointer text-sm font-black text-slate-700">
+              Technischer Study-Circle-Status
+            </summary>
+            <StudyCircleStatusCard status={debugStatus} />
+          </details>
         </div>
       </div>
 

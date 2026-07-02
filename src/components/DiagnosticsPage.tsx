@@ -36,6 +36,26 @@ const statusLabels: Record<string, string> = {
   closed: "Geschlossen",
 };
 
+const betaChecklistItems = [
+  "Neuen Account erstellen",
+  "Onboarding Step 1 per Enter testen",
+  "Onboarding Feature-Auswahl bewusst setzen",
+  "Profil im Standard/System-Darkmode prüfen",
+  "Modul anlegen und speichern",
+  "Prüfung und Lerneinheit anlegen",
+  "Timer starten und Seite wechseln",
+  "Study Circle Freundescode testen",
+  "Circle erstellen, beitreten und verlassen",
+  "Daten exportieren",
+  "PWA installieren oder iOS-Install-Anleitung prüfen",
+  "Offline-Seite kurz testen",
+  "Update-Hinweis nach neuem Deploy prüfen",
+  "App-Daten mit Testaccount löschen",
+  "Firebase Account mit Testaccount löschen",
+];
+
+const BETA_CHECKLIST_STORAGE_PREFIX = "gradeglow-beta-test-checklist-v1";
+
 const quickBugTemplates = [
   {
     label: "Daten wirken weg",
@@ -79,6 +99,7 @@ export default function DiagnosticsPage({ user, onLogout }: DiagnosticsPageProps
   const [uiIssues, setUiIssues] = useState<UiIssue[]>([]);
   const [reports, setReports] = useState<DiagnosticReport[]>([]);
   const [isLoadingReports, setIsLoadingReports] = useState(false);
+  const [checkedBetaItems, setCheckedBetaItems] = useState<string[]>([]);
   const { profile } = useGradeGlowProfile(user);
   const { limits } = useGradeGlowAccess(user);
   const effectivePageThemeId = getEffectivePageThemeId(profile.activePageThemeId, limits.premiumThemes);
@@ -121,6 +142,17 @@ export default function DiagnosticsPage({ user, onLogout }: DiagnosticsPageProps
     const refresh = () => setSnapshot(getDiagnosticsSnapshot());
     refresh();
     void loadReports();
+
+    try {
+      const savedChecklist = localStorage.getItem(`${BETA_CHECKLIST_STORAGE_PREFIX}-${user.uid}`);
+      if (savedChecklist) {
+        const parsed = JSON.parse(savedChecklist);
+        setCheckedBetaItems(Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : []);
+      }
+    } catch {
+      setCheckedBetaItems([]);
+    }
+
     window.addEventListener("resize", refresh);
     window.addEventListener("online", refresh);
     window.addEventListener("offline", refresh);
@@ -131,6 +163,31 @@ export default function DiagnosticsPage({ user, onLogout }: DiagnosticsPageProps
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.uid]);
+
+  const toggleBetaChecklistItem = (item: string) => {
+    setCheckedBetaItems((current) => {
+      const nextItems = current.includes(item)
+        ? current.filter((currentItem) => currentItem !== item)
+        : [...current, item];
+
+      try {
+        localStorage.setItem(`${BETA_CHECKLIST_STORAGE_PREFIX}-${user.uid}`, JSON.stringify(nextItems));
+      } catch {
+        // ignore localStorage failures
+      }
+
+      return nextItems;
+    });
+  };
+
+  const resetBetaChecklist = () => {
+    setCheckedBetaItems([]);
+    try {
+      localStorage.removeItem(`${BETA_CHECKLIST_STORAGE_PREFIX}-${user.uid}`);
+    } catch {
+      // ignore localStorage failures
+    }
+  };
 
   const applyQuickTemplate = (template: (typeof quickBugTemplates)[number]) => {
     setTitle(template.title);
@@ -224,6 +281,44 @@ export default function DiagnosticsPage({ user, onLogout }: DiagnosticsPageProps
             </div>
           </div>
         </header>
+
+        <section className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-sm font-bold text-violet-700">Beta-Test-Checkliste</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight">Release-Stabilität prüfen</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Hake nach jedem Testlauf ab, was funktioniert. Der Stand wird nur lokal auf diesem Gerät gespeichert.
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+              <span className="rounded-full bg-slate-950 px-3 py-1.5 text-xs font-black text-white">
+                {checkedBetaItems.length}/{betaChecklistItems.length} erledigt
+              </span>
+              <button type="button" onClick={resetBetaChecklist} className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-black text-slate-600 ring-1 ring-slate-200">
+                Zurücksetzen
+              </button>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {betaChecklistItems.map((item) => {
+              const isDone = checkedBetaItems.includes(item);
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  className={`rounded-2xl p-3 text-left text-sm font-black ring-1 transition hover:-translate-y-0.5 ${isDone ? "bg-emerald-50 text-emerald-800 ring-emerald-100" : "bg-slate-50 text-slate-700 ring-slate-200"}`}
+                  onClick={() => toggleBetaChecklistItem(item)}
+                >
+                  <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[0.7rem] ring-1 ring-slate-200">
+                    {isDone ? "✓" : ""}
+                  </span>
+                  {item}
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
         <section className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
           <form className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6" onSubmit={submitBugReport}>

@@ -5,12 +5,12 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import GradeGlowLogo from "./GradeGlowLogo";
 import AdminDiagnosticsPanel from "./AdminDiagnosticsPanel";
 import { getAdminEntitlements, grantEntitlementForAdmin, revokeEntitlementForAdmin } from "../lib/adminBeta";
-import { getRecentFeedbackForAdmin, updateFeedbackStatusForAdmin } from "../lib/feedback";
+import { getRecentFeedbackForAdmin, updateFeedbackForAdmin } from "../lib/feedback";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
 import { planLabels } from "../lib/gradeglowAccess";
 import { getEffectivePageThemeId, getPageThemeStyle, getThemeClassName } from "../lib/gradeglowThemes";
-import type { AppUser, FeedbackStatus, GradeGlowEntitlement, GradeGlowFeedback, UserPlan } from "../types";
+import type { AppUser, FeedbackPriority, FeedbackStatus, FeedbackType, GradeGlowEntitlement, GradeGlowFeedback, UserPlan } from "../types";
 
 type AdminBetaPageProps = {
   user: AppUser;
@@ -22,6 +22,8 @@ type EntitlementRow = GradeGlowEntitlement & { uid: string };
 const planOptions: UserPlan[] = ["free", "premium", "lifetime", "admin"];
 const statusOptions = ["active", "trialing", "beta_test", "cancelled", "expired"];
 const feedbackStatusOptions: FeedbackStatus[] = ["open", "reviewing", "planned", "done", "closed"];
+const feedbackPriorityOptions: FeedbackPriority[] = ["low", "normal", "high", "critical"];
+const feedbackTypeOptions: Array<"all" | FeedbackType> = ["all", "bug", "feature_request", "feedback", "delete_request", "beta_note"];
 
 const getDefaultPremiumUntil = () => {
   const date = new Date();
@@ -73,10 +75,32 @@ const getPlanDefaultConfig = (nextPlan: UserPlan) => {
 
 const statusLabels: Record<FeedbackStatus, string> = {
   open: "Offen",
-  reviewing: "In Prüfung",
+  reviewing: "In Arbeit",
   planned: "Geplant",
   done: "Erledigt",
-  closed: "Geschlossen",
+  closed: "Ignoriert/Archiviert",
+};
+
+const priorityLabels: Record<FeedbackPriority, string> = {
+  low: "Niedrig",
+  normal: "Mittel",
+  high: "Hoch",
+  critical: "Kritisch",
+};
+
+const typeLabels: Record<FeedbackType, string> = {
+  bug: "Bug",
+  feature_request: "Wunsch",
+  feedback: "Feedback",
+  delete_request: "Löschung",
+  beta_note: "Beta-Hinweis",
+};
+
+const priorityBadgeClass: Record<FeedbackPriority, string> = {
+  low: "bg-slate-100 text-slate-600 ring-slate-200",
+  normal: "bg-violet-50 text-violet-700 ring-violet-100",
+  high: "bg-amber-50 text-amber-700 ring-amber-100",
+  critical: "bg-rose-50 text-rose-700 ring-rose-100",
 };
 
 export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
@@ -96,6 +120,9 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
   const [entitlements, setEntitlements] = useState<EntitlementRow[]>([]);
   const [feedback, setFeedback] = useState<GradeGlowFeedback[]>([]);
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
+  const [feedbackFilterType, setFeedbackFilterType] = useState<"all" | FeedbackType>("all");
+  const [feedbackFilterStatus, setFeedbackFilterStatus] = useState<"active" | "all" | FeedbackStatus>("active");
+  const [feedbackSearch, setFeedbackSearch] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const selectedUid = uid.trim();
@@ -118,17 +145,38 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
     applyPreset(nextPlan);
   };
 
-  const sortedFeedback = useMemo(
-    () => [...feedback].sort((a, b) => (b.createdAtIso || "").localeCompare(a.createdAtIso || "")),
-    [feedback],
-  );
+  const sortedFeedback = useMemo(() => {
+    const search = feedbackSearch.trim().toLowerCase();
+    return [...feedback]
+      .filter((item) => feedbackFilterType === "all" || item.type === feedbackFilterType)
+      .filter((item) => {
+        if (feedbackFilterStatus === "all") return true;
+        if (feedbackFilterStatus === "active") return !["done", "closed"].includes(item.status);
+        return item.status === feedbackFilterStatus;
+      })
+      .filter((item) => {
+        if (!search) return true;
+        return [item.subject, item.message, item.ownerEmail, item.ownerName, item.ownerUid, item.page]
+          .join(" ")
+          .toLowerCase()
+          .includes(search);
+      })
+      .sort((a, b) => {
+        const priorityRank: Record<FeedbackPriority, number> = { critical: 4, high: 3, normal: 2, low: 1 };
+        const priorityDiff = priorityRank[b.priority] - priorityRank[a.priority];
+        if (priorityDiff !== 0 && !["done", "closed"].includes(a.status) && !["done", "closed"].includes(b.status)) return priorityDiff;
+        return (b.createdAtIso || "").localeCompare(a.createdAtIso || "");
+      });
+  }, [feedback, feedbackFilterStatus, feedbackFilterType, feedbackSearch]);
 
   const betaTesterCount = entitlements.filter((row) =>
     ["beta_test", "founder", "friend_bonus"].includes(row.premiumSource),
   ).length;
   const premiumLikeCount = entitlements.filter((row) => row.plan !== "free").length;
-  const openFeedbackCount = feedback.filter((item) => item.status === "open" || item.status === "reviewing").length;
-  const highPriorityFeedbackCount = feedback.filter((item) => item.priority === "high" && item.status !== "done" && item.status !== "closed").length;
+  const activeFeedback = feedback.filter((item) => !["done", "closed"].includes(item.status));
+  const bugFeedbackCount = activeFeedback.filter((item) => item.type === "bug").length;
+  const featureRequestCount = activeFeedback.filter((item) => item.type === "feature_request").length;
+  const criticalFeedbackCount = activeFeedback.filter((item) => item.priority === "critical").length;
 
   const loadAdminData = async () => {
     if (!isAdmin) return;
@@ -212,10 +260,17 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const updateFeedback = async (feedbackId: string, status: FeedbackStatus) => {
+  const updateFeedback = async (feedbackId: string, nextStatus?: FeedbackStatus, nextPriority?: FeedbackPriority) => {
+    const current = feedback.find((item) => item.id === feedbackId);
+    if (!current) return;
+
     setMessage("");
     try {
-      await updateFeedbackStatusForAdmin(feedbackId, status, adminNotes[feedbackId] ?? "");
+      await updateFeedbackForAdmin(feedbackId, {
+        status: nextStatus ?? current.status,
+        priority: nextPriority ?? current.priority,
+        adminNote: adminNotes[feedbackId] ?? "",
+      });
       setMessage("Feedback aktualisiert.");
       await loadAdminData();
     } catch {
@@ -267,7 +322,7 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
           </section>
         ) : (
           <>
-            <section className="grid gap-3 md:grid-cols-4">
+            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
               <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur">
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-600">Beta Tester</p>
                 <p className="mt-2 text-3xl font-black tracking-tight">{betaTesterCount}</p>
@@ -279,14 +334,24 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
                 <p className="mt-1 text-xs font-semibold text-slate-500">Premium, Lifetime oder Admin</p>
               </div>
               <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-amber-100 backdrop-blur">
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-600">Offene Rückmeldungen</p>
-                <p className="mt-2 text-3xl font-black tracking-tight">{openFeedbackCount}</p>
-                <p className="mt-1 text-xs font-semibold text-slate-500">open oder reviewing</p>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-600">Aktive Meldungen</p>
+                <p className="mt-2 text-3xl font-black tracking-tight">{activeFeedback.length}</p>
+                <p className="mt-1 text-xs font-semibold text-slate-500">nicht erledigt/archiviert</p>
               </div>
               <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-rose-100 backdrop-blur">
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-rose-600">High Priority</p>
-                <p className="mt-2 text-3xl font-black tracking-tight">{highPriorityFeedbackCount}</p>
-                <p className="mt-1 text-xs font-semibold text-slate-500">vor Beta-Invite prüfen</p>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-rose-600">Kritisch</p>
+                <p className="mt-2 text-3xl font-black tracking-tight">{criticalFeedbackCount}</p>
+                <p className="mt-1 text-xs font-semibold text-slate-500">sofort prüfen</p>
+              </div>
+              <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-sky-100 backdrop-blur">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-600">Bugs</p>
+                <p className="mt-2 text-3xl font-black tracking-tight">{bugFeedbackCount}</p>
+                <p className="mt-1 text-xs font-semibold text-slate-500">aktive Bugmeldungen</p>
+              </div>
+              <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-emerald-100 backdrop-blur">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-600">Wünsche</p>
+                <p className="mt-2 text-3xl font-black tracking-tight">{featureRequestCount}</p>
+                <p className="mt-1 text-xs font-semibold text-slate-500">aktive Feature-Ideen</p>
               </div>
             </section>
 
@@ -401,31 +466,81 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
             </section>
 
             <section className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                  <p className="text-sm font-bold text-violet-700">Feedback Inbox</p>
-                  <h2 className="mt-1 text-2xl font-black tracking-tight">Beta-Rückmeldungen</h2>
+                  <p className="text-sm font-bold text-violet-700">Feedback Control Center</p>
+                  <h2 className="mt-1 text-2xl font-black tracking-tight">Beta-Rückmeldungen priorisieren</h2>
+                  <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-slate-500">
+                    Filtere echte Tester-Meldungen, setze Status/Priorität und sammle interne Notizen, ohne Firestore manuell zu öffnen.
+                  </p>
                 </div>
-                <span className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-black text-slate-600 ring-1 ring-slate-200">{sortedFeedback.length} Einträge</span>
+                <span className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-black text-slate-600 ring-1 ring-slate-200">{sortedFeedback.length} von {feedback.length} Einträgen</span>
+              </div>
+
+              <div className="mt-5 grid gap-3 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200 md:grid-cols-[1fr_0.7fr_0.7fr]">
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-black uppercase tracking-[0.14em] text-slate-500">Suche</span>
+                  <input className="field-input bg-white" value={feedbackSearch} onChange={(event) => setFeedbackSearch(event.target.value)} placeholder="Betreff, User, Seite…" />
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-black uppercase tracking-[0.14em] text-slate-500">Typ</span>
+                  <select className="field-input bg-white" value={feedbackFilterType} onChange={(event) => setFeedbackFilterType(event.target.value as "all" | FeedbackType)}>
+                    {feedbackTypeOptions.map((type) => <option key={type} value={type}>{type === "all" ? "Alle Typen" : typeLabels[type]}</option>)}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-black uppercase tracking-[0.14em] text-slate-500">Status</span>
+                  <select className="field-input bg-white" value={feedbackFilterStatus} onChange={(event) => setFeedbackFilterStatus(event.target.value as "active" | "all" | FeedbackStatus)}>
+                    <option value="active">Nur aktive</option>
+                    <option value="all">Alle Status</option>
+                    {feedbackStatusOptions.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
+                  </select>
+                </label>
               </div>
 
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                {sortedFeedback.length === 0 && (
+                  <p className="rounded-2xl bg-slate-50 p-4 text-sm font-semibold text-slate-500 ring-1 ring-slate-200">Keine Rückmeldungen für diese Filter.</p>
+                )}
                 {sortedFeedback.map((item) => (
                   <article key={item.id} className="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-black text-slate-950">{item.subject}</p>
-                        <p className="mt-1 text-xs font-bold text-slate-400">{item.type} · {item.priority} · {item.ownerEmail || item.ownerUid}</p>
+                        <p className="mt-1 text-xs font-bold text-slate-400">{typeLabels[item.type]} · {item.ownerEmail || item.ownerName || item.ownerUid} · {item.createdAtIso.slice(0, 16).replace("T", " ")}</p>
                       </div>
-                      <select className="rounded-2xl border-0 bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200" value={item.status} onChange={(event) => updateFeedback(item.id, event.target.value as FeedbackStatus)}>
-                        {feedbackStatusOptions.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
-                      </select>
+                      <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ring-1 ${priorityBadgeClass[item.priority]}`}>
+                        {priorityLabels[item.priority]}
+                      </span>
                     </div>
                     <p className="mt-3 whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-600">{item.message}</p>
+                    <div className="mt-3 grid gap-2 rounded-2xl bg-white p-3 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 sm:grid-cols-2">
+                      <p className="break-words">Seite: {item.page || "—"}</p>
+                      <p>Version: {item.appVersion}</p>
+                    </div>
                     <div className="mt-3 rounded-2xl bg-white p-3 ring-1 ring-slate-200">
-                      <p className="text-xs font-black text-slate-500">Admin-Notiz</p>
-                      <textarea className="mt-2 w-full resize-y rounded-xl border-0 bg-slate-50 p-3 text-sm font-semibold text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-violet-300" value={adminNotes[item.id] ?? ""} onChange={(event) => setAdminNotes((current) => ({ ...current, [item.id]: event.target.value }))} />
-                      <button type="button" onClick={() => updateFeedback(item.id, item.status)} className="mt-2 rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white">Notiz speichern</button>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <label>
+                          <span className="mb-1 block text-xs font-black text-slate-500">Status</span>
+                          <select className="w-full rounded-2xl border-0 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200" value={item.status} onChange={(event) => updateFeedback(item.id, event.target.value as FeedbackStatus)}>
+                            {feedbackStatusOptions.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
+                          </select>
+                        </label>
+                        <label>
+                          <span className="mb-1 block text-xs font-black text-slate-500">Priorität</span>
+                          <select className="w-full rounded-2xl border-0 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200" value={item.priority} onChange={(event) => updateFeedback(item.id, undefined, event.target.value as FeedbackPriority)}>
+                            {feedbackPriorityOptions.map((priority) => <option key={priority} value={priority}>{priorityLabels[priority]}</option>)}
+                          </select>
+                        </label>
+                      </div>
+                      <p className="mt-3 text-xs font-black text-slate-500">Admin-Notiz</p>
+                      <textarea className="mt-2 w-full resize-y rounded-xl border-0 bg-slate-50 p-3 text-sm font-semibold text-slate-700 outline-none ring-1 ring-slate-200 focus:ring-violet-300" value={adminNotes[item.id] ?? ""} onChange={(event) => setAdminNotes((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="Interne Notiz, Repro-Schritte, Fix-Idee…" />
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <button type="button" onClick={() => updateFeedback(item.id)} className="rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white">Notiz speichern</button>
+                        <button type="button" onClick={() => updateFeedback(item.id, "reviewing")} className="rounded-xl bg-violet-50 px-3 py-2 text-xs font-black text-violet-700 ring-1 ring-violet-100">In Arbeit</button>
+                        <button type="button" onClick={() => updateFeedback(item.id, "done")} className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 ring-1 ring-emerald-100">Erledigt</button>
+                        <button type="button" onClick={() => updateFeedback(item.id, "closed")} className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600 ring-1 ring-slate-200">Archivieren</button>
+                      </div>
                     </div>
                   </article>
                 ))}

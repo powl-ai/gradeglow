@@ -170,3 +170,33 @@ Aktueller Stand: `beta-2026-07-02-onboarding-delete-fix`. Details stehen in `BET
 - Setup-Abschluss ist erst nach bewusster Feature-Auswahl möglich.
 - Account-Löschung führt vor dem Löschen eine Firebase-Re-Authentifizierung aus.
 - E-Mail/Passwort-Accounts bekommen ein Passwortfeld, Google-Accounts öffnen automatisch die Google-Bestätigung.
+
+
+## Aktueller Patch
+
+- Version: `beta-2026-07-02-pwa-readiness`
+- Schwerpunkt: PWA-/Mobile-Readiness, Install-Hinweise, Service-Worker-Update-Hinweis und erweiterte Beta-Checkliste.
+
+
+### Beta Test Control Center
+
+- `/admin` enthält jetzt eine bessere Beta-Test-Zentrale.
+- Feedback kann nach Typ, Status und Suche gefiltert werden.
+- Admins können Status, Priorität und interne Notizen direkt in der App pflegen.
+- `critical` wurde als Feedback-Priorität ergänzt.
+- Diagnostics zeigt zusätzliche Kennzahlen und gruppierte Client Errors.
+
+
+
+## Beta Launch Readiness
+
+Neu in `beta-2026-07-02-launch-readiness`:
+
+- `/launch` als Beta Launch Center
+- Launch Score nach Produktkern, Daten/Vertrauen, Beta-Betrieb, Mobile/PWA und Store-Vorbereitung
+- automatische Checks aus App-Daten
+- manuelle lokal gespeicherte Launch-Checks
+- kopierbarer Launch Report
+- PWA-App-Shell und Manifest Shortcut für `/launch`
+
+Siehe `BETA_LAUNCH_READINESS_UPDATE.md`.

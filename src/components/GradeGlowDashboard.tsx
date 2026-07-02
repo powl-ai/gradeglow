@@ -67,7 +67,8 @@ export type DashboardPage =
   | "modules"
   | "feedback"
   | "diagnostics"
-  | "backup";
+  | "backup"
+  | "launch";
 
 type GradeGlowDashboardProps = {
   user: AppUser;
@@ -150,6 +151,14 @@ const dashboardNavItems: DashboardNavItem[] = [
     betaOnly: true,
   },
   {
+    id: "launch",
+    href: "/launch",
+    label: "Launch",
+    description: "Beta-Reife und Release-Plan",
+    emoji: "🚀",
+    betaOnly: true,
+  },
+  {
     id: "backup",
     href: "/backup",
     label: "Backup",
@@ -178,6 +187,7 @@ const emptyAssessmentInput: AssessmentInput = {
 
 const ACTIVE_TIMER_STORAGE_KEY = "gradeglow-active-study-timer-v1";
 const QUICK_RAIL_SCROLL_STORAGE_KEY = "gradeglow-quick-rail-scroll-left-v1";
+const WELCOME_QUERY_PARAM = "welcome";
 
 type StoredActiveStudyTimer = {
   examId: string;
@@ -266,6 +276,7 @@ export default function GradeGlowDashboard({
   const [isToolsOpen, setIsToolsOpen] = useState(false);
   const [isInsightsOpen, setIsInsightsOpen] = useState(false);
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
   const [importMessage, setImportMessage] = useState("");
   const [moduleLimitMessage, setModuleLimitMessage] = useState("");
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
@@ -1100,6 +1111,19 @@ export default function GradeGlowDashboard({
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get(WELCOME_QUERY_PARAM) !== "1") return;
+
+    setShowWelcomeBanner(true);
+    params.delete(WELCOME_QUERY_PARAM);
+    const nextSearch = params.toString();
+    const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
+    window.history.replaceState(null, "", nextUrl);
+  }, []);
+
+  useEffect(() => {
     const rail = quickRailRef.current;
     if (!rail || typeof window === "undefined") return;
 
@@ -1464,6 +1488,28 @@ export default function GradeGlowDashboard({
             </div>
           </div>
         </header>
+
+
+      {showWelcomeBanner && page === "overview" && (
+        <section className="rounded-[2rem] bg-slate-950 p-5 text-white shadow-xl shadow-violet-950/20 ring-1 ring-white/10 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-200">Setup abgeschlossen</p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight">Willkommen bei GradeGlow.</h2>
+              <p className="mt-2 text-sm font-semibold leading-6 text-slate-300">
+                Dein Profil und deine Feature-Auswahl sind gespeichert. Lege jetzt Module oder Prüfungen an und teste danach Export, Study Circle und Löschung einmal mit einem Testaccount.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-50"
+              onClick={() => setShowWelcomeBanner(false)}
+            >
+              Verstanden
+            </button>
+          </div>
+        </section>
+      )}
 
         {globalTimer && page !== "exams" && (
           <section className="rounded-3xl bg-slate-950 p-4 text-white shadow-xl shadow-violet-950/10 ring-1 ring-white/10 sm:p-5">

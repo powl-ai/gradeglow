@@ -6,13 +6,16 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "GradeGlow",
     description:
       "Tracke Module, ECTS, Noten, Einzelleistungen, Prüfungen, Zielnoten und deinen Bachelor-Fortschritt.",
-    start_url: "/",
+    id: "/",
+    start_url: "/?source=pwa",
     scope: "/",
     display: "standalone",
+    display_override: ["window-controls-overlay", "standalone", "browser"],
     orientation: "portrait",
     background_color: "#fbf7ff",
     theme_color: "#7c3aed",
     categories: ["education", "productivity", "utilities"],
+    prefer_related_applications: false,
     lang: "de-DE",
     icons: [
       {
@@ -53,6 +56,13 @@ export default function manifest(): MetadataRoute.Manifest {
         short_name: "Profil",
         description: "Studiengang, Name und Ziel-ECTS bearbeiten",
         url: "/settings",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
+      },
+      {
+        name: "Beta Launch Center",
+        short_name: "Launch",
+        description: "Beta-Reife, Testplan und Release-Blocker prüfen",
+        url: "/launch",
         icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
       },
     ],

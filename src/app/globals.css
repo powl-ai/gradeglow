@@ -1224,3 +1224,35 @@ details > summary::-webkit-details-marker {
     color: rgba(226, 232, 240, 0.84) !important;
   }
 }
+
+/* PWA/mobile release polish ------------------------------------------------
+   Keeps fixed/floating actions away from iOS Safari bars and makes taps feel
+   native without changing the visual design. */
+:root {
+  --gg-safe-top: env(safe-area-inset-top, 0px);
+  --gg-safe-right: env(safe-area-inset-right, 0px);
+  --gg-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --gg-safe-left: env(safe-area-inset-left, 0px);
+}
+
+a,
+button,
+[role="button"] {
+  -webkit-tap-highlight-color: rgba(124, 58, 237, 0.14);
+  touch-action: manipulation;
+}
+
+.gg-safe-bottom {
+  padding-bottom: max(var(--gg-safe-bottom), 1rem);
+}
+
+.gg-safe-x {
+  padding-right: max(var(--gg-safe-right), 1rem);
+  padding-left: max(var(--gg-safe-left), 1rem);
+}
+
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior-y: none;
+  }
+}

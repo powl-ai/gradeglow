@@ -240,7 +240,8 @@ export default function OnboardingWizard({
       }
 
       await saveProfile(buildProfile(true));
-      window.location.href = selectedOption.href;
+      const targetHref = selectedOption.href === "/" ? "/?welcome=1" : `${selectedOption.href}?welcome=1`;
+      window.location.href = targetHref;
     } catch {
       setMessage("Setup konnte nicht gespeichert werden. Versuch es bitte nochmal.");
     } finally {
@@ -265,8 +266,8 @@ export default function OnboardingWizard({
   const skip = async () => {
     setIsSaving(true);
     try {
-      await saveProfile({ ...buildProfile(true), preferredStartMode: "manual" });
-      window.location.href = "/modules";
+      await saveProfile({ ...buildProfile(true), preferredStartMode: "manual", enabledFeatureIds: [] });
+      window.location.href = "/modules?welcome=1";
     } finally {
       setIsSaving(false);
     }

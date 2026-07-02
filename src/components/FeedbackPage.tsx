@@ -27,6 +27,7 @@ const priorityOptions: { value: FeedbackPriority; label: string }[] = [
   { value: "low", label: "Niedrig" },
   { value: "normal", label: "Normal" },
   { value: "high", label: "Hoch" },
+  { value: "critical", label: "Kritisch" },
 ];
 
 const statusLabels: Record<string, string> = {

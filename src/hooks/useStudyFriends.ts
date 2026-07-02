@@ -8,6 +8,7 @@ import {
   doc,
   getDoc,
   onSnapshot,
+  updateDoc,
   serverTimestamp,
   setDoc,
   writeBatch,
@@ -1036,6 +1037,33 @@ export function useStudyFriends({ user, profile, exams, limits, profileReady = t
     }
   };
 
+  const updateCircleWeeklyGoal = async (circleId: string, weeklyGoalMinutes: number) => {
+    if (!canUseCloudSocial || !db || !circleId) return;
+
+    if (activeCircle?.ownerUid !== user.uid) {
+      setMessage("Nur der Circle-Owner kann das Wochenziel ändern.");
+      return;
+    }
+
+    const normalizedGoal = Math.max(30, Math.min(6000, Math.round(weeklyGoalMinutes)));
+
+    setIsBusy(true);
+    setMessage("");
+
+    try {
+      await updateDoc(doc(db, STUDY_CIRCLES_COLLECTION, circleId), {
+        weeklyGoalMinutes: normalizedGoal,
+        updatedAt: serverTimestamp(),
+        updatedAtIso: nowIso(),
+      });
+      setMessage(`Wochenziel auf ${normalizedGoal} Minuten gesetzt.`);
+    } catch (error) {
+      setMessage(getFriendErrorMessage(error));
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
   const leaveCircle = async (circleId: string) => {
     if (!canUseCloudSocial || !db || !circleId) return;
 
@@ -1075,6 +1103,7 @@ export function useStudyFriends({ user, profile, exams, limits, profileReady = t
     setActiveCircleId,
     createCircle,
     joinCircle,
+    updateCircleWeeklyGoal,
     leaveCircle,
   };
 }

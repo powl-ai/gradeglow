@@ -281,7 +281,7 @@ export type FeedbackType = "bug" | "feedback" | "feature_request" | "delete_requ
 
 export type FeedbackStatus = "open" | "reviewing" | "planned" | "done" | "closed";
 
-export type FeedbackPriority = "low" | "normal" | "high";
+export type FeedbackPriority = "low" | "normal" | "high" | "critical";
 
 export type GradeGlowFeedback = {
   id: string;

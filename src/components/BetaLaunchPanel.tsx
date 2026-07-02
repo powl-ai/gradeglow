@@ -15,7 +15,7 @@ type BetaLaunchPanelProps = {
   cloudMessages: string[];
 };
 
-const BETA_LAUNCH_DISMISS_PREFIX = "gradeglow-beta-launch-panel-dismissed-v1";
+const BETA_LAUNCH_DISMISS_PREFIX = "gradeglow-beta-launch-panel-dismissed-v2";
 
 const ChecklistItem = ({ label, done, hint }: { label: string; done: boolean; hint: string }) => (
   <div className={`rounded-2xl p-3 ring-1 ${done ? "bg-emerald-50 text-emerald-800 ring-emerald-100" : "bg-amber-50 text-amber-900 ring-amber-100"}`}>
@@ -41,7 +41,7 @@ export default function BetaLaunchPanel({
   cloudMessages,
 }: BetaLaunchPanelProps) {
   const storageKey = `${BETA_LAUNCH_DISMISS_PREFIX}-${user.uid}`;
-  const [isDismissed, setIsDismissed] = useState(true);
+  const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
     try {
@@ -140,7 +140,7 @@ export default function BetaLaunchPanel({
           <div className="rounded-2xl bg-violet-50 p-3 text-violet-800 ring-1 ring-violet-100 md:col-span-2 xl:col-span-3">
             <p className="text-sm font-black">Beta-Test-Aufgabe</p>
             <p className="mt-1 text-xs font-semibold leading-5">
-              Account erstellen, Profil speichern, Modul + Prüfung anlegen, Lerneinheit abhaken, Theme wechseln, Freund hinzufügen, Bug/Feedback senden, neu laden.
+              Account erstellen, Profil speichern, Modul + Prüfung anlegen, Lerneinheit abhaken, Theme wechseln, Freund hinzufügen, Bug/Feedback senden, Daten exportieren, Lösch-Flow mit Testaccount prüfen, neu laden.
             </p>
           </div>
         </div>

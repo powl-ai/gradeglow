@@ -68,7 +68,8 @@ export type DashboardPage =
   | "feedback"
   | "diagnostics"
   | "backup"
-  | "launch";
+  | "launch"
+  | "premium";
 
 type GradeGlowDashboardProps = {
   user: AppUser;
@@ -157,6 +158,13 @@ const dashboardNavItems: DashboardNavItem[] = [
     description: "Beta-Reife und Release-Plan",
     emoji: "🚀",
     betaOnly: true,
+  },
+  {
+    id: "premium",
+    href: "/premium",
+    label: "Plus",
+    description: "Free, Beta und Premium",
+    emoji: "⭐",
   },
   {
     id: "backup",

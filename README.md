@@ -200,3 +200,12 @@ Neu in `beta-2026-07-02-launch-readiness`:
 - PWA-App-Shell und Manifest Shortcut für `/launch`
 
 Siehe `BETA_LAUNCH_READINESS_UPDATE.md`.
+
+## Beta Update 2026-07-02 – Premium/Social/Mobile
+
+Siehe `BETA_PREMIUM_SOCIAL_MOBILE_UPDATE.md`.
+
+- `/premium` vorbereitet Free/Beta/Plus-Grenzen ohne aktive Zahlungen.
+- Study Circle Profile haben Beta-Badges und ein öffentliches Profilmodal.
+- Admin Feedback kann erledigte/archivierte Meldungen wieder anzeigen.
+- Mobile/PWA CSS wurde kompakter gemacht.

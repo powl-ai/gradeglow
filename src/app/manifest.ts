@@ -59,6 +59,13 @@ export default function manifest(): MetadataRoute.Manifest {
         icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
       },
       {
+        name: "GradeGlow Plus",
+        short_name: "Plus",
+        description: "Free-, Beta- und Premium-Grenzen ansehen",
+        url: "/premium",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
+      },
+      {
         name: "Beta Launch Center",
         short_name: "Launch",
         description: "Beta-Reife, Testplan und Release-Blocker prüfen",

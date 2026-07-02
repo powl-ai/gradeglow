@@ -148,6 +148,7 @@ const buildPublicProfile = (
     shareStudySubjects: profile.shareStudySubjects,
     shareStudyStreak: shouldShareStreak,
     updatedAtIso: nowIso(),
+    badgeIds: ["beta-2026"],
   };
 };
 
@@ -193,6 +194,16 @@ const getPublicImageSource = (value: unknown) => {
   return trimmed.startsWith("data:image/") || trimmed.startsWith("https://") || trimmed.startsWith("http://")
     ? trimmed
     : "";
+};
+
+const normalizeBadgeIds = (value: unknown) => {
+  const rawBadges = Array.isArray(value) ? value : [];
+  const cleanedBadges = rawBadges
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  return Array.from(new Set(["beta-2026", ...cleanedBadges]));
 };
 
 const migratePublicProfile = (
@@ -243,6 +254,7 @@ const migratePublicProfile = (
     shareStudySubjects,
     shareStudyStreak,
     updatedAtIso: typeof record.updatedAtIso === "string" ? record.updatedAtIso : "",
+    badgeIds: normalizeBadgeIds(record.badgeIds),
   };
 };
 
@@ -332,6 +344,7 @@ const buildMissingFriend = (friendId: string): FriendListItem => ({
   shareStudySubjects: false,
   shareStudyStreak: false,
   updatedAtIso: "",
+  badgeIds: [],
   isMissing: true,
 });
 
@@ -1088,6 +1101,7 @@ export function useStudyFriends({ user, profile, exams, limits, profileReady = t
     canUseCloudSocial,
     ownPublicProfile,
     friends,
+    friendIds,
     circles,
     activeCircleId: effectiveActiveCircleId,
     activeCircle,

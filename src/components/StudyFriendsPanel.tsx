@@ -91,6 +91,33 @@ const Avatar = ({
   );
 };
 
+const badgeMeta: Record<string, { label: string; description: string }> = {
+  "beta-2026": {
+    label: "Beta 2026",
+    description: "Schon seit der Beta dabei",
+  },
+};
+
+const BadgeList = ({ badgeIds, compact = false }: { badgeIds: string[]; compact?: boolean }) => {
+  const visibleBadges = badgeIds.map((id) => badgeMeta[id]).filter(Boolean);
+  if (visibleBadges.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {visibleBadges.map((badge) => (
+        <span
+          key={badge.label}
+          title={badge.description}
+          className={`inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 font-black text-violet-700 ring-1 ring-violet-100 ${compact ? "text-[0.62rem]" : "text-xs"}`}
+        >
+          <span aria-hidden="true">★</span>
+          {badge.label}
+        </span>
+      ))}
+    </div>
+  );
+};
+
 const SubjectBars = ({ profile }: { profile: PublicStudyProfile }) => {
   if (!profile.shareStudySubjects) {
     return (
@@ -286,6 +313,76 @@ const PrivacyToggle = ({
   </button>
 );
 
+const PublicProfileModal = ({
+  profile,
+  isSelf,
+  isFriend,
+  isBusy,
+  onClose,
+  onAddFriend,
+  onRemoveFriend,
+}: {
+  profile: CircleRow;
+  isSelf: boolean;
+  isFriend: boolean;
+  isBusy: boolean;
+  onClose: () => void;
+  onAddFriend: () => void;
+  onRemoveFriend: () => void;
+}) => (
+  <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-3 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true">
+    <article className="max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-white p-5 text-slate-950 shadow-2xl ring-1 ring-slate-200 sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <Avatar image={profile.avatarDataUrl} label={profile.displayName} size="lg" />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="truncate text-2xl font-black tracking-tight">{profile.displayName}</h3>
+              {isSelf && <span className="rounded-full bg-violet-50 px-2 py-1 text-[0.65rem] font-black text-violet-700 ring-1 ring-violet-100">Du</span>}
+            </div>
+            <p className="mt-1 text-sm font-semibold text-slate-500">{profile.degreeProgram || "Kein Studiengang sichtbar"}</p>
+            <div className="mt-2"><BadgeList badgeIds={profile.badgeIds} /></div>
+          </div>
+        </div>
+        <button type="button" onClick={onClose} className="shrink-0 rounded-2xl bg-slate-50 px-3 py-2 text-xs font-black text-slate-600 ring-1 ring-slate-200">Schließen</button>
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <p className="text-xs font-bold text-slate-500">Diese Woche</p>
+          <p className="mt-1 text-2xl font-black">{formatSharedMinutes(profile, profile.thisWeekDoneMinutes)}</p>
+        </div>
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <p className="text-xs font-bold text-slate-500">Gesamt</p>
+          <p className="mt-1 text-2xl font-black">{formatSharedMinutes(profile, profile.totalDoneMinutes)}</p>
+        </div>
+        <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <p className="text-xs font-bold text-slate-500">Streak</p>
+          <p className="mt-1 text-2xl font-black">{formatSharedStreak(profile)}</p>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
+        <p className="mb-3 text-sm font-black text-slate-700">Geteilte Lernfächer</p>
+        {profile.isMissing ? (
+          <p className="rounded-2xl bg-amber-50 p-3 text-xs font-semibold leading-5 text-amber-800 ring-1 ring-amber-100">Dieses Profil ist aktuell nicht öffentlich geteilt.</p>
+        ) : (
+          <SubjectBars profile={profile} />
+        )}
+      </div>
+
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+        {!isSelf && !isFriend && !profile.isMissing && (
+          <button type="button" disabled={isBusy} onClick={onAddFriend} className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-violet-800 disabled:opacity-50">Als Freund hinzufügen</button>
+        )}
+        {!isSelf && isFriend && (
+          <button type="button" disabled={isBusy} onClick={onRemoveFriend} className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-700 ring-1 ring-rose-100 transition hover:bg-rose-100 disabled:opacity-50">Freund entfernen</button>
+        )}
+      </div>
+    </article>
+  </div>
+);
+
 export default function StudyFriendsPanel({
   user,
   profile,
@@ -298,6 +395,7 @@ export default function StudyFriendsPanel({
   const [circleJoinCodeInput, setCircleJoinCodeInput] = useState("");
   const [friendSearch, setFriendSearch] = useState("");
   const [goalInput, setGoalInput] = useState("600");
+  const [selectedProfile, setSelectedProfile] = useState<CircleRow | null>(null);
   const [isSavingSharing, setIsSavingSharing] = useState(false);
   const [isSavingPrivacy, setIsSavingPrivacy] = useState(false);
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
@@ -309,6 +407,7 @@ export default function StudyFriendsPanel({
     canUseCloudSocial,
     ownPublicProfile,
     friends,
+    friendIds,
     circles,
     activeCircleId,
     activeCircle,
@@ -466,6 +565,18 @@ export default function StudyFriendsPanel({
     if (!isProfileLoaded) return;
     await joinCircle(circleJoinCodeInput);
     setCircleJoinCodeInput("");
+  };
+
+  const handleAddSelectedProfileAsFriend = async () => {
+    if (!selectedProfile || selectedProfile.isSelf || selectedProfile.isMissing) return;
+    await addFriend(selectedProfile.friendCode || selectedProfile.uid);
+    setSelectedProfile((current) => current ? { ...current } : current);
+  };
+
+  const handleRemoveSelectedProfileFriend = async () => {
+    if (!selectedProfile || selectedProfile.isSelf) return;
+    await removeFriend(selectedProfile.uid);
+    setSelectedProfile(null);
   };
 
   const handleUpdateCircleGoal = async () => {
@@ -987,9 +1098,11 @@ export default function StudyFriendsPanel({
 
               <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                 {circleLeaderboardRows.map((member) => (
-                  <div
+                  <button
+                    type="button"
                     key={`member-${member.uid}`}
-                    className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"
+                    className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3 text-left ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50 hover:ring-violet-100"
+                    onClick={() => setSelectedProfile(member)}
                   >
                     <Avatar image={member.avatarDataUrl} label={member.displayName} />
                     <div className="min-w-0 flex-1">
@@ -1006,8 +1119,9 @@ export default function StudyFriendsPanel({
                       <p className="truncate text-xs font-bold text-slate-500">
                         {member.role === "owner" ? "Owner" : "Member"} · {formatSharedMinutes(member, member.thisWeekDoneMinutes)} diese Woche
                       </p>
+                      <div className="mt-2"><BadgeList badgeIds={member.badgeIds} compact /></div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -1181,15 +1295,26 @@ export default function StudyFriendsPanel({
                           zuletzt gelernt:{" "}
                           {formatDateLabel(friend.lastStudiedDateKey)}
                         </p>
+                        <div className="mt-2"><BadgeList badgeIds={friend.badgeIds} compact /></div>
                       </div>
-                      <button
-                        type="button"
-                        className="self-start rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-500 ring-1 ring-slate-200 transition hover:bg-rose-50 hover:text-rose-700 hover:ring-rose-100 disabled:opacity-50"
-                        onClick={() => void removeFriend(friend.uid)}
-                        disabled={isBusy}
-                      >
-                        Entfernen
-                      </button>
+                      <div className="flex shrink-0 flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="self-start rounded-full bg-white px-3 py-1.5 text-xs font-black text-violet-700 ring-1 ring-violet-100 transition hover:bg-violet-50 disabled:opacity-50"
+                          onClick={() => setSelectedProfile(friend)}
+                          disabled={isBusy}
+                        >
+                          Profil
+                        </button>
+                        <button
+                          type="button"
+                          className="self-start rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-500 ring-1 ring-slate-200 transition hover:bg-rose-50 hover:text-rose-700 hover:ring-rose-100 disabled:opacity-50"
+                          onClick={() => void removeFriend(friend.uid)}
+                          disabled={isBusy}
+                        >
+                          Entfernen
+                        </button>
+                      </div>
                     </div>
 
                     <div className="mt-3 grid gap-2 sm:grid-cols-3">
@@ -1240,6 +1365,18 @@ export default function StudyFriendsPanel({
           </div>
         )}
       </div>
+
+      {selectedProfile && (
+        <PublicProfileModal
+          profile={selectedProfile}
+          isSelf={selectedProfile.uid === user.uid}
+          isFriend={friendIds.includes(selectedProfile.uid)}
+          isBusy={isBusy}
+          onClose={() => setSelectedProfile(null)}
+          onAddFriend={() => void handleAddSelectedProfileAsFriend()}
+          onRemoveFriend={() => void handleRemoveSelectedProfileFriend()}
+        />
+      )}
     </section>
   );
 }

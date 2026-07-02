@@ -225,6 +225,7 @@ export type PublicStudyProfile = {
   shareStudySubjects: boolean;
   shareStudyStreak: boolean;
   updatedAtIso: string;
+  badgeIds: string[];
 };
 
 

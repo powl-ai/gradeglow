@@ -1256,3 +1256,95 @@ button,
     overscroll-behavior-y: none;
   }
 }
+
+/* Premium boundaries + mobile/PWA readability pass -----------------------
+   The iOS PWA can feel like a native app now; this keeps text/fields from
+   overpowering the viewport while preserving desktop density. */
+.gg-themed .gg-premium-badge,
+.gg-themed [title="Schon seit der Beta dabei"] {
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .gg-themed {
+    --gg-mobile-card-radius: 1.35rem;
+  }
+
+  .gg-themed .text-6xl,
+  .gg-themed .text-5xl {
+    font-size: 2.15rem !important;
+    line-height: 1.04 !important;
+    letter-spacing: -0.04em !important;
+  }
+
+  .gg-themed .text-4xl {
+    font-size: 1.9rem !important;
+    line-height: 1.08 !important;
+  }
+
+  .gg-themed .text-3xl {
+    font-size: 1.55rem !important;
+    line-height: 1.12 !important;
+  }
+
+  .gg-themed .text-2xl {
+    font-size: 1.3rem !important;
+    line-height: 1.18 !important;
+  }
+
+  .gg-themed .text-xl {
+    font-size: 1.12rem !important;
+    line-height: 1.22 !important;
+  }
+
+  .gg-themed .rounded-\[2rem\],
+  .gg-themed .rounded-\[2\.5rem\],
+  .gg-themed .rounded-\[3rem\],
+  .gg-themed .rounded-3xl {
+    border-radius: var(--gg-mobile-card-radius) !important;
+  }
+
+  .gg-themed .field-input,
+  .gg-themed input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  .gg-themed select,
+  .gg-themed textarea {
+    padding: 0.72rem 0.82rem !important;
+    border-radius: 0.9rem !important;
+    font-size: 16px !important;
+    line-height: 1.35 !important;
+  }
+
+  .gg-themed button,
+  .gg-themed a[role="button"],
+  .gg-themed .soft-button {
+    min-height: 2.55rem;
+  }
+
+  .gg-themed nav[aria-label="GradeGlow Schnellnavigation"] {
+    top: calc(env(safe-area-inset-top, 0px) + 0.35rem) !important;
+    border-radius: 1.25rem !important;
+    padding: 0.4rem !important;
+  }
+
+  .gg-themed nav[aria-label="GradeGlow Schnellnavigation"] a {
+    border-radius: 1rem !important;
+    padding: 0.55rem 0.7rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  .gg-themed [class*="grid-cols-4"],
+  .gg-themed [class*="grid-cols-5"] {
+    min-width: 0;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 640px) {
+  body {
+    padding-top: 0;
+  }
+
+  .gg-themed main,
+  main.gg-themed {
+    min-height: 100dvh;
+  }
+}

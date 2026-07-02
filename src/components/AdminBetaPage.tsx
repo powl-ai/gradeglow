@@ -177,6 +177,8 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
   const bugFeedbackCount = activeFeedback.filter((item) => item.type === "bug").length;
   const featureRequestCount = activeFeedback.filter((item) => item.type === "feature_request").length;
   const criticalFeedbackCount = activeFeedback.filter((item) => item.priority === "critical").length;
+  const doneFeedbackCount = feedback.filter((item) => item.status === "done").length;
+  const closedFeedbackCount = feedback.filter((item) => item.status === "closed").length;
 
   const loadAdminData = async () => {
     if (!isAdmin) return;
@@ -474,7 +476,12 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
                     Filtere echte Tester-Meldungen, setze Status/Priorität und sammle interne Notizen, ohne Firestore manuell zu öffnen.
                   </p>
                 </div>
-                <span className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-black text-slate-600 ring-1 ring-slate-200">{sortedFeedback.length} von {feedback.length} Einträgen</span>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => setFeedbackFilterStatus("active")} className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-black text-slate-600 ring-1 ring-slate-200">Aktiv: {activeFeedback.length}</button>
+                  <button type="button" onClick={() => setFeedbackFilterStatus("done")} className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700 ring-1 ring-emerald-100">Erledigt: {doneFeedbackCount}</button>
+                  <button type="button" onClick={() => setFeedbackFilterStatus("closed")} className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-black text-slate-600 ring-1 ring-slate-200">Archiv: {closedFeedbackCount}</button>
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-600 ring-1 ring-slate-200">{sortedFeedback.length} von {feedback.length} Einträgen</span>
+                </div>
               </div>
 
               <div className="mt-5 grid gap-3 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200 md:grid-cols-[1fr_0.7fr_0.7fr]">
@@ -497,6 +504,10 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
                   </select>
                 </label>
               </div>
+
+              <p className="mt-3 rounded-2xl bg-white p-3 text-xs font-bold leading-5 text-slate-500 ring-1 ring-slate-200">
+                Erledigte Rückmeldungen verschwinden nur aus der aktiven Ansicht. Über Status „Erledigt“, „Archiv“ oder „Alle Status“ kannst du sie jederzeit wieder öffnen und nachträglich ändern.
+              </p>
 
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
                 {sortedFeedback.length === 0 && (

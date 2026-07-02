@@ -1,4 +1,4 @@
-export type LaunchReadinessCategoryId = "product" | "data" | "beta" | "mobile" | "store";
+export type LaunchReadinessCategoryId = "product" | "data" | "beta" | "mobile" | "store" | "native";
 
 export type LaunchReadinessCategory = {
   id: LaunchReadinessCategoryId;
@@ -40,6 +40,11 @@ export const launchReadinessCategories: LaunchReadinessCategory[] = [
     id: "store",
     title: "App-Store-Vorbereitung",
     description: "Noch kein Store-Release, aber alle Unterlagen und Entscheidungen werden strukturiert vorbereitet.",
+  },
+  {
+    id: "native",
+    title: "Native App",
+    description: "Capacitor, TestFlight, Play-Test, Safe-Area, Auth und spätere native Store-Anforderungen werden vorbereitet.",
   },
 ];
 
@@ -131,6 +136,30 @@ export const manualLaunchChecks: ManualLaunchCheck[] = [
     description: "/premium öffnen und prüfen: keine falschen Zahlungsversprechen, Free/Beta/Plus verständlich, Paywall noch nicht live.",
     owner: "Produkt",
     priority: "mittel",
+  },
+  {
+    id: "store-center-review",
+    categoryId: "store",
+    title: "Store Readiness Center geprüft",
+    description: "/store öffnen, Listing-Draft, Screenshot-Story, Datenschutz-Labels und Store-Report einmal durchgehen.",
+    owner: "Store",
+    priority: "mittel",
+  },
+  {
+    id: "native-config-review",
+    categoryId: "native",
+    title: "Native App Readiness geprüft",
+    description: "/native öffnen und App-ID, Capacitor-Strategie, Safe-Area, Auth, Push, IAP und Store-Blocker prüfen.",
+    owner: "Technik",
+    priority: "mittel",
+  },
+  {
+    id: "capacitor-not-live",
+    categoryId: "native",
+    title: "Capacitor noch nicht live geschaltet",
+    description: "Bestätigen, dass keine ios/android-Plattformordner, keine nativen Payments und keine Ads versehentlich produktiv eingebaut wurden.",
+    owner: "Technik",
+    priority: "hoch",
   },
 ];
 

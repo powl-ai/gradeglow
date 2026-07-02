@@ -219,3 +219,13 @@ Siehe `BETA_PREMIUM_SOCIAL_MOBILE_UPDATE.md`.
 - In-App-Toast ergänzt, wenn dich jemand als Freund hinzufügt.
 - Keine Firestore Rules oder Functions geändert.
 
+
+## Native App / Capacitor Prep
+
+GradeGlow ist weiterhin Vercel/PWA-first. Für eine spätere native iOS-/Android-App ist jetzt eine vorsichtige Capacitor-Vorbereitung enthalten:
+
+- `capacitor.config.ts`
+- `/native` Native App Readiness Center
+- `CAPACITOR_NATIVE_PREP.md`
+
+Es wurden bewusst keine nativen Plattformordner, keine Capacitor-Abhängigkeiten, keine Ads und keine Zahlungen aktiviert.

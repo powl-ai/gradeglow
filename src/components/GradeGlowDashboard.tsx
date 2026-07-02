@@ -72,7 +72,9 @@ export type DashboardPage =
   | "diagnostics"
   | "backup"
   | "launch"
-  | "premium";
+  | "premium"
+  | "store"
+  | "native";
 
 type GradeGlowDashboardProps = {
   user: AppUser;
@@ -176,6 +178,22 @@ const dashboardNavItems: DashboardNavItem[] = [
     label: "Plus",
     description: "Free, Beta und Premium",
     emoji: "⭐",
+  },
+  {
+    id: "store",
+    href: "/store",
+    label: "Store",
+    description: "App Store, Screenshots und Listing vorbereiten",
+    emoji: "🛍",
+    betaOnly: true,
+  },
+  {
+    id: "native",
+    href: "/native",
+    label: "Native",
+    description: "Capacitor, TestFlight und App-Wrapper vorbereiten",
+    emoji: "📱",
+    betaOnly: true,
   },
   {
     id: "backup",
@@ -1722,56 +1740,27 @@ export default function GradeGlowDashboard({
 
         {page === "overview" && (
           <>
-            <div className="hidden lg:block">
-              <BetaLaunchPanel
-                user={user}
-                moduleCount={modules.length}
-                examCount={exams.length}
-                studyCircleReady={profile.studySharingEnabled}
-                profileReady={isProfileLoaded}
-                profileComplete={profileComplete}
-                cloudMessages={betaCloudMessages}
-              />
-            </div>
-            <details className="gg-mobile-collapsible lg:hidden">
-              <summary>
-                <span>
-                  <span className="gg-mobile-kicker">Beta</span>
-                  Ready-Check
-                </span>
-                <strong>{profileComplete ? "OK" : "Offen"}</strong>
-              </summary>
-              <div className="gg-mobile-collapsible-body">
-                <BetaLaunchPanel
-                  user={user}
-                  moduleCount={modules.length}
-                  examCount={exams.length}
-                  studyCircleReady={profile.studySharingEnabled}
-                  profileReady={isProfileLoaded}
-                  profileComplete={profileComplete}
-                  cloudMessages={betaCloudMessages}
-                />
-              </div>
-            </details>
-          </>
-        )}
-
-        {page === "overview" && (
-          <>
             <section className="gg-mobile-home lg:hidden">
-              <div className="gg-mobile-hero-card">
-                <div>
-                  <p className="gg-mobile-kicker text-white/70">Heute im Fokus</p>
-                  <h2 className="mt-1 text-[1.1rem] font-black text-white">{nextMobileExam ? nextMobileExam.title : "Lernplan starten"}</h2>
-                  <p className="mt-1 text-[0.72rem] font-semibold leading-4 text-white/65">
+              <div className="gg-mobile-hero-card gg-mobile-today-card">
+                <div className="min-w-0">
+                  <p className="gg-mobile-kicker text-white/70">Heute</p>
+                  <h2 className="mt-1 truncate text-[1.02rem] font-black text-white">{globalTimer ? "Timer läuft" : nextMobileExam ? nextMobileExam.title : "Lernplan starten"}</h2>
+                  <p className="mt-1 text-[0.68rem] font-semibold leading-4 text-white/65">
                     {globalTimer
-                      ? `${globalTimerModeLabel} läuft · ${formatCompactDuration(globalTimerElapsedSeconds)}`
+                      ? `${globalTimerModeLabel} · ${formatCompactDuration(globalTimerElapsedSeconds)} · ${globalTimerExam?.moduleName || globalTimer.title}`
                       : nextMobileExam
                         ? `${nextMobileExam.examDate}${nextMobileExam.moduleName ? ` · ${nextMobileExam.moduleName}` : ""}`
                         : "Lege eine Prüfung an und GradeGlow baut dir den Plan."}
                   </p>
                 </div>
-                <Link href="/exams" className="rounded-full bg-white px-3 py-2 text-[0.72rem] font-black text-slate-950">Öffnen</Link>
+                <Link href={globalTimer ? "/timer" : "/exams"} className="shrink-0 rounded-full bg-white px-3 py-2 text-[0.68rem] font-black text-slate-950">{globalTimer ? "Timer" : "Öffnen"}</Link>
+              </div>
+
+              <div className="gg-mobile-action-grid">
+                <Link href="/timer"><span>▶</span><strong>Timer</strong><small>Fokus starten</small></Link>
+                <Link href="/exams"><span>▦</span><strong>Plan</strong><small>{openStudySessionsCount} offen</small></Link>
+                <Link href="/friends"><span>●</span><strong>Circle</strong><small>Freunde</small></Link>
+                <Link href="/settings"><span>◌</span><strong>Profil</strong><small>Mehr</small></Link>
               </div>
 
               <div className="gg-mobile-stat-list">
@@ -1791,6 +1780,36 @@ export default function GradeGlowDashboard({
                 </div>
               </div>
             </section>
+
+            <div className="hidden lg:block">
+              <BetaLaunchPanel
+                user={user}
+                moduleCount={modules.length}
+                examCount={exams.length}
+                studyCircleReady={profile.studySharingEnabled}
+                profileReady={isProfileLoaded}
+                profileComplete={profileComplete}
+                cloudMessages={betaCloudMessages}
+              />
+            </div>
+
+            <details className="gg-mobile-collapsible gg-mobile-secondary-panel lg:hidden">
+              <summary>
+                <span><span className="gg-mobile-kicker">Beta</span>Ready-Check</span>
+                <strong>{profileComplete ? "OK" : "Offen"}</strong>
+              </summary>
+              <div className="gg-mobile-collapsible-body">
+                <BetaLaunchPanel
+                  user={user}
+                  moduleCount={modules.length}
+                  examCount={exams.length}
+                  studyCircleReady={profile.studySharingEnabled}
+                  profileReady={isProfileLoaded}
+                  profileComplete={profileComplete}
+                  cloudMessages={betaCloudMessages}
+                />
+              </div>
+            </details>
 
             <section
               id="overview"

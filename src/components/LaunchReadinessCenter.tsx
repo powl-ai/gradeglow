@@ -222,6 +222,26 @@ const createAutoChecks = ({
       ctaLabel: "Dashboard öffnen",
       priority: "mittel",
     },
+    {
+      id: "store-center-entry",
+      categoryId: "store",
+      title: "Store Readiness Center vorhanden",
+      description: "Listing-Draft, Screenshot-Story, Datenschutz-Labels und Store-Report sind strukturiert vorbereitet.",
+      passed: true,
+      ctaHref: "/store",
+      ctaLabel: "Store Center öffnen",
+      priority: "mittel",
+    },
+    {
+      id: "native-center-entry",
+      categoryId: "native",
+      title: "Native App Readiness vorhanden",
+      description: "Capacitor Config, native Strategie und TestFlight-/Play-Test-Blocker sind vorbereitet, ohne Web/PWA zu gefährden.",
+      passed: true,
+      ctaHref: "/native",
+      ctaLabel: "Native Center öffnen",
+      priority: "mittel",
+    },
   ];
 };
 

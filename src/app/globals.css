@@ -2518,3 +2518,111 @@ button,
 .gg-plan-legacy-timer {
   display: none !important;
 }
+
+/* Mobile core experience: fewer dashboard panels, app-like actions, PWA-safe shell. */
+@media (max-width: 1023px) {
+  .gg-mobile-action-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.42rem;
+  }
+
+  .gg-mobile-action-grid a {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.12rem;
+    border: 1px solid rgba(139, 92, 246, 0.14);
+    border-radius: 0.92rem;
+    background: rgba(255,255,255,0.9);
+    padding: 0.52rem 0.42rem;
+    text-align: center;
+    text-decoration: none;
+    box-shadow: 0 8px 20px rgba(88, 28, 135, 0.06);
+  }
+
+  .gg-mobile-action-grid a span {
+    color: rgb(109, 40, 217);
+    font-size: 0.9rem;
+    line-height: 1;
+  }
+
+  .gg-mobile-action-grid a strong {
+    color: rgb(15, 23, 42);
+    font-size: 0.66rem;
+    font-weight: 950;
+    line-height: 1;
+  }
+
+  .gg-mobile-action-grid a small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: rgb(100, 116, 139);
+    font-size: 0.54rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .gg-mobile-secondary-panel {
+    opacity: 0.96;
+  }
+
+  .gg-mobile-secondary-panel > summary {
+    padding-block: 0.58rem !important;
+  }
+
+  /* Planner as a mobile app view: the timer is no longer part of Plan. */
+  #exams > section > div:first-child p.mt-2 {
+    display: none;
+  }
+
+  #exams .gg-plan-legacy-timer {
+    display: none !important;
+  }
+
+  #exams [class*="xl:grid-cols-4"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  #exams [class*="xl:grid-cols-4"] > div {
+    border-radius: 0.95rem !important;
+    padding: 0.72rem !important;
+  }
+
+  #exams [class*="xl:grid-cols-4"] p[class*="text-3xl"] {
+    font-size: 1rem !important;
+  }
+
+  .gg-timer-only-page {
+    min-height: min(34rem, calc(100svh - 7.5rem));
+    align-content: start;
+  }
+
+  .gg-timer-card {
+    border-radius: 1.25rem !important;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 1023px) {
+  /* Installed PWA: the OS already provides status space, so the internal header becomes unnecessary. */
+  .gg-mobile-appbar {
+    display: none !important;
+  }
+
+  .gg-app-shell {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.55rem) !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 3.25rem) !important;
+  }
+
+  .gg-mobile-tabbar {
+    min-height: calc(env(safe-area-inset-bottom, 0px) + 2.82rem) !important;
+    padding-top: 0.12rem !important;
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.06rem) !important;
+    border-radius: 0.95rem 0.95rem 0 0 !important;
+  }
+
+  .gg-mobile-tabbar a {
+    min-height: 1.82rem !important;
+  }
+}

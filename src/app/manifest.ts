@@ -72,6 +72,20 @@ export default function manifest(): MetadataRoute.Manifest {
         url: "/launch",
         icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
       },
+      {
+        name: "Store Readiness",
+        short_name: "Store",
+        description: "Listing, Screenshots und Store-Blocker vorbereiten",
+        url: "/store",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
+      },
+      {
+        name: "Native App Prep",
+        short_name: "Native",
+        description: "Capacitor, TestFlight und native App-Blocker prüfen",
+        url: "/native",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
+      },
     ],
   };
 }

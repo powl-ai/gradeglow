@@ -1,6 +1,7 @@
 "use client";
 
 import { formatLimit, isUnlimited, planLabels } from "../lib/gradeglowAccess";
+import UpgradeCard from "./UpgradeCard";
 import type { PlanLimits, UserPlan } from "../types";
 
 type UsageItem = {
@@ -89,11 +90,12 @@ export default function PlanUsagePanel({ plan, limits, modulesCount, examsCount,
       </div>
 
       {(isFreePlan || hasReachedLimit) && (
-        <div className="mt-4 rounded-2xl bg-slate-950 p-4 text-white ring-1 ring-slate-900">
-          <p className="text-sm font-black">Premium bald verfügbar</p>
-          <p className="mt-1 text-sm leading-6 text-slate-300">
-            Später: mehr Module, mehr Prüfungen, mehr Freunde, Advanced Stats, Premium-Themes und keine Ads. Für Beta kannst du Premium weiterhin manuell über Firebase Entitlements freischalten.
-          </p>
+        <div className="mt-4">
+          <UpgradeCard
+            compact
+            title={hasReachedLimit ? "Free-Limit erreicht" : "GradeGlow Plus vorbereitet"}
+            description="Später: mehr Module, mehr Prüfungen, mehr Freunde, Advanced Stats, Premium-Themes und keine Ads. Für Beta kannst du Premium weiterhin manuell über Firebase Entitlements freischalten."
+          />
         </div>
       )}
     </section>

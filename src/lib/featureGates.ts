@@ -13,6 +13,7 @@ export type GradeGlowFeatureGateId =
   | "exportBackup"
   | "diagnostics"
   | "launchCenter"
+  | "monetizationCenter"
   | "adminConsole"
   | "futureAi";
 
@@ -53,6 +54,7 @@ export const getFeatureAccess = (
       return { allowed: isPremium || isBeta, label: isPremium || isBeta ? `${planLabel} aktiv` : "GradeGlow Plus", reason: isPremium || isBeta ? "Dieses Plus-Feature ist für deinen Account freigeschaltet." : "Dieses Feature bleibt sichtbar, wird später aber als Plus-Vorteil vermarktet.", badge: isPremium || isBeta ? (isBeta ? "Beta" : "Plus") : "Plus" };
     case "diagnostics":
     case "launchCenter":
+    case "monetizationCenter":
       return { allowed: isBeta || isAdmin, label: isBeta || isAdmin ? "Beta-Werkzeug" : "Beta intern", reason: isBeta || isAdmin ? "Beta-/Admin-Werkzeuge sind für diesen Account sichtbar." : "Dieses Werkzeug ist nur für Beta-Betrieb und interne Tests gedacht.", badge: isAdmin ? "Admin" : "Beta" };
     case "adminConsole":
       return { allowed: isAdmin, label: isAdmin ? "Admin aktiv" : "Admin intern", reason: isAdmin ? "Admin-Konsole ist freigeschaltet." : "Nur Admins können diese Konsole öffnen.", badge: "Admin" };
@@ -80,5 +82,6 @@ export const premiumBoundaryRows: Array<{
   { featureId: "exportBackup", title: "Export & Backup", free: "sichtbar vorbereitet", plus: "Plus-Kandidat", beta: "Freigeschaltet" },
   { featureId: "diagnostics", title: "Diagnostics & Button-Audit", free: "nicht sichtbar", plus: "nicht sichtbar", beta: "Beta/Admin" },
   { featureId: "launchCenter", title: "Launch Center", free: "nicht sichtbar", plus: "nicht sichtbar", beta: "Beta/Admin" },
+  { featureId: "monetizationCenter", title: "Monetarisierung & Checkout Prep", free: "nicht sichtbar", plus: "nicht sichtbar", beta: "Beta/Admin" },
   { featureId: "futureAi", title: "Spätere KI-Funktionen", free: "nicht aktiv", plus: "mögliches Plus", beta: "noch nicht live" },
 ];

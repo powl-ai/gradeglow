@@ -74,7 +74,8 @@ export type DashboardPage =
   | "launch"
   | "premium"
   | "store"
-  | "native";
+  | "native"
+  | "monetization";
 
 type GradeGlowDashboardProps = {
   user: AppUser;
@@ -185,6 +186,15 @@ const dashboardNavItems: DashboardNavItem[] = [
     label: "Store",
     description: "App Store, Screenshots und Listing vorbereiten",
     emoji: "🛍",
+    betaOnly: true,
+  },
+
+  {
+    id: "monetization",
+    href: "/monetization",
+    label: "Monetarisierung",
+    description: "Checkout, Plus und Ads vorbereiten",
+    emoji: "€",
     betaOnly: true,
   },
   {

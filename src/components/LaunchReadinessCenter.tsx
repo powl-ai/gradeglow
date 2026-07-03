@@ -232,6 +232,17 @@ const createAutoChecks = ({
       ctaLabel: "Store Center öffnen",
       priority: "mittel",
     },
+
+    {
+      id: "monetization-center-entry",
+      categoryId: "monetization",
+      title: "Monetarisierung vorbereitet",
+      description: "Checkout-Links, Plus-Modell, Sponsor Slots und rechtliche Blocker sind in /monetization strukturiert.",
+      passed: true,
+      ctaHref: "/monetization",
+      ctaLabel: "Monetarisierung öffnen",
+      priority: "hoch",
+    },
     {
       id: "native-center-entry",
       categoryId: "native",

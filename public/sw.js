@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gradeglow-v35";
+const CACHE_VERSION = "gradeglow-v36";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -16,6 +16,7 @@ const APP_SHELL = [
   "/diagnostics",
   "/launch",
   "/premium",
+  "/monetization",
   "/store",
   "/native",
   "/timer",

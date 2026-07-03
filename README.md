@@ -229,3 +229,8 @@ GradeGlow ist weiterhin Vercel/PWA-first. Für eine spätere native iOS-/Android
 - `CAPACITOR_NATIVE_PREP.md`
 
 Es wurden bewusst keine nativen Plattformordner, keine Capacitor-Abhängigkeiten, keine Ads und keine Zahlungen aktiviert.
+
+
+## Monetization Connect Prep
+
+Siehe `BETA_MONETIZATION_CONNECT_UPDATE.md`. Monetarisierung ist vorbereitet, aber Checkout/Ads sind standardmäßig deaktiviert.

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import PwaRegister from "../components/PwaRegister";
+import AdSenseScript from "../components/AdSenseScript";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     <html lang="de" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
         <PwaRegister />
+        <AdSenseScript />
         {children}
         <Analytics />
         <SpeedInsights />

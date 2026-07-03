@@ -1,4 +1,4 @@
-export type LaunchReadinessCategoryId = "product" | "data" | "beta" | "mobile" | "store" | "native";
+export type LaunchReadinessCategoryId = "product" | "data" | "beta" | "mobile" | "store" | "native" | "monetization";
 
 export type LaunchReadinessCategory = {
   id: LaunchReadinessCategoryId;
@@ -40,6 +40,12 @@ export const launchReadinessCategories: LaunchReadinessCategory[] = [
     id: "store",
     title: "App-Store-Vorbereitung",
     description: "Noch kein Store-Release, aber alle Unterlagen und Entscheidungen werden strukturiert vorbereitet.",
+  },
+
+  {
+    id: "monetization",
+    title: "Monetarisierung",
+    description: "Plus, Checkout-Links, Sponsor Slots, Ads-Consent und native IAP werden vorbereitet, ohne schon live Geld zu nehmen.",
   },
   {
     id: "native",
@@ -144,6 +150,23 @@ export const manualLaunchChecks: ManualLaunchCheck[] = [
     description: "/store öffnen, Listing-Draft, Screenshot-Story, Datenschutz-Labels und Store-Report einmal durchgehen.",
     owner: "Store",
     priority: "mittel",
+  },
+
+  {
+    id: "monetization-center-review",
+    categoryId: "monetization",
+    title: "Monetarisierung Center geprüft",
+    description: "/monetization öffnen und prüfen: Checkout-Links, ENV-Flags, Ads/Sponsor Slots und rechtliche Blocker sind verständlich.",
+    owner: "Produkt",
+    priority: "hoch",
+  },
+  {
+    id: "checkout-not-live",
+    categoryId: "monetization",
+    title: "Checkout nicht versehentlich live",
+    description: "Bestätigen, dass NEXT_PUBLIC_GRADEGLOW_ENABLE_CHECKOUT erst true wird, wenn Payment/Legal final getestet sind.",
+    owner: "Technik",
+    priority: "hoch",
   },
   {
     id: "native-config-review",

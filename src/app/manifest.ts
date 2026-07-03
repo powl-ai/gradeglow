@@ -79,6 +79,14 @@ export default function manifest(): MetadataRoute.Manifest {
         url: "/store",
         icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
       },
+
+      {
+        name: "Monetarisierung vorbereiten",
+        short_name: "Monetarisierung",
+        description: "Checkout, Plus, Sponsor Slots und Ads vorbereiten",
+        url: "/monetization",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
+      },
       {
         name: "Native App Prep",
         short_name: "Native",

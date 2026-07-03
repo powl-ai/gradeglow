@@ -6,6 +6,8 @@ import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
 import { formatLimit, getPlanLimits, planLabels } from "../lib/gradeglowAccess";
 import { getFeatureAccess, premiumBoundaryRows } from "../lib/featureGates";
+import { canOpenCheckout, checkoutLinks } from "../lib/monetization";
+import UpgradeCard from "./UpgradeCard";
 import { getEffectivePageThemeId, getPageThemeStyle, getThemeClassName } from "../lib/gradeglowThemes";
 import type { AppUser } from "../types";
 
@@ -40,6 +42,7 @@ export default function PremiumBoundariesPage({ user, onLogout }: { user: AppUse
               <div className="flex flex-col gap-2 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur sm:min-w-72">
                 <Link href="/" className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-black text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-50">Zur App</Link>
                 <Link href="/launch" className="rounded-2xl bg-white/10 px-4 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">Launch Center</Link>
+                <Link href="/monetization" className="rounded-2xl bg-white/10 px-4 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">Monetarisierung</Link>
                 <button type="button" onClick={onLogout} className="rounded-2xl bg-white/10 px-4 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">Logout</button>
               </div>
             </div>
@@ -119,25 +122,27 @@ export default function PremiumBoundariesPage({ user, onLogout }: { user: AppUse
 
 
         <section className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
-          <p className="text-sm font-bold text-violet-700">Monetarisierung</p>
-          <h2 className="mt-1 text-2xl font-black tracking-tight">Plus zuerst, Ads nur vorsichtig.</h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div className="rounded-2xl bg-violet-50 p-4 ring-1 ring-violet-100">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-500">Empfohlen</p>
-              <h3 className="mt-2 font-black">GradeGlow Plus</h3>
-              <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">Später Abo oder Einmalkauf für unbegrenzte Nutzung, Themes, Export und Circle-Insights.</p>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <p className="text-sm font-bold text-violet-700">Monetarisierung</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight">Plus zuerst, Ads nur vorsichtig.</h2>
+              <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-slate-500">Checkout-Links und Sponsor Slots sind jetzt vorbereitet. Live wird es erst, wenn du die ENV-Flags in Vercel bewusst aktivierst.</p>
             </div>
-            <div className="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-100">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-600">Optional</p>
-              <h3 className="mt-2 font-black">Sponsor Cards</h3>
-              <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">Wenn Werbung, dann nur als klare, ruhige Karten im Free-Bereich. Nicht im Timer und nicht über Buttons.</p>
-            </div>
-            <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Noch aus</p>
-              <h3 className="mt-2 font-black">Keine echten Ads aktiv</h3>
-              <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">AdSense/AdMob, Consent, Datenschutz und Platzierungen bleiben vorbereitet, aber noch nicht live.</p>
-            </div>
+            <Link href="/monetization" className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5">Monetarisierung öffnen</Link>
           </div>
+          <div className="mt-4">
+            <UpgradeCard />
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {checkoutLinks.map((link) => (
+              <div key={link.cycle} className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{link.isConfigured ? "Verbunden" : "ENV fehlt"}</p>
+                <h3 className="mt-2 font-black">{link.label}</h3>
+                <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">{link.priceLabel}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 rounded-2xl bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800 ring-1 ring-amber-100">Checkout-Status: {canOpenCheckout ? "aktiv" : "Preview"}. Vor echten Zahlungen Impressum, Datenschutz, AGB/Widerruf und Support finalisieren.</p>
         </section>
 
         <section className="grid gap-4 lg:grid-cols-2">          <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">

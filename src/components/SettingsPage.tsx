@@ -308,7 +308,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     setAccentColor(profile.accentColor || "violet");
     setActivePageThemeId(profile.activePageThemeId || "default");
     setAvatarDataUrl(profile.avatarDataUrl || "");
-    setEnabledFeatureIds(profile.enabledFeatureIds.length > 0 ? profile.enabledFeatureIds : [...DEFAULT_ENABLED_FEATURE_IDS]);
+    setEnabledFeatureIds(profile.enabledFeatureIds);
   }, [isProfileLoaded, profile]);
 
   const syncStyle = useMemo(() => {
@@ -634,19 +634,51 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     ) : avatar;
   };
 
+  const saveFeatureSelection = async (nextIds: GradeGlowFeatureId[], successMessage: string) => {
+    const uniqueFeatureIds = Array.from(new Set(nextIds));
+    setEnabledFeatureIds(uniqueFeatureIds);
+
+    if (!isProfileLoaded) {
+      setFormMessage("Profil wird noch geladen. Bitte kurz warten.");
+      return;
+    }
+
+    setIsSaving(true);
+    setFormMessage("Sichtbare Bereiche werden gespeichert…");
+
+    try {
+      const cleanedDisplayName = displayName.trim() || profile.displayName || user.displayName || user.email || "GradeGlow User";
+      await saveProfile({
+        ...nextProfile,
+        displayName: cleanedDisplayName,
+        enabledFeatureIds: uniqueFeatureIds,
+        onboardingCompleted: true,
+      });
+      setFormMessage(successMessage);
+    } catch {
+      setFormMessage("Sichtbare Bereiche konnten nicht gespeichert werden.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const applyFeaturePreset = (nextIds: GradeGlowFeatureId[], message: string) => {
-    setEnabledFeatureIds(Array.from(new Set(nextIds)));
-    setFormMessage(message);
+    void saveFeatureSelection(nextIds, message);
   };
 
   const toggleFeaturePreference = (featureId: GradeGlowFeatureId) => {
-    setEnabledFeatureIds((current) => {
-      if (current.includes(featureId)) {
-        return current.filter((item) => item !== featureId);
-      }
+    const nextIds = enabledFeatureIds.includes(featureId)
+      ? enabledFeatureIds.filter((item) => item !== featureId)
+      : [...enabledFeatureIds, featureId];
 
-      return [...current, featureId];
-    });
+    const optionLabel = featurePreferenceOptions.find((option) => option.id === featureId)?.title ?? "Bereich";
+    const isActivating = !enabledFeatureIds.includes(featureId);
+    void saveFeatureSelection(
+      nextIds,
+      isActivating
+        ? `${optionLabel} aktiviert und gespeichert.`
+        : `${optionLabel} ausgeblendet und gespeichert.`
+    );
   };
 
   return (
@@ -815,16 +847,16 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
               <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <p className="text-sm font-black text-slate-950">Sichtbare Bereiche</p>
-                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">Blende Funktionen aus, die du nicht nutzt. Pflichtbereiche wie Überblick, Module und Prüfungen bleiben immer sichtbar. Nach „Minimal starten“ kannst du hier jederzeit alles wieder aktivieren.</p>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">Blende Funktionen aus, die du nicht nutzt. Pflichtbereiche wie Überblick, Module und Prüfungen bleiben immer sichtbar. Nach „Minimal starten“ kannst du hier jederzeit alles wieder aktivieren. Änderungen werden in diesem Block direkt gespeichert, damit die mobile PWA das Menü sofort aktualisieren kann.</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50 hover:text-violet-700" onClick={() => applyFeaturePreset(RECOMMENDED_FEATURE_IDS, "Empfohlene Bereiche ausgewählt. Speichern nicht vergessen.")}>
+                  <button type="button" className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50 hover:text-violet-700" disabled={isSaving || !isProfileLoaded} onClick={() => applyFeaturePreset(RECOMMENDED_FEATURE_IDS, "Empfohlene Bereiche aktiviert und gespeichert.")}>
                     Empfohlen
                   </button>
-                  <button type="button" className="rounded-full bg-slate-950 px-3 py-2 text-xs font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-800" onClick={() => applyFeaturePreset(DEFAULT_ENABLED_FEATURE_IDS, "Alle Bereiche ausgewählt. Speichern nicht vergessen.")}>
+                  <button type="button" className="rounded-full bg-slate-950 px-3 py-2 text-xs font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-800" disabled={isSaving || !isProfileLoaded} onClick={() => applyFeaturePreset(DEFAULT_ENABLED_FEATURE_IDS, "Alle Bereiche aktiviert und gespeichert.")}>
                     Alles aktivieren
                   </button>
-                  <button type="button" className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-slate-100" onClick={() => applyFeaturePreset([], "Minimal ausgewählt. Speichern nicht vergessen.")}>
+                  <button type="button" className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-slate-100" disabled={isSaving || !isProfileLoaded} onClick={() => applyFeaturePreset([], "Minimal-Modus gespeichert.")}>
                     Minimal
                   </button>
                 </div>
@@ -837,6 +869,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                       key={option.id}
                       type="button"
                       className={`gg-readable-option-card rounded-2xl p-3 text-left ring-1 transition hover:-translate-y-0.5 ${isEnabled ? "is-active" : ""}`}
+                      disabled={isSaving || !isProfileLoaded}
                       onClick={() => toggleFeaturePreference(option.id)}
                     >
                       <span className="flex items-center justify-between gap-3">

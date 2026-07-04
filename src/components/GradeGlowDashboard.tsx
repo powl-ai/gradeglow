@@ -1125,7 +1125,8 @@ export default function GradeGlowDashboard({
   const degreeProgramLabel =
     profile.degreeProgram || "Studiengang noch nicht gesetzt";
   const enabledFeatureIds = new Set(profile.enabledFeatureIds);
-  const disabledOptionalFeatureCount = DEFAULT_ENABLED_FEATURE_IDS.filter((featureId) => !enabledFeatureIds.has(featureId)).length;
+  const enabledOptionalFeatureCount = DEFAULT_ENABLED_FEATURE_IDS.filter((featureId) => enabledFeatureIds.has(featureId)).length;
+  const disabledOptionalFeatureCount = DEFAULT_ENABLED_FEATURE_IDS.length - enabledOptionalFeatureCount;
   const isBetaDiagnosticsUser = entitlement.plan === "admin" || ["beta_test", "founder", "manual"].includes(entitlement.premiumSource);
   const visibleDashboardNavItems = dashboardNavItems.filter((item) => {
     if (item.navHidden) return false;
@@ -1502,6 +1503,21 @@ export default function GradeGlowDashboard({
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+              <Link
+                href="/settings#features"
+                className="mb-3 block rounded-2xl bg-violet-50 p-3 text-left ring-1 ring-violet-100 transition hover:-translate-y-0.5 hover:bg-violet-100"
+                onClick={() => setIsNavigationOpen(false)}
+              >
+                <span className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-black text-violet-900">Sichtbare Bereiche verwalten</span>
+                  <span className="rounded-full bg-white px-2.5 py-1 text-[0.65rem] font-black text-violet-700 ring-1 ring-violet-100">
+                    {enabledOptionalFeatureCount}/{DEFAULT_ENABLED_FEATURE_IDS.length} aktiv
+                  </span>
+                </span>
+                <span className="mt-1 block text-xs font-semibold leading-5 text-violet-700">
+                  Circle, Insights, Stundenplan, StuPo und GlowPoints direkt aktivieren oder ausblenden.
+                </span>
+              </Link>
               <div className="grid gap-2">
                 {visibleDashboardNavItems.map((item) => {
                   const isActive = item.id === page;

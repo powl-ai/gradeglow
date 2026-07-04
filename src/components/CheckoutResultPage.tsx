@@ -5,6 +5,8 @@ import { GRADEGLOW_SUPPORT_EMAIL } from "../lib/appVersion";
 
 type CheckoutResultPageProps = {
   result: "success" | "cancel";
+  isPreview?: boolean;
+  cycle?: string;
 };
 
 const copyByResult = {
@@ -22,11 +24,16 @@ const copyByResult = {
   },
 };
 
-export default function CheckoutResultPage({ result }: CheckoutResultPageProps) {
+export default function CheckoutResultPage({ result, isPreview = false, cycle }: CheckoutResultPageProps) {
   const content = copyByResult[result];
+  const normalizedCycle = cycle === "monthly" || cycle === "yearly" || cycle === "lifetime" ? cycle : null;
+  const previewTitle = result === "success" ? "Preview abgeschlossen — kein Kauf wurde ausgelöst." : "Preview abgebrochen — alles unverändert.";
+  const previewText = result === "success"
+    ? "Das ist nur der Fake-Live-Rückweg für GradeGlow Plus. Es wurde kein Zahlungsanbieter geöffnet, kein Geld genommen und kein Entitlement gesetzt. Für echte Käufe bleibt Checkout bis zur ENV-Aktivierung aus."
+    : "Das ist der sichere Fake-Live-Cancel-Rückweg. Dein Plan bleibt unverändert und es wurde nichts gespeichert.";
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950 gg-safe-x gg-safe-bottom">
+    <main className="min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950 gg-safe-top gg-safe-x gg-safe-bottom">
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute left-[-8rem] top-[-8rem] h-96 w-96 rounded-full bg-fuchsia-200/60 blur-3xl" />
         <div className="absolute right-[-10rem] top-40 h-[28rem] w-[28rem] rounded-full bg-violet-200/60 blur-3xl" />
@@ -41,11 +48,12 @@ export default function CheckoutResultPage({ result }: CheckoutResultPageProps) 
             <div className="relative">
               <div className="mb-5 flex flex-wrap items-center gap-3">
                 <GradeGlowLogo size="md" tone="light" />
-                <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-violet-50 ring-1 ring-white/15">{content.badge}</span>
+                <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-violet-50 ring-1 ring-white/15">{isPreview ? "Preview · keine Zahlung" : content.badge}</span>
+                {normalizedCycle && <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-violet-50 ring-1 ring-white/15">{normalizedCycle}</span>}
               </div>
-              <p className="text-sm font-bold uppercase tracking-[0.35em] text-fuchsia-200/80">{content.eyebrow}</p>
-              <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">{content.title}</h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">{content.text}</p>
+              <p className="text-sm font-bold uppercase tracking-[0.35em] text-fuchsia-200/80">{isPreview ? "Fake-Live Checkout" : content.eyebrow}</p>
+              <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">{isPreview ? previewTitle : content.title}</h1>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">{isPreview ? previewText : content.text}</p>
               <div className="mt-6 flex flex-wrap gap-2">
                 <Link href="/" className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-violet-50">Zur App</Link>
                 <Link href="/premium" className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">Plus ansehen</Link>
@@ -76,7 +84,9 @@ export default function CheckoutResultPage({ result }: CheckoutResultPageProps) 
             ))}
           </ol>
           <p className="mt-4 rounded-2xl bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800 ring-1 ring-amber-100">
-            Support bei Kauf-/Freischaltungsfragen: {GRADEGLOW_SUPPORT_EMAIL}
+            {isPreview
+              ? "Preview-Hinweis: Diese Seite ist nur zum Testen des Kauf-Rückwegs. Für echte Käufe muss zuerst ein Payment-Link verbunden und Checkout bewusst aktiviert werden."
+              : `Support bei Kauf-/Freischaltungsfragen: ${GRADEGLOW_SUPPORT_EMAIL}`}
           </p>
         </section>
       </div>

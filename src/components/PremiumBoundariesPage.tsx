@@ -8,6 +8,7 @@ import { formatLimit, getPlanLimits, planLabels } from "../lib/gradeglowAccess";
 import { getFeatureAccess, premiumBoundaryRows } from "../lib/featureGates";
 import { canOpenCheckout, checkoutLinks } from "../lib/monetization";
 import UpgradeCard from "./UpgradeCard";
+import PremiumPreviewCheckoutCard from "./PremiumPreviewCheckoutCard";
 import { getEffectivePageThemeId, getPageThemeStyle, getThemeClassName } from "../lib/gradeglowThemes";
 import type { AppUser } from "../types";
 
@@ -66,6 +67,8 @@ export default function PremiumBoundariesPage({ user, onLogout }: { user: AppUse
             <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">Module: {formatLimit(plusLimits.maxModules)} · Prüfungen: {formatLimit(plusLimits.maxExams)} · Freunde: {formatLimit(plusLimits.maxFriends)}</p>
           </div>
         </section>
+
+        <PremiumPreviewCheckoutCard />
 
         <section className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">

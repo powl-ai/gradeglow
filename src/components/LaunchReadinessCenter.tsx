@@ -379,7 +379,7 @@ export default function LaunchReadinessCenter({
   };
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950 gg-safe-x gg-safe-bottom">
+    <main className="min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950 gg-safe-top gg-safe-x gg-safe-bottom">
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute left-[-8rem] top-[-8rem] h-96 w-96 rounded-full bg-fuchsia-200/60 blur-3xl" />
         <div className="absolute right-[-10rem] top-40 h-[28rem] w-[28rem] rounded-full bg-violet-200/60 blur-3xl" />

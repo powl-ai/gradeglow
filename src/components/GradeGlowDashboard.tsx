@@ -1773,6 +1773,16 @@ export default function GradeGlowDashboard({
                 <Link href="/settings"><span>◌</span><strong>Profil</strong><small>Mehr</small></Link>
               </div>
 
+              {entitlement.plan === "free" && (
+                <Link href="/premium" className="gg-mobile-plus-teaser">
+                  <span>
+                    <strong>Plus Preview</strong>
+                    <small>Fake-Live aktiv · kein Kauf</small>
+                  </span>
+                  <b>ansehen</b>
+                </Link>
+              )}
+
               <div className="gg-mobile-stat-list">
                 <div className="gg-mobile-stat-row"><span>Schnitt</span><strong>{analytics.average > 0 ? formatGrade(analytics.average) : "—"}</strong></div>
                 <div className="gg-mobile-stat-row"><span>ECTS</span><strong>{analytics.passedEcts}/{totalTargetEcts}</strong></div>

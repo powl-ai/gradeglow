@@ -3,6 +3,7 @@
 import Link from "next/link";
 import GradeGlowLogo from "./GradeGlowLogo";
 import UpgradeCard from "./UpgradeCard";
+import PremiumPreviewCheckoutCard from "./PremiumPreviewCheckoutCard";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
 import { GRADEGLOW_APP_VERSION } from "../lib/appVersion";
@@ -145,6 +146,8 @@ export default function MonetizationHubPage({ user, onLogout }: { user: AppUser;
 
         <UpgradeCard />
 
+        <PremiumPreviewCheckoutCard />
+
         <section className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -189,9 +192,15 @@ export default function MonetizationHubPage({ user, onLogout }: { user: AppUser;
                     <span className={`rounded-full px-2.5 py-1 text-[0.65rem] font-black ring-1 ${link.isConfigured ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-amber-50 text-amber-700 ring-amber-100"}`}>{link.isConfigured ? "Link da" : "ENV fehlt"}</span>
                   </div>
                   <p className="mt-3 break-all rounded-xl bg-white p-3 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">{link.url || `NEXT_PUBLIC_GRADEGLOW_PLUS_${link.cycle.toUpperCase()}_URL`}</p>
-                  <a href={target.href} target={target.isLive ? "_blank" : undefined} rel={target.isLive ? "noreferrer" : undefined} className="mt-3 block rounded-2xl bg-white px-3 py-2 text-center text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50 hover:text-violet-700">
-                    {target.isLive ? "Checkout testen" : "Preview / verbinden"}
-                  </a>
+                  {target.isLive ? (
+                    <a href={target.href} target="_blank" rel="noreferrer" className="mt-3 block rounded-2xl bg-white px-3 py-2 text-center text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50 hover:text-violet-700">
+                      Checkout testen
+                    </a>
+                  ) : (
+                    <Link href={`/checkout/success?preview=1&cycle=${link.cycle}`} className="mt-3 block rounded-2xl bg-white px-3 py-2 text-center text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50 hover:text-violet-700">
+                      Preview testen
+                    </Link>
+                  )}
                 </article>
               );
             })}

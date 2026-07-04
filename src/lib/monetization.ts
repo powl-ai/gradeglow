@@ -49,14 +49,14 @@ export const checkoutLinks: CheckoutLink[] = [
   {
     cycle: "monthly",
     label: "Plus monatlich",
-    priceLabel: getEnv("NEXT_PUBLIC_GRADEGLOW_PLUS_MONTHLY_PRICE") || "2–4 € / Monat geplant",
+    priceLabel: getEnv("NEXT_PUBLIC_GRADEGLOW_PLUS_MONTHLY_PRICE") || "3,99 € / Monat",
     url: getEnv("NEXT_PUBLIC_GRADEGLOW_PLUS_MONTHLY_URL"),
     isConfigured: Boolean(getEnv("NEXT_PUBLIC_GRADEGLOW_PLUS_MONTHLY_URL")),
   },
   {
     cycle: "yearly",
     label: "Plus jährlich",
-    priceLabel: getEnv("NEXT_PUBLIC_GRADEGLOW_PLUS_YEARLY_PRICE") || "Jahrespreis geplant",
+    priceLabel: getEnv("NEXT_PUBLIC_GRADEGLOW_PLUS_YEARLY_PRICE") || "29,99 € / Jahr",
     url: getEnv("NEXT_PUBLIC_GRADEGLOW_PLUS_YEARLY_URL"),
     isConfigured: Boolean(getEnv("NEXT_PUBLIC_GRADEGLOW_PLUS_YEARLY_URL")),
     recommended: true,
@@ -64,7 +64,7 @@ export const checkoutLinks: CheckoutLink[] = [
   {
     cycle: "lifetime",
     label: "Lifetime / Early Supporter",
-    priceLabel: getEnv("NEXT_PUBLIC_GRADEGLOW_PLUS_LIFETIME_PRICE") || "später Early-Supporter-Angebot",
+    priceLabel: getEnv("NEXT_PUBLIC_GRADEGLOW_PLUS_LIFETIME_PRICE") || "49 € Early Supporter",
     url: getEnv("NEXT_PUBLIC_GRADEGLOW_PLUS_LIFETIME_URL"),
     isConfigured: Boolean(getEnv("NEXT_PUBLIC_GRADEGLOW_PLUS_LIFETIME_URL")),
   },

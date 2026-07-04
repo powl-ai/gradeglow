@@ -1242,6 +1242,10 @@ button,
   touch-action: manipulation;
 }
 
+.gg-safe-top {
+  padding-top: max(var(--gg-safe-top), 1rem);
+}
+
 .gg-safe-bottom {
   padding-bottom: max(var(--gg-safe-bottom), 1rem);
 }
@@ -2624,5 +2628,129 @@ button,
 
   .gg-mobile-tabbar a {
     min-height: 1.82rem !important;
+  }
+}
+
+/* Fake-live Premium + final PWA safe-area polish --------------------------
+   Keep this at the end so it wins over older mobile-shell experiments. */
+@media (max-width: 1023px) {
+  main.gg-themed > .mx-auto:not(.gg-app-shell) {
+    padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.05rem), 2.15rem) !important;
+    padding-right: max(env(safe-area-inset-right, 0px), 0.8rem) !important;
+    padding-left: max(env(safe-area-inset-left, 0px), 0.8rem) !important;
+    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 1.2rem), 1.4rem) !important;
+  }
+
+  .gg-app-shell {
+    min-height: 100svh;
+    padding-top: max(calc(env(safe-area-inset-top, 0px) + 1rem), 2.05rem) !important;
+    padding-right: max(env(safe-area-inset-right, 0px), 0.8rem) !important;
+    padding-left: max(env(safe-area-inset-left, 0px), 0.8rem) !important;
+    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 4.7rem), 5.05rem) !important;
+  }
+
+  .gg-mobile-appbar {
+    display: flex !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    margin: 0 0 0.55rem !important;
+    z-index: 20 !important;
+  }
+
+  .gg-mobile-plus-teaser {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.7rem;
+    border: 1px solid rgba(139, 92, 246, 0.16);
+    border-radius: 1rem;
+    background: rgba(15, 23, 42, 0.96);
+    padding: 0.7rem 0.8rem;
+    color: white;
+    text-decoration: none;
+    box-shadow: 0 14px 30px rgba(88, 28, 135, 0.14);
+  }
+
+  .gg-mobile-plus-teaser span {
+    display: grid;
+    gap: 0.12rem;
+  }
+
+  .gg-mobile-plus-teaser strong {
+    font-size: 0.78rem;
+    font-weight: 950;
+    letter-spacing: -0.02em;
+  }
+
+  .gg-mobile-plus-teaser small {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.62rem;
+    font-weight: 800;
+  }
+
+  .gg-mobile-plus-teaser b {
+    flex-shrink: 0;
+    border-radius: 999px;
+    background: white;
+    padding: 0.45rem 0.62rem;
+    color: rgb(15, 23, 42);
+    font-size: 0.62rem;
+    font-weight: 950;
+  }
+
+  .gg-mobile-tabbar {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.2rem) !important;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 1023px) {
+  html,
+  body {
+    min-height: 100svh;
+    background: var(--gg-app-bg, #fbf7ff) !important;
+  }
+
+  body {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  main.gg-themed > .mx-auto:not(.gg-app-shell) {
+    padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.35rem), 2.8rem) !important;
+    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 1.2rem), 1.6rem) !important;
+  }
+
+  .gg-app-shell {
+    padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.25rem), 2.75rem) !important;
+    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 4.25rem), 4.7rem) !important;
+  }
+
+  .gg-mobile-appbar {
+    display: flex !important;
+    margin-top: 0 !important;
+  }
+
+  .gg-mobile-tabbar {
+    min-height: max(calc(env(safe-area-inset-bottom, 0px) + 3.05rem), 3.25rem) !important;
+    padding-top: 0.2rem !important;
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.18rem) !important;
+  }
+
+  .gg-mobile-tabbar a {
+    min-height: 1.98rem !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  .gg-safe-top {
+    padding-top: max(calc(env(safe-area-inset-top, 0px) + 0.85rem), 1.75rem) !important;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 1023px) {
+  .gg-safe-top {
+    padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.15rem), 2.65rem) !important;
   }
 }

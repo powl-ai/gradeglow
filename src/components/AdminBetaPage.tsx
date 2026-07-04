@@ -116,6 +116,7 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
   const [note, setNote] = useState("1 Jahr Beta-Test Premium");
   const [betaTester, setBetaTester] = useState(true);
   const [message, setMessage] = useState("");
+  const [copyEntitlementMessage, setCopyEntitlementMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [entitlements, setEntitlements] = useState<EntitlementRow[]>([]);
   const [feedback, setFeedback] = useState<GradeGlowFeedback[]>([]);
@@ -127,6 +128,14 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
 
   const selectedUid = uid.trim();
   const selectedPlanHasNoExpiry = isNonExpiringPlan(plan) || plan === "free";
+  const entitlementPreview = useMemo(() => ({
+    plan,
+    premiumUntil: selectedPlanHasNoExpiry ? "" : premiumUntil.trim(),
+    premiumSource: premiumSource.trim() || (betaTester ? "beta_test" : "manual"),
+    premiumStatus: premiumStatus.trim() || "active",
+    note: note.trim(),
+    betaTester,
+  }), [betaTester, note, plan, premiumSource, premiumStatus, premiumUntil, selectedPlanHasNoExpiry]);
   const effectivePageThemeId = getEffectivePageThemeId(profile.activePageThemeId, limits.premiumThemes);
   const themeClassName = getThemeClassName(profile.themeMode);
   const themeStyle = getPageThemeStyle(effectivePageThemeId);
@@ -139,6 +148,17 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
     setPremiumStatus(defaults.premiumStatus);
     setNote(defaults.note);
     setBetaTester(defaults.betaTester);
+    setCopyEntitlementMessage("");
+  };
+
+  const applyManualPaymentPreset = () => {
+    setPlan("premium");
+    setPremiumUntil(getDefaultPremiumUntil());
+    setPremiumSource("payment_manual");
+    setPremiumStatus("active");
+    setNote("Manuelle Plus-Freischaltung nach geprüftem externen Checkout.");
+    setBetaTester(false);
+    setCopyEntitlementMessage("");
   };
 
   const handlePlanChange = (nextPlan: UserPlan) => {
@@ -179,6 +199,16 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
   const criticalFeedbackCount = activeFeedback.filter((item) => item.priority === "critical").length;
   const doneFeedbackCount = feedback.filter((item) => item.status === "done").length;
   const closedFeedbackCount = feedback.filter((item) => item.status === "closed").length;
+
+  const copyEntitlementJson = async () => {
+    setCopyEntitlementMessage("");
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(entitlementPreview, null, 2));
+      setCopyEntitlementMessage("Entitlement-JSON kopiert.");
+    } catch {
+      setCopyEntitlementMessage("Kopieren nicht möglich. JSON unten manuell markieren.");
+    }
+  };
 
   const loadAdminData = async () => {
     if (!isAdmin) return;
@@ -363,11 +393,12 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
                   <p className="text-sm font-bold text-emerald-700">Launch Readiness</p>
                   <h2 className="mt-1 text-2xl font-black tracking-tight">Mini-Beta mit 2–3 Accounts starten</h2>
                   <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-slate-500">
-                    Erst Profil, Module, Prüfung, Theme-Wechsel, Study Circle und Feedback testen. Danach größere Features wie Stripe, Blaze/Push oder Paywall.
+                    Erst Profil, Module, Prüfung, Theme-Wechsel, Study Circle und Feedback testen. Plus kann weiterhin manuell vergeben werden; echte Webhooks/Functions kommen erst später mit Blaze.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Link href="/diagnostics" className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5">Diagnostics</Link>
+                  <Link href="/monetization" className="rounded-2xl bg-violet-50 px-4 py-3 text-sm font-black text-violet-700 ring-1 ring-violet-100 transition hover:-translate-y-0.5">Monetarisierung</Link>
                   <Link href="/feedback" className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-700 ring-1 ring-emerald-100 transition hover:-translate-y-0.5">Feedback testen</Link>
                 </div>
               </div>
@@ -381,9 +412,10 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
 
                 <div className="mt-5 grid gap-2 sm:grid-cols-2">
                   <button type="button" onClick={() => applyPreset("premium")} className="rounded-2xl bg-violet-50 px-4 py-3 text-left text-xs font-black text-violet-700 ring-1 ring-violet-100 transition hover:-translate-y-0.5">1 Jahr Beta Premium</button>
+                  <button type="button" onClick={applyManualPaymentPreset} className="rounded-2xl bg-emerald-50 px-4 py-3 text-left text-xs font-black text-emerald-700 ring-1 ring-emerald-100 transition hover:-translate-y-0.5">Payment manuell geprüft</button>
                   <button type="button" onClick={() => applyPreset("lifetime")} className="rounded-2xl bg-fuchsia-50 px-4 py-3 text-left text-xs font-black text-fuchsia-700 ring-1 ring-fuchsia-100 transition hover:-translate-y-0.5">Lifetime Freundesbonus</button>
                   <button type="button" onClick={() => applyPreset("admin")} className="rounded-2xl bg-slate-950 px-4 py-3 text-left text-xs font-black text-white transition hover:-translate-y-0.5">Admin / Founder</button>
-                  <button type="button" onClick={() => applyPreset("free")} className="rounded-2xl bg-rose-50 px-4 py-3 text-left text-xs font-black text-rose-700 ring-1 ring-rose-100 transition hover:-translate-y-0.5">Free / Entfernen</button>
+                  <button type="button" onClick={() => applyPreset("free")} className="rounded-2xl bg-rose-50 px-4 py-3 text-left text-xs font-black text-rose-700 ring-1 ring-rose-100 transition hover:-translate-y-0.5 sm:col-span-2">Free / Entfernen</button>
                 </div>
 
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -431,6 +463,18 @@ export default function AdminBetaPage({ user, onLogout }: AdminBetaPageProps) {
                     <span className="mb-1.5 block text-sm font-bold text-slate-700">Notiz</span>
                     <textarea className="field-input min-h-28 resize-y" value={note} onChange={(event) => setNote(event.target.value)} />
                   </label>
+                </div>
+
+                <div className="mt-5 rounded-3xl bg-slate-950 p-4 text-white ring-1 ring-slate-900">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-sm font-black">Entitlement Preview</p>
+                      <p className="mt-1 text-xs font-semibold leading-5 text-slate-300">So wird entitlements/{selectedUid || "UID"} gespeichert. Für geprüfte externe Käufe Quelle payment_manual nutzen.</p>
+                    </div>
+                    <button type="button" onClick={copyEntitlementJson} className="rounded-2xl bg-white px-3 py-2 text-xs font-black text-slate-950 transition hover:-translate-y-0.5">JSON kopieren</button>
+                  </div>
+                  <pre className="mt-3 max-h-56 overflow-auto rounded-2xl bg-white/10 p-3 text-xs font-semibold leading-5 text-slate-100 ring-1 ring-white/10">{JSON.stringify(entitlementPreview, null, 2)}</pre>
+                  {copyEntitlementMessage && <p className="mt-2 text-xs font-bold text-violet-100">{copyEntitlementMessage}</p>}
                 </div>
 
                 {message && <p className="mt-4 rounded-2xl bg-violet-50 p-3 text-sm font-bold text-violet-700 ring-1 ring-violet-100">{message}</p>}

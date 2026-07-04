@@ -3201,7 +3201,7 @@ export default function GradeGlowDashboard({
             <Link href="/feedback" className="transition hover:text-violet-700">Feedback</Link>
             {isBetaDiagnosticsUser && <Link href="/diagnostics" className="transition hover:text-violet-700">Diagnose</Link>}
             <Link href="/settings" className="transition hover:text-violet-700">Profil & Backup</Link>
-            <Link href="/info" className="transition hover:text-violet-700">Info, Datenschutz & Impressum</Link>
+            <Link href="/legal" className="transition hover:text-violet-700">Legal Hub</Link>
             {entitlement.plan === "admin" && <Link href="/admin" className="transition hover:text-violet-700">Admin</Link>}
           </div>
         </footer>

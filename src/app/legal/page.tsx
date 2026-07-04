@@ -1,5 +1,5 @@
 import LegalCenterPage from "../../components/LegalCenterPage";
 
-export default function InfoPage() {
+export default function LegalRoute() {
   return <LegalCenterPage />;
 }

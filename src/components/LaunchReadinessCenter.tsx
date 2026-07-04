@@ -586,8 +586,8 @@ export default function LaunchReadinessCenter({
             <button type="button" onClick={copyReport} className="rounded-2xl bg-violet-700 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-800">
               Report kopieren
             </button>
-            <Link href="/info" className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50">
-              Info/Datenschutz prüfen
+            <Link href="/legal" className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50">
+              Legal Hub prüfen
             </Link>
             <Link href="/feedback" className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50">
               Feedback testen

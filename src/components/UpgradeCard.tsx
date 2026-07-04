@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { getCheckoutTarget } from "../lib/checkout";
 import { canOpenCheckout, getRecommendedCheckoutLink } from "../lib/monetization";
 
 type UpgradeCardProps = {
@@ -15,6 +16,7 @@ export default function UpgradeCard({
   compact = false,
 }: UpgradeCardProps) {
   const link = getRecommendedCheckoutLink();
+  const target = getCheckoutTarget(link.cycle);
 
   return (
     <div className={`rounded-3xl bg-slate-950 text-white ring-1 ring-slate-900 ${compact ? "p-4" : "p-5"}`}>
@@ -29,8 +31,8 @@ export default function UpgradeCard({
         </span>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        {canOpenCheckout && link.url ? (
-          <a href={link.url} target="_blank" rel="noreferrer" className="rounded-2xl bg-white px-4 py-2.5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-violet-50">
+        {target.isLive ? (
+          <a href={target.href} target="_blank" rel="noreferrer" className="rounded-2xl bg-white px-4 py-2.5 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-violet-50">
             Plus öffnen
           </a>
         ) : (

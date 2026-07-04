@@ -769,8 +769,8 @@ export default function AuthGate({ children }: AuthGateProps) {
           </p>
 
           <div className="mt-4 flex flex-wrap items-center justify-center gap-3 border-t border-slate-100 pt-4 text-xs font-bold text-slate-400 sm:mt-5">
-            <Link className="transition hover:text-violet-700" href="/info">
-              Info, Datenschutz & Impressum
+            <Link className="transition hover:text-violet-700" href="/legal">
+              Legal Hub
             </Link>
             <span aria-hidden="true">·</span>
             <span>GradeGlow Prototype</span>

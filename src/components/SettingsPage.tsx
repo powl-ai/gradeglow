@@ -1121,7 +1121,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
             <Link href="/" className="transition hover:text-violet-700">Dashboard</Link>
             <Link href="/feedback" className="transition hover:text-violet-700">Feedback</Link>
             <Link href="/backup" className="transition hover:text-violet-700">Backup</Link>
-            <Link href="/info" className="transition hover:text-violet-700">Info, Datenschutz & Impressum</Link>
+            <Link href="/legal" className="transition hover:text-violet-700">Legal Hub</Link>
           </div>
         </footer>
       </div>

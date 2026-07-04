@@ -234,3 +234,16 @@ Es wurden bewusst keine nativen Plattformordner, keine Capacitor-Abhängigkeiten
 ## Monetization Connect Prep
 
 Siehe `BETA_MONETIZATION_CONNECT_UPDATE.md`. Monetarisierung ist vorbereitet, aber Checkout/Ads sind standardmäßig deaktiviert.
+
+## Monetization + Legal Connect
+
+Aktueller Stand: `beta-2026-07-04-monetization-legal-connect`. Details stehen in `BETA_MONETIZATION_LEGAL_CONNECT_UPDATE.md`.
+
+- Checkout-Provider-Abstraktion für Stripe, Lemon Squeezy, Paddle und spätere native Stores vorbereitet.
+- `/checkout/success` und `/checkout/cancel` als sichere Rückseiten für externe Payment-Provider ergänzt.
+- `/legal` als Legal Hub mit Impressum, Datenschutz, Nutzungsbedingungen, Widerruf, Account-Löschung und Ads-Hinweisen angelegt.
+- `/info` führt jetzt ebenfalls zum Legal Hub.
+- `/monetization` zeigt Provider-Vergleich, Checkout-Flow, Success/Cancel-Rückwege, Entitlement-Flow und Legal-Status.
+- `/admin` hat einen Preset `Payment manuell geprüft` und eine kopierbare Entitlement-JSON-Vorschau.
+- Checkout, Ads und Sponsor Slots bleiben standardmäßig aus.
+- Firestore Rules und Functions wurden nicht geändert.

@@ -1,5 +1,6 @@
 import type { GradeGlowEntitlement, PlanLimits, UserPlan } from "../types";
 import { isPremiumPlan } from "./gradeglowAccess";
+import { isLegalStructureReady } from "./legal";
 
 export type BillingProvider = "none" | "stripe" | "lemonsqueezy" | "paddle" | "app_store" | "play_store";
 export type BillingCycle = "monthly" | "yearly" | "lifetime";
@@ -32,9 +33,14 @@ export type MonetizationReadinessCheck = {
 
 const getEnv = (key: string) => process.env[key]?.trim() ?? "";
 
-export const billingProvider = (getEnv("NEXT_PUBLIC_GRADEGLOW_BILLING_PROVIDER") || "none") as BillingProvider;
+const validBillingProviders: BillingProvider[] = ["none", "stripe", "lemonsqueezy", "paddle", "app_store", "play_store"];
+const getBillingProvider = (value: string): BillingProvider =>
+  validBillingProviders.includes(value as BillingProvider) ? (value as BillingProvider) : "none";
+
+export const billingProvider = getBillingProvider(getEnv("NEXT_PUBLIC_GRADEGLOW_BILLING_PROVIDER") || "none");
 export const monetizationMode = getEnv("NEXT_PUBLIC_GRADEGLOW_MONETIZATION_MODE") || "preview";
 export const isCheckoutEnabled = getEnv("NEXT_PUBLIC_GRADEGLOW_ENABLE_CHECKOUT") === "true";
+export const isPaymentProviderSelected = billingProvider !== "none";
 export const areSponsorSlotsEnabled = getEnv("NEXT_PUBLIC_GRADEGLOW_ENABLE_SPONSOR_SLOTS") === "true";
 export const isAdSenseEnabled = getEnv("NEXT_PUBLIC_GRADEGLOW_ENABLE_ADSENSE") === "true";
 export const adsensePublisherId = getEnv("NEXT_PUBLIC_ADSENSE_PUBLISHER_ID");
@@ -65,7 +71,7 @@ export const checkoutLinks: CheckoutLink[] = [
 ];
 
 export const hasAnyCheckoutLink = checkoutLinks.some((link) => link.isConfigured);
-export const canOpenCheckout = isCheckoutEnabled && hasAnyCheckoutLink;
+export const canOpenCheckout = isCheckoutEnabled && isPaymentProviderSelected && hasAnyCheckoutLink;
 
 export const getRecommendedCheckoutLink = () =>
   checkoutLinks.find((link) => link.recommended && link.isConfigured) ?? checkoutLinks.find((link) => link.isConfigured) ?? checkoutLinks.find((link) => link.recommended) ?? checkoutLinks[0];
@@ -120,6 +126,13 @@ export const monetizationReadinessChecks: MonetizationReadinessCheck[] = [
     owner: "Produkt",
   },
   {
+    id: "provider-selected",
+    title: "Checkout Provider gewählt",
+    description: "Stripe, Lemon Squeezy oder Paddle wählen. Native IAP erst später für echte Store-Builds.",
+    status: isPaymentProviderSelected ? "ready" : "needs_config",
+    owner: "Technik",
+  },
+  {
     id: "checkout-links",
     title: "Checkout Links konfiguriert",
     description: "Setze später die NEXT_PUBLIC_GRADEGLOW_PLUS_*_URL Variablen in Vercel.",
@@ -135,9 +148,9 @@ export const monetizationReadinessChecks: MonetizationReadinessCheck[] = [
   },
   {
     id: "legal-pages",
-    title: "Impressum/Datenschutz/AGB/Widerruf final",
-    description: "Vor echten Zahlungen und Ads rechtlich prüfen und die Info-Seiten finalisieren.",
-    status: "blocked",
+    title: "Impressum/Datenschutz/AGB/Widerruf strukturiert",
+    description: "Legal Hub ist technisch angelegt. Vor echten Zahlungen und Ads Inhalte final prüfen und Platzhalter ersetzen.",
+    status: isLegalStructureReady ? "needs_config" : "blocked",
     owner: "Recht",
   },
   {

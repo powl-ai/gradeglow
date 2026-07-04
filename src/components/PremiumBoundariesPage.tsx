@@ -133,9 +133,13 @@ export default function PremiumBoundariesPage({ user, onLogout }: { user: AppUse
         <section className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="text-sm font-bold text-violet-700">Monetarisierung</p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight">Plus zuerst, Ads nur vorsichtig.</h2>
-              <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-slate-500">Checkout-Links und Sponsor Slots sind jetzt vorbereitet. Live wird es erst, wenn du die ENV-Flags in Vercel bewusst aktivierst.</p>
+              <p className="text-sm font-bold text-violet-700">{isAdmin ? "Monetarisierung" : "Plus Preview"}</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight">{isAdmin ? "Plus zuerst, Ads nur vorsichtig." : "Plus ist vorbereitet, aber noch nicht kaufaktiv."}</h2>
+              <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-slate-500">
+                {isAdmin
+                  ? "Checkout-Links und Sponsor Slots sind vorbereitet. Live wird es erst, wenn du die Vercel-Flags bewusst aktivierst."
+                  : "Du kannst dir die Plus-Pakete schon ansehen. In der Beta wird dabei kein Zahlungsanbieter geöffnet und es werden keine Rechte automatisch gesetzt."}
+              </p>
             </div>
             {isAdmin && <Link href="/monetization" className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5">Monetarisierung öffnen</Link>}
           </div>
@@ -145,13 +149,17 @@ export default function PremiumBoundariesPage({ user, onLogout }: { user: AppUse
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {checkoutLinks.map((link) => (
               <div key={link.cycle} className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{link.isConfigured ? "Verbunden" : "ENV fehlt"}</p>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{isAdmin ? (link.isConfigured ? "Verbunden" : "Preview") : "Preview"}</p>
                 <h3 className="mt-2 font-black">{link.label}</h3>
                 <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">{link.priceLabel}</p>
               </div>
             ))}
           </div>
-          <p className="mt-3 rounded-2xl bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800 ring-1 ring-amber-100">Checkout-Status: {canOpenCheckout ? "aktiv" : "Preview"}. Vor echten Zahlungen Impressum, Datenschutz, AGB/Widerruf und Support finalisieren.</p>
+          <p className="mt-3 rounded-2xl bg-amber-50 p-3 text-xs font-bold leading-5 text-amber-800 ring-1 ring-amber-100">
+            {isAdmin
+              ? `Checkout-Status: ${canOpenCheckout ? "aktiv" : "Preview"}. Vor echten Zahlungen Impressum, Datenschutz, AGB/Widerruf und Support finalisieren.`
+              : "Plus Preview: kein Kauf, kein Zahlungsanbieter, keine automatische Freischaltung."}
+          </p>
         </section>
 
         <section className="grid gap-4 lg:grid-cols-2">          <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">

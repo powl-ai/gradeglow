@@ -237,11 +237,11 @@ const ACTIVE_TIMER_STORAGE_KEY = "gradeglow-active-study-timer-v1";
 const QUICK_RAIL_SCROLL_STORAGE_KEY = "gradeglow-quick-rail-scroll-left-v1";
 const WELCOME_QUERY_PARAM = "welcome";
 
-const mobileTabItems: Array<{ href: string; label: string; icon: string; match: DashboardPage[] }> = [
+const mobileTabItems: Array<{ href: string; label: string; icon: string; match: DashboardPage[]; featureId?: GradeGlowFeatureId }> = [
   { href: "/", label: "Home", icon: "⌂", match: ["overview"] },
   { href: "/exams", label: "Plan", icon: "▦", match: ["exams"] },
   { href: "/timer", label: "Timer", icon: "▶", match: ["timer"] },
-  { href: "/friends", label: "Circle", icon: "●", match: ["friends"] },
+  { href: "/friends", label: "Circle", icon: "●", match: ["friends"], featureId: "friends" },
   { href: "/settings", label: "Profil", icon: "◌", match: [] },
 ];
 
@@ -1136,6 +1136,23 @@ export default function GradeGlowDashboard({
   });
   const activeNavItem =
     dashboardNavItems.find((item) => item.id === page) ?? dashboardNavItems[0];
+  const activeDashboardItem = dashboardNavItems.find((item) => item.id === page);
+  const activeFeatureId = activeDashboardItem?.featureId;
+  const isCurrentFeatureDisabled = Boolean(activeFeatureId && !enabledFeatureIds.has(activeFeatureId));
+  const isCurrentBetaBlocked = Boolean(activeDashboardItem?.betaOnly && !isBetaDiagnosticsUser);
+  const isCurrentAdminBlocked = Boolean(activeDashboardItem?.adminOnly && entitlement.plan !== "admin");
+  const isCurrentPageBlocked = isCurrentFeatureDisabled || isCurrentBetaBlocked || isCurrentAdminBlocked;
+  const currentPageBlockTitle = isCurrentFeatureDisabled
+    ? `${activeNavItem.label} ist ausgeblendet`
+    : isCurrentAdminBlocked
+      ? "Interner Bereich"
+      : "Beta-Werkzeug";
+  const currentPageBlockText = isCurrentFeatureDisabled
+    ? "Du hast diesen Bereich in deiner Feature-Auswahl ausgeblendet. Du kannst ihn jederzeit wieder aktivieren."
+    : isCurrentAdminBlocked
+      ? "Dieser Bereich ist nur für Admins sichtbar und gehört nicht zur normalen Nutzer-App."
+      : "Dieser Bereich ist nur für interne Beta-Tests sichtbar. Normales Feedback kannst du weiterhin senden.";
+  const visibleMobileTabItems = mobileTabItems.filter((item) => !item.featureId || enabledFeatureIds.has(item.featureId));
   const upcomingMobileExams = exams
     .filter((exam) => exam.status !== "done" && !exam.isHidden)
     .sort((a, b) => a.examDate.localeCompare(b.examDate));
@@ -1767,7 +1784,30 @@ export default function GradeGlowDashboard({
           </section>
         )}
 
-        {page === "overview" && (
+        {isCurrentPageBlocked && (
+          <section className="rounded-[2rem] bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+            <p className="text-sm font-bold text-violet-700">{currentPageBlockTitle}</p>
+            <h2 className="mt-1 text-2xl font-black tracking-tight">Nicht in deiner aktuellen App-Ansicht aktiv</h2>
+            <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-500">{currentPageBlockText}</p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {isCurrentFeatureDisabled && (
+                <Link href="/settings#features" className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-800">
+                  Features ändern
+                </Link>
+              )}
+              {isCurrentBetaBlocked && (
+                <Link href="/feedback" className="rounded-2xl bg-violet-700 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-800">
+                  Feedback senden
+                </Link>
+              )}
+              <Link href="/" className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50">
+                Zurück zur App
+              </Link>
+            </div>
+          </section>
+        )}
+
+        {!isCurrentPageBlocked && page === "overview" && (
           <>
             <section className="gg-mobile-home lg:hidden">
               <div className="gg-mobile-hero-card gg-mobile-today-card">
@@ -1788,7 +1828,11 @@ export default function GradeGlowDashboard({
               <div className="gg-mobile-action-grid">
                 <Link href="/timer"><span>▶</span><strong>Timer</strong><small>Fokus starten</small></Link>
                 <Link href="/exams"><span>▦</span><strong>Plan</strong><small>{openStudySessionsCount} offen</small></Link>
-                <Link href="/friends"><span>●</span><strong>Circle</strong><small>Freunde</small></Link>
+                {enabledFeatureIds.has("friends") ? (
+                  <Link href="/friends"><span>●</span><strong>Circle</strong><small>Freunde</small></Link>
+                ) : (
+                  <Link href="/modules"><span>□</span><strong>Module</strong><small>Studium</small></Link>
+                )}
                 <Link href="/settings"><span>◌</span><strong>Profil</strong><small>Mehr</small></Link>
               </div>
 
@@ -1829,6 +1873,7 @@ export default function GradeGlowDashboard({
                 profileReady={isProfileLoaded}
                 profileComplete={profileComplete}
                 cloudMessages={betaCloudMessages}
+                canOpenDiagnostics={isBetaDiagnosticsUser}
               />
             </div>
 
@@ -1846,6 +1891,7 @@ export default function GradeGlowDashboard({
                   profileReady={isProfileLoaded}
                   profileComplete={profileComplete}
                   cloudMessages={betaCloudMessages}
+                  canOpenDiagnostics={isBetaDiagnosticsUser}
                 />
               </div>
             </details>
@@ -1995,7 +2041,7 @@ export default function GradeGlowDashboard({
           </>
         )}
 
-        {page === "insights" && (
+        {!isCurrentPageBlocked && page === "insights" && (
           <section
             id="insights"
             className="scroll-mt-6 overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur"
@@ -2030,7 +2076,7 @@ export default function GradeGlowDashboard({
           </section>
         )}
 
-        {page === "friends" && (
+        {!isCurrentPageBlocked && page === "friends" && (
           <section id="friends" className="scroll-mt-6">
             <StudyFriendsPanel
               user={user}
@@ -2042,7 +2088,7 @@ export default function GradeGlowDashboard({
           </section>
         )}
 
-        {page === "exams" && (
+        {!isCurrentPageBlocked && page === "exams" && (
           <section id="exams" className="scroll-mt-6">
             <GradeGlowPlanner
               modules={modules}
@@ -2060,7 +2106,7 @@ export default function GradeGlowDashboard({
           </section>
         )}
 
-        {page === "timer" && (
+        {!isCurrentPageBlocked && page === "timer" && (
           <section id="timer" className="gg-timer-only-page scroll-mt-6">
             <div className="gg-timer-card">
               <div className="flex items-start justify-between gap-3">
@@ -2127,7 +2173,7 @@ export default function GradeGlowDashboard({
           </section>
         )}
 
-        {page === "schedule" && (
+        {!isCurrentPageBlocked && page === "schedule" && (
           <section id="schedule" className="scroll-mt-6">
             <UniSchedulePanel
               modules={modules}
@@ -2142,13 +2188,13 @@ export default function GradeGlowDashboard({
           </section>
         )}
 
-        {page === "planning" && (
+        {!isCurrentPageBlocked && page === "planning" && (
           <div id="study-planning" className="scroll-mt-6">
             <StudyPlanningPanel modules={modules} setModules={setModules} />
           </div>
         )}
 
-        {page === "modules" && (
+        {!isCurrentPageBlocked && page === "modules" && (
           <>
             <section
               id="modules"
@@ -3094,12 +3140,12 @@ export default function GradeGlowDashboard({
           </>
         )}
 
-        {page === "feedback" && (
+        {!isCurrentPageBlocked && page === "feedback" && (
           <section id="feedback" className="scroll-mt-6 rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
             <p className="text-sm font-bold text-violet-700">Feedback</p>
             <h2 className="mt-1 text-2xl font-black tracking-tight">Bug melden oder Feature wünschen</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Feedback wird auf einer eigenen Seite gesammelt, damit Beta-Meldungen sauber in Firebase landen.
+              Feedback wird auf einer eigenen Seite gesammelt, damit Bugs und Wünsche nicht verloren gehen.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link href="/feedback" className="rounded-2xl bg-violet-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-violet-100 transition hover:-translate-y-0.5 hover:bg-violet-800">
@@ -3114,7 +3160,7 @@ export default function GradeGlowDashboard({
           </section>
         )}
 
-        {page === "diagnostics" && (
+        {!isCurrentPageBlocked && page === "diagnostics" && (
           <section id="diagnostics" className="scroll-mt-6 rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
             <p className="text-sm font-bold text-violet-700">Beta Diagnostics</p>
             <h2 className="mt-1 text-2xl font-black tracking-tight">Status prüfen und Bug melden</h2>
@@ -3132,7 +3178,7 @@ export default function GradeGlowDashboard({
           </section>
         )}
 
-        {page === "backup" && (
+        {!isCurrentPageBlocked && page === "backup" && (
           <section
             id="backup"
             className="scroll-mt-6 overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur"
@@ -3225,7 +3271,7 @@ export default function GradeGlowDashboard({
         )}
 
         <footer className="hidden flex-col items-center justify-between gap-3 pb-2 text-xs font-bold text-slate-400 sm:flex-row lg:flex">
-          <span>GradeGlow Prototype</span>
+          <span>GradeGlow Beta 2026</span>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link href="/feedback" className="transition hover:text-violet-700">Feedback</Link>
             {isBetaDiagnosticsUser && <Link href="/diagnostics" className="transition hover:text-violet-700">Diagnose</Link>}
@@ -3237,7 +3283,7 @@ export default function GradeGlowDashboard({
       </div>
 
       <nav className="gg-mobile-tabbar lg:hidden" aria-label="GradeGlow App Navigation">
-        {mobileTabItems.map((item) => {
+        {visibleMobileTabItems.map((item) => {
           const isActive = item.match.includes(page);
           return (
             <Link key={`${item.href}-${item.label}`} href={item.href} className={isActive ? "is-active" : ""}>

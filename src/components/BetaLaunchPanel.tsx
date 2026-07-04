@@ -13,9 +13,10 @@ type BetaLaunchPanelProps = {
   profileReady: boolean;
   profileComplete: boolean;
   cloudMessages: string[];
+  canOpenDiagnostics?: boolean;
 };
 
-const BETA_LAUNCH_DISMISS_PREFIX = "gradeglow-beta-launch-panel-dismissed-v2";
+const BETA_LAUNCH_DISMISS_PREFIX = "gradeglow-beta-user-guide-dismissed-v1";
 
 const ChecklistItem = ({ label, done, hint }: { label: string; done: boolean; hint: string }) => (
   <div className={`rounded-2xl p-3 ring-1 ${done ? "bg-emerald-50 text-emerald-800 ring-emerald-100" : "bg-amber-50 text-amber-900 ring-amber-100"}`}>
@@ -39,6 +40,7 @@ export default function BetaLaunchPanel({
   profileReady,
   profileComplete,
   cloudMessages,
+  canOpenDiagnostics = false,
 }: BetaLaunchPanelProps) {
   const storageKey = `${BETA_LAUNCH_DISMISS_PREFIX}-${user.uid}`;
   const [isDismissed, setIsDismissed] = useState(false);
@@ -56,7 +58,7 @@ export default function BetaLaunchPanel({
       {
         label: "Profil ist sicher geladen",
         done: profileReady,
-        hint: profileReady ? "Profil-Speichern ist freigegeben." : "GradeGlow wartet noch auf Firestore.",
+        hint: profileReady ? "Profil-Speichern ist freigegeben." : "GradeGlow lädt dein Profil noch.",
       },
       {
         label: "Basisprofil vollständig",
@@ -101,10 +103,10 @@ export default function BetaLaunchPanel({
         <div className="relative bg-slate-950 p-5 text-white sm:p-6 lg:p-7">
           <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-fuchsia-500/12 blur-3xl" />
           <div className="relative">
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-200">Beta Launch</p>
-            <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Ready-Check vor dem Testen</h2>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-200">Beta 2026</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Dein kurzer Test-Guide</h2>
             <p className="mt-3 text-sm font-semibold leading-6 text-slate-300">
-              Nutze diese Box, um GradeGlow kurz vor jedem Beta-Test zu prüfen. Wenn etwas leer wirkt: erst Laden abwarten, dann melden.
+              Teste GradeGlow wie eine echte Lern-App: Profil anlegen, Plan bauen, Timer starten und Feedback schicken, wenn etwas unklar ist.
             </p>
             <div className="mt-5 grid gap-2 sm:grid-cols-3">
               <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
@@ -112,11 +114,11 @@ export default function BetaLaunchPanel({
                 <p className="mt-1 text-sm font-black">{GRADEGLOW_APP_VERSION}</p>
               </div>
               <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
-                <p className="text-xs text-slate-300">Check</p>
+                <p className="text-xs text-slate-300">Teststand</p>
                 <p className="mt-1 text-sm font-black">{doneCount}/{checklist.length} erledigt</p>
               </div>
               <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
-                <p className="text-xs text-slate-300">Cloud</p>
+                <p className="text-xs text-slate-300">Sync</p>
                 <p className="mt-1 truncate text-sm font-black">{cloudMessages[0] ?? "bereit"}</p>
               </div>
             </div>
@@ -124,9 +126,11 @@ export default function BetaLaunchPanel({
               <Link href="/feedback" className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-violet-50">
                 Feedback senden
               </Link>
-              <Link href="/diagnostics" className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">
-                Diagnose öffnen
-              </Link>
+              {canOpenDiagnostics && (
+                <Link href="/diagnostics" className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">
+                  Diagnose öffnen
+                </Link>
+              )}
               <button type="button" onClick={dismiss} className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">
                 Ausblenden
               </button>
@@ -138,9 +142,9 @@ export default function BetaLaunchPanel({
             <ChecklistItem key={item.label} {...item} />
           ))}
           <div className="rounded-2xl bg-violet-50 p-3 text-violet-800 ring-1 ring-violet-100 md:col-span-2 xl:col-span-3">
-            <p className="text-sm font-black">Beta-Test-Aufgabe</p>
+            <p className="text-sm font-black">Was du einmal testen solltest</p>
             <p className="mt-1 text-xs font-semibold leading-5">
-              Account erstellen, Profil speichern, Modul + Prüfung anlegen, Lerneinheit abhaken, Theme wechseln, Freund hinzufügen, Bug/Feedback senden, Daten exportieren, Lösch-Flow mit Testaccount prüfen, neu laden.
+              Account erstellen, Profil speichern, Modul + Prüfung anlegen, Lerneinheit abhaken, Timer speichern, Theme wechseln, Freund hinzufügen, Feedback senden, Daten exportieren und die App neu laden.
             </p>
           </div>
         </div>

@@ -108,7 +108,7 @@ export default function FeedbackPage({ user, onLogout }: FeedbackPageProps) {
       setStatusMessage("Danke, Feedback wurde gespeichert.");
       await loadFeedback();
     } catch {
-      setStatusMessage("Feedback konnte nicht gespeichert werden. Prüfe Login und Firestore-Regeln.");
+      setStatusMessage("Feedback konnte nicht gespeichert werden. Prüfe bitte Login und Verbindung.");
     } finally {
       setIsSubmitting(false);
     }
@@ -139,7 +139,7 @@ export default function FeedbackPage({ user, onLogout }: FeedbackPageProps) {
                 <p className="text-sm font-bold uppercase tracking-[0.35em] text-fuchsia-200/80">GradeGlow Testphase</p>
                 <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl">Feedback, Bugs und Feature-Wünsche.</h1>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-                  Sammle Beta-Rückmeldungen direkt in Firestore, statt sie lose über Chatnachrichten zu verlieren.
+                  Sag kurz, was nicht klappt, was unverständlich ist oder welche Funktion dir fehlt. Je genauer die Meldung, desto schneller lässt sie sich verbessern.
                 </p>
               </div>
 
@@ -200,7 +200,7 @@ export default function FeedbackPage({ user, onLogout }: FeedbackPageProps) {
             </div>
 
             <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-              {statusMessage ? <p className="text-sm font-bold text-slate-600">{statusMessage}</p> : <p className="text-sm text-slate-500">Feedback landet in Firebase unter feedback.</p>}
+              {statusMessage ? <p className="text-sm font-bold text-slate-600">{statusMessage}</p> : <p className="text-sm text-slate-500">Tipp: Nenne Gerät, Browser/PWA und die Seite, auf der es passiert ist.</p>}
               <button type="submit" disabled={isSubmitting} className="rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 transition hover:-translate-y-0.5 disabled:opacity-50">
                 {isSubmitting ? "Speichere…" : "Feedback senden"}
               </button>
@@ -216,6 +216,10 @@ export default function FeedbackPage({ user, onLogout }: FeedbackPageProps) {
               <button type="button" className="rounded-2xl bg-slate-50 px-3 py-2 text-xs font-black text-slate-600 ring-1 ring-slate-200" onClick={loadFeedback}>
                 Neu laden
               </button>
+            </div>
+
+            <div className="mt-5 rounded-2xl bg-violet-50 p-4 text-sm font-semibold leading-6 text-violet-800 ring-1 ring-violet-100">
+              Gute Beta-Meldung: Was wolltest du tun? Was ist passiert? Was hättest du erwartet?
             </div>
 
             <div className="mt-5 space-y-3">

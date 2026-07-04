@@ -56,7 +56,7 @@ export default function PlanUsagePanel({ plan, limits, modulesCount, examsCount,
           <p className="text-sm font-bold text-violet-700">Plan & Limits</p>
           <h2 className="mt-1 text-2xl font-black tracking-tight">{planLabels[plan]} Nutzung</h2>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Free/Premium ist jetzt technisch vorbereitet: Limits werden zentral geprüft und Upgrade-Cards erscheinen dort, wo ein Limit erreicht wird.
+            GradeGlow zeigt dir fair, wie viel du im aktuellen Plan schon nutzt. Plus ist vorbereitet, aber echte Käufe sind noch nicht aktiv.
           </p>
         </div>
         <span className={`self-start rounded-full px-3 py-1.5 text-xs font-black ring-1 ${isFreePlan ? "bg-slate-50 text-slate-600 ring-slate-200" : "bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-100"}`}>
@@ -94,7 +94,7 @@ export default function PlanUsagePanel({ plan, limits, modulesCount, examsCount,
           <UpgradeCard
             compact
             title={hasReachedLimit ? "Free-Limit erreicht" : "GradeGlow Plus vorbereitet"}
-            description="Später: mehr Module, mehr Prüfungen, mehr Freunde, Advanced Stats, Premium-Themes und keine Ads. Für Beta kannst du Premium weiterhin manuell über Firebase Entitlements freischalten."
+            description="Später: mehr Module, mehr Prüfungen, mehr Freunde, Advanced Stats, Premium-Themes und keine Ads. In der Beta ist Plus nur als Preview sichtbar."
           />
         </div>
       )}

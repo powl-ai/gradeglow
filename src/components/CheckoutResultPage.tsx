@@ -57,7 +57,6 @@ export default function CheckoutResultPage({ result, isPreview = false, cycle }:
               <div className="mt-6 flex flex-wrap gap-2">
                 <Link href="/" className="rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-violet-50">Zur App</Link>
                 <Link href="/premium" className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">Plus ansehen</Link>
-                <Link href="/monetization" className="rounded-2xl bg-white/10 px-4 py-3 text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">Monetarisierung</Link>
               </div>
             </div>
           </div>

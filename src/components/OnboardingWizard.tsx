@@ -326,7 +326,7 @@ export default function OnboardingWizard({
                 <p className="text-sm font-bold text-violet-700">Basisdaten</p>
                 <h2 className="mt-1 text-2xl font-black tracking-tight">Was studierst du?</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Das kannst du später jederzeit unter Profil ändern.
+                  Das kannst du später jederzeit unter Profil → Sichtbare Bereiche ändern.
                 </p>
               </div>
 
@@ -402,7 +402,7 @@ export default function OnboardingWizard({
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-sm font-black text-slate-950">Welche Bereiche brauchst du wirklich?</p>
-                    <p className="mt-1 text-sm leading-6 text-slate-500">Wähle bewusst aus. Überblick, Module und Prüfungen bleiben immer sichtbar; alles andere kannst du später im Profil ändern.</p>
+                    <p className="mt-1 text-sm leading-6 text-slate-500">Wähle bewusst aus. Überblick, Module und Prüfungen bleiben immer sichtbar; alles andere kannst du später im Profil → Sichtbare Bereiche ändern.</p>
                   </div>
                   <span className={`w-fit rounded-full px-3 py-1 text-[0.7rem] font-black ring-1 ${featureSetupChoice ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-amber-50 text-amber-700 ring-amber-100"}`}>
                     {featureSetupChoice ? "Auswahl gesetzt" : "Noch keine Auswahl"}

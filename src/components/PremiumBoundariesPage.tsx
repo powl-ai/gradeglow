@@ -20,6 +20,7 @@ export default function PremiumBoundariesPage({ user, onLogout }: { user: AppUse
   const themeStyle = getPageThemeStyle(effectivePageThemeId);
   const freeLimits = getPlanLimits("free");
   const plusLimits = getPlanLimits("premium");
+  const isAdmin = entitlement.plan === "admin";
 
   return (
     <main className={`gg-themed ${themeClassName} min-h-screen overflow-x-hidden bg-[#fbf7ff] text-slate-950`} data-accent={profile.accentColor} data-page-theme={effectivePageThemeId} style={themeStyle}>
@@ -42,8 +43,13 @@ export default function PremiumBoundariesPage({ user, onLogout }: { user: AppUse
               </div>
               <div className="flex flex-col gap-2 rounded-3xl bg-white/10 p-4 ring-1 ring-white/10 backdrop-blur sm:min-w-72">
                 <Link href="/" className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-black text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-50">Zur App</Link>
-                <Link href="/launch" className="rounded-2xl bg-white/10 px-4 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">Launch Center</Link>
-                <Link href="/monetization" className="rounded-2xl bg-white/10 px-4 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">Monetarisierung</Link>
+                <Link href="/legal" className="rounded-2xl bg-white/10 px-4 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">Rechtliches</Link>
+                {isAdmin && (
+                  <>
+                    <Link href="/launch" className="rounded-2xl bg-white/10 px-4 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">Launch Center</Link>
+                    <Link href="/monetization" className="rounded-2xl bg-white/10 px-4 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">Monetarisierung</Link>
+                  </>
+                )}
                 <button type="button" onClick={onLogout} className="rounded-2xl bg-white/10 px-4 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">Logout</button>
               </div>
             </div>
@@ -131,7 +137,7 @@ export default function PremiumBoundariesPage({ user, onLogout }: { user: AppUse
               <h2 className="mt-1 text-2xl font-black tracking-tight">Plus zuerst, Ads nur vorsichtig.</h2>
               <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-slate-500">Checkout-Links und Sponsor Slots sind jetzt vorbereitet. Live wird es erst, wenn du die ENV-Flags in Vercel bewusst aktivierst.</p>
             </div>
-            <Link href="/monetization" className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5">Monetarisierung öffnen</Link>
+            {isAdmin && <Link href="/monetization" className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5">Monetarisierung öffnen</Link>}
           </div>
           <div className="mt-4">
             <UpgradeCard />

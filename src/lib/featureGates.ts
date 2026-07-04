@@ -26,6 +26,9 @@ export type FeatureAccessResult = {
 
 const betaSources = ["beta_test", "founder", "manual", "friend_bonus", "promo"];
 
+export const isAdminEntitlement = (entitlement: Pick<GradeGlowEntitlement, "plan">) =>
+  entitlement.plan === "admin";
+
 export const isBetaEntitlement = (entitlement: Pick<GradeGlowEntitlement, "plan" | "premiumSource">) =>
   entitlement.plan === "admin" || betaSources.includes(entitlement.premiumSource);
 
@@ -53,9 +56,10 @@ export const getFeatureAccess = (
     case "exportBackup":
       return { allowed: isPremium || isBeta, label: isPremium || isBeta ? `${planLabel} aktiv` : "GradeGlow Plus", reason: isPremium || isBeta ? "Dieses Plus-Feature ist für deinen Account freigeschaltet." : "Dieses Feature bleibt sichtbar, wird später aber als Plus-Vorteil vermarktet.", badge: isPremium || isBeta ? (isBeta ? "Beta" : "Plus") : "Plus" };
     case "diagnostics":
+      return { allowed: isBeta || isAdmin, label: isBeta || isAdmin ? "Beta-Werkzeug" : "Beta intern", reason: isBeta || isAdmin ? "Beta-/Admin-Werkzeuge sind für diesen Account sichtbar." : "Dieses Werkzeug ist nur für Beta-Betrieb und interne Tests gedacht.", badge: isAdmin ? "Admin" : "Beta" };
     case "launchCenter":
     case "monetizationCenter":
-      return { allowed: isBeta || isAdmin, label: isBeta || isAdmin ? "Beta-Werkzeug" : "Beta intern", reason: isBeta || isAdmin ? "Beta-/Admin-Werkzeuge sind für diesen Account sichtbar." : "Dieses Werkzeug ist nur für Beta-Betrieb und interne Tests gedacht.", badge: isAdmin ? "Admin" : "Beta" };
+      return { allowed: isAdmin, label: isAdmin ? "Admin-Werkzeug" : "Admin intern", reason: isAdmin ? "Launch- und Monetarisierungscenter sind für diesen Admin-Account freigeschaltet." : "Dieses Werkzeug ist nur für interne Admins sichtbar, nicht für normale Nutzer oder Beta-Tester.", badge: "Admin" };
     case "adminConsole":
       return { allowed: isAdmin, label: isAdmin ? "Admin aktiv" : "Admin intern", reason: isAdmin ? "Admin-Konsole ist freigeschaltet." : "Nur Admins können diese Konsole öffnen.", badge: "Admin" };
     case "futureAi":
@@ -81,7 +85,7 @@ export const premiumBoundaryRows: Array<{
   { featureId: "appIconCosmetics", title: "App-Icon & Profil-Cosmetics", free: "Basis", plus: "Plus-Vorteil", beta: "Freigeschaltet" },
   { featureId: "exportBackup", title: "Export & Backup", free: "sichtbar vorbereitet", plus: "Plus-Kandidat", beta: "Freigeschaltet" },
   { featureId: "diagnostics", title: "Diagnostics & Button-Audit", free: "nicht sichtbar", plus: "nicht sichtbar", beta: "Beta/Admin" },
-  { featureId: "launchCenter", title: "Launch Center", free: "nicht sichtbar", plus: "nicht sichtbar", beta: "Beta/Admin" },
-  { featureId: "monetizationCenter", title: "Monetarisierung & Checkout Prep", free: "nicht sichtbar", plus: "nicht sichtbar", beta: "Beta/Admin" },
+  { featureId: "launchCenter", title: "Launch Center", free: "nicht sichtbar", plus: "nicht sichtbar", beta: "nur Admin" },
+  { featureId: "monetizationCenter", title: "Monetarisierung & Checkout Prep", free: "nicht sichtbar", plus: "nicht sichtbar", beta: "nur Admin" },
   { featureId: "futureAi", title: "Spätere KI-Funktionen", free: "nicht aktiv", plus: "mögliches Plus", beta: "noch nicht live" },
 ];

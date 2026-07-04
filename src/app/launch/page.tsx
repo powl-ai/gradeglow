@@ -2,20 +2,20 @@
 
 import AuthGate from "../../components/AuthGate";
 import ClientDiagnosticsLogger from "../../components/ClientDiagnosticsLogger";
+import InternalToolGate from "../../components/InternalToolGate";
 import LaunchReadinessCenter from "../../components/LaunchReadinessCenter";
 import { useGradeGlowAccess } from "../../hooks/useGradeGlowAccess";
 import { useGradeGlowExams } from "../../hooks/useGradeGlowExams";
 import { useGradeGlowModules } from "../../hooks/useGradeGlowModules";
 import { useGradeGlowProfile } from "../../hooks/useGradeGlowProfile";
 import { useGradeGlowSchedule } from "../../hooks/useGradeGlowSchedule";
-import type { AppUser } from "../../types";
+import type { AppUser, GradeGlowEntitlement } from "../../types";
 
-function LaunchRouteInner({ user, logout }: { user: AppUser; logout: () => Promise<void> }) {
+function LaunchCenterContent({ user, logout, entitlement }: { user: AppUser; logout: () => Promise<void>; entitlement: GradeGlowEntitlement }) {
   const { modules, isLoaded: modulesLoaded, syncMessage: modulesSyncMessage } = useGradeGlowModules(user);
   const { exams, isLoaded: examsLoaded, syncMessage: examsSyncMessage } = useGradeGlowExams(user);
   const { isLoaded: scheduleLoaded, syncMessage: scheduleSyncMessage } = useGradeGlowSchedule(user);
   const { profile, isProfileLoaded } = useGradeGlowProfile(user);
-  const { entitlement } = useGradeGlowAccess(user);
 
   const cloudMessages = [
     modulesSyncMessage,
@@ -39,6 +39,21 @@ function LaunchRouteInner({ user, logout }: { user: AppUser; logout: () => Promi
         examsLoaded={examsLoaded}
       />
     </ClientDiagnosticsLogger>
+  );
+}
+
+function LaunchRouteInner({ user, logout }: { user: AppUser; logout: () => Promise<void> }) {
+  const { entitlement, accessSyncStatus } = useGradeGlowAccess(user);
+
+  return (
+    <InternalToolGate
+      title="Launch Center"
+      description="Launch-Checks, Release-Status und interne Beta-Blocker sind Admin-Werkzeuge und werden normalen Nutzern nicht angezeigt."
+      entitlement={entitlement}
+      accessSyncStatus={accessSyncStatus}
+    >
+      <LaunchCenterContent user={user} logout={logout} entitlement={entitlement} />
+    </InternalToolGate>
   );
 }
 

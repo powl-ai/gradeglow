@@ -27,6 +27,7 @@ import { publishStudyActivity } from "../lib/studyActivity";
 import { getAvatarFrameWrapperClassName, getProfileBannerClassName } from "../lib/glowRewards";
 import { getEffectivePageThemeId, getPageThemeStyle, getThemeClassName } from "../lib/gradeglowThemes";
 import {
+  DEFAULT_ENABLED_FEATURE_IDS,
   DEFAULT_TARGET_ECTS,
   useGradeGlowProfile,
 } from "../hooks/useGradeGlowProfile";
@@ -171,7 +172,7 @@ const dashboardNavItems: DashboardNavItem[] = [
     label: "Launch",
     description: "Beta-Reife und Release-Plan",
     emoji: "🚀",
-    betaOnly: true,
+    adminOnly: true,
   },
   {
     id: "premium",
@@ -195,7 +196,7 @@ const dashboardNavItems: DashboardNavItem[] = [
     label: "Monetarisierung",
     description: "Checkout, Plus und Ads vorbereiten",
     emoji: "€",
-    betaOnly: true,
+    adminOnly: true,
   },
   {
     id: "native",
@@ -1124,6 +1125,7 @@ export default function GradeGlowDashboard({
   const degreeProgramLabel =
     profile.degreeProgram || "Studiengang noch nicht gesetzt";
   const enabledFeatureIds = new Set(profile.enabledFeatureIds);
+  const disabledOptionalFeatureCount = DEFAULT_ENABLED_FEATURE_IDS.filter((featureId) => !enabledFeatureIds.has(featureId)).length;
   const isBetaDiagnosticsUser = entitlement.plan === "admin" || ["beta_test", "founder", "manual"].includes(entitlement.premiumSource);
   const visibleDashboardNavItems = dashboardNavItems.filter((item) => {
     if (item.navHidden) return false;
@@ -1643,10 +1645,10 @@ export default function GradeGlowDashboard({
 
                 <div className="grid grid-cols-2 gap-2">
                   <Link
-                    href="/settings"
+                    href="/settings#features"
                     className="rounded-2xl bg-white/10 px-3 py-3 text-center text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15"
                   >
-                    Profil
+                    Features
                   </Link>
                   <button
                     type="button"
@@ -1661,6 +1663,23 @@ export default function GradeGlowDashboard({
           </div>
         </header>
 
+
+
+
+        {page === "overview" && disabledOptionalFeatureCount > 0 && (
+          <section className="rounded-[2rem] bg-white/90 p-4 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-black text-violet-700">Feature-Auswahl</p>
+                <h2 className="mt-1 text-xl font-black tracking-tight">{disabledOptionalFeatureCount} Bereich{disabledOptionalFeatureCount === 1 ? "" : "e"} ausgeblendet</h2>
+                <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">Du kannst nach „Minimal starten“ jederzeit wieder Insights, Circle, Stundenplan, StuPo oder GlowPoints aktivieren.</p>
+              </div>
+              <Link href="/settings#features" className="rounded-2xl bg-slate-950 px-4 py-3 text-center text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-800">
+                Features ändern
+              </Link>
+            </div>
+          </section>
+        )}
 
       {showWelcomeBanner && page === "overview" && (
         <section className="rounded-[2rem] bg-slate-950 p-5 text-white shadow-xl shadow-violet-950/20 ring-1 ring-white/10 sm:p-6">

@@ -46,11 +46,6 @@ export default function UpgradeCard({
         <Link href="/premium" className="rounded-2xl bg-white/10 px-4 py-2.5 text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">
           Free vs Plus
         </Link>
-        {!target.isLive && (
-          <Link href="/monetization" className="rounded-2xl bg-white/10 px-4 py-2.5 text-sm font-black text-white ring-1 ring-white/10 transition hover:-translate-y-0.5 hover:bg-white/15">
-            Verbinden
-          </Link>
-        )}
       </div>
     </div>
   );

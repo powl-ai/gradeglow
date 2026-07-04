@@ -40,6 +40,8 @@ const featurePreferenceOptions: { id: GradeGlowFeatureId; title: string; descrip
   { id: "planning", title: "StuPo & Planung", description: "Semesterplanung, Import und Fehlversuche anzeigen." },
   { id: "rewards", title: "GlowPoints", description: "Daily Glow, Streaks und Kosmetik-Shop sichtbar lassen." },
 ];
+
+const RECOMMENDED_FEATURE_IDS: GradeGlowFeatureId[] = ["insights", "schedule", "rewards"];
 const startModeLabels: Record<StartMode, string> = {
   manual: "Module manuell eintragen",
   stupo: "StuPo importieren",
@@ -632,6 +634,11 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     ) : avatar;
   };
 
+  const applyFeaturePreset = (nextIds: GradeGlowFeatureId[], message: string) => {
+    setEnabledFeatureIds(Array.from(new Set(nextIds)));
+    setFormMessage(message);
+  };
+
   const toggleFeaturePreference = (featureId: GradeGlowFeatureId) => {
     setEnabledFeatureIds((current) => {
       if (current.includes(featureId)) {
@@ -804,10 +811,23 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
               </label>
             </div>
 
-            <div className="mt-6 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
-              <div className="mb-4">
-                <p className="text-sm font-black text-slate-950">Sichtbare Bereiche</p>
-                <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">Blende Funktionen aus, die du nicht nutzt. Pflichtbereiche wie Überblick, Module und Prüfungen bleiben immer sichtbar.</p>
+            <div id="features" className="mt-6 scroll-mt-24 rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-sm font-black text-slate-950">Sichtbare Bereiche</p>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">Blende Funktionen aus, die du nicht nutzt. Pflichtbereiche wie Überblick, Module und Prüfungen bleiben immer sichtbar. Nach „Minimal starten“ kannst du hier jederzeit alles wieder aktivieren.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50 hover:text-violet-700" onClick={() => applyFeaturePreset(RECOMMENDED_FEATURE_IDS, "Empfohlene Bereiche ausgewählt. Speichern nicht vergessen.")}>
+                    Empfohlen
+                  </button>
+                  <button type="button" className="rounded-full bg-slate-950 px-3 py-2 text-xs font-black text-white transition hover:-translate-y-0.5 hover:bg-violet-800" onClick={() => applyFeaturePreset(DEFAULT_ENABLED_FEATURE_IDS, "Alle Bereiche ausgewählt. Speichern nicht vergessen.")}>
+                    Alles aktivieren
+                  </button>
+                  <button type="button" className="rounded-full bg-white px-3 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-slate-100" onClick={() => applyFeaturePreset([], "Minimal ausgewählt. Speichern nicht vergessen.")}>
+                    Minimal
+                  </button>
+                </div>
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
                 {featurePreferenceOptions.map((option) => {

@@ -380,6 +380,9 @@ export default function GradeGlowDashboard({
   const [isInsightsOpen, setIsInsightsOpen] = useState(false);
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
+  const [showDailyGlowPrompt, setShowDailyGlowPrompt] = useState(false);
+  const [isClaimingDailyGlowPrompt, setIsClaimingDailyGlowPrompt] = useState(false);
+  const [dailyGlowPromptMessage, setDailyGlowPromptMessage] = useState("");
   const [importMessage, setImportMessage] = useState("");
   const [moduleLimitMessage, setModuleLimitMessage] = useState("");
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
@@ -401,6 +404,65 @@ export default function GradeGlowDashboard({
   const themeClassName = getThemeClassName(profile.themeMode);
   const effectivePageThemeId = getEffectivePageThemeId(profile.activePageThemeId, limits.premiumThemes);
   const themeStyle = getPageThemeStyle(effectivePageThemeId);
+  const enabledFeatureIds = new Set(profile.enabledFeatureIds);
+  const isRewardsEnabled = enabledFeatureIds.has("rewards");
+  const todayKey = getTodayDateKey();
+  const yesterdayKey = addDaysLocal(createLocalDateFromKey(todayKey) ?? new Date(), -1).toISOString().slice(0, 10);
+
+  useEffect(() => {
+    if (!isProfileLoaded || !isRewardsEnabled) return;
+    if (profile.dailyLoginLastClaimDateKey === todayKey) {
+      setShowDailyGlowPrompt(false);
+      return;
+    }
+
+    try {
+      const dismissedKey = window.sessionStorage.getItem("gradeglow-daily-glow-prompt-dismissed");
+      if (dismissedKey === todayKey) return;
+    } catch {
+      // ignore session storage availability issues
+    }
+
+    const timer = window.setTimeout(() => setShowDailyGlowPrompt(true), 350);
+    return () => window.clearTimeout(timer);
+  }, [isProfileLoaded, isRewardsEnabled, profile.dailyLoginLastClaimDateKey, todayKey]);
+
+  const closeDailyGlowPrompt = () => {
+    setShowDailyGlowPrompt(false);
+    setDailyGlowPromptMessage("");
+    try {
+      window.sessionStorage.setItem("gradeglow-daily-glow-prompt-dismissed", todayKey);
+    } catch {
+      // ignore session storage availability issues
+    }
+  };
+
+  const claimDailyGlowFromPrompt = async () => {
+    if (profile.dailyLoginLastClaimDateKey === todayKey || isClaimingDailyGlowPrompt) return;
+    setIsClaimingDailyGlowPrompt(true);
+    setDailyGlowPromptMessage("");
+
+    const nextStreak = profile.dailyLoginLastClaimDateKey === yesterdayKey ? profile.dailyLoginStreak + 1 : 1;
+    const streakBonus = Math.min(25, Math.max(0, nextStreak - 1) * 2);
+    const earnedPoints = 10 + streakBonus;
+
+    try {
+      await saveProfile({
+        ...profile,
+        glowPoints: profile.glowPoints + earnedPoints,
+        dailyLoginStreak: nextStreak,
+        dailyLoginLastClaimDateKey: todayKey,
+      });
+      setDailyGlowPromptMessage(`+${earnedPoints} GP gesammelt. Dein Daily Glow ist für heute abgeholt.`);
+      window.setTimeout(() => {
+        closeDailyGlowPrompt();
+      }, 900);
+    } catch {
+      setDailyGlowPromptMessage("Daily Glow konnte gerade nicht gespeichert werden.");
+    } finally {
+      setIsClaimingDailyGlowPrompt(false);
+    }
+  };
 
   useEffect(() => {
     const syncTimer = () => {
@@ -1237,7 +1299,6 @@ export default function GradeGlowDashboard({
   const profileBannerClassName = getProfileBannerClassName(profile.activeProfileBannerId);
   const degreeProgramLabel =
     profile.degreeProgram || "Studiengang noch nicht gesetzt";
-  const enabledFeatureIds = new Set(profile.enabledFeatureIds);
   const enabledOptionalFeatureCount = DEFAULT_ENABLED_FEATURE_IDS.filter((featureId) => enabledFeatureIds.has(featureId)).length;
   const disabledOptionalFeatureCount = DEFAULT_ENABLED_FEATURE_IDS.length - enabledOptionalFeatureCount;
   const isBetaDiagnosticsUser = entitlement.plan === "admin" || ["beta_test", "founder", "manual"].includes(entitlement.premiumSource);
@@ -1562,6 +1623,37 @@ export default function GradeGlowDashboard({
           </div>
         </div>
       )}
+
+      {showDailyGlowPrompt && isRewardsEnabled && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/50 p-3 backdrop-blur-sm sm:items-center sm:p-6">
+          <article className="w-full max-w-md overflow-hidden rounded-[2rem] bg-white shadow-2xl shadow-slate-950/25 ring-1 ring-slate-200">
+            <div className={`p-5 text-white ${profileBannerClassName}`}>
+              <p className="text-sm font-bold text-white/70">Daily Glow</p>
+              <h3 className="mt-1 text-2xl font-black tracking-tight">Deine GP warten schon ✨</h3>
+              <p className="mt-2 text-sm font-semibold leading-6 text-white/75">
+                Hole beim Öffnen der App direkt deinen Daily Glow ab und halte deinen Login-Streak am Laufen.
+              </p>
+              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-2xl bg-white/12 p-3 ring-1 ring-white/12"><span className="block text-[0.62rem] font-bold text-white/65">GP jetzt</span><strong className="mt-1 block text-xl font-black text-white">{10 + Math.min(25, Math.max(0, ((profile.dailyLoginLastClaimDateKey === yesterdayKey ? profile.dailyLoginStreak + 1 : 1) - 1)) * 2)}</strong></div>
+                <div className="rounded-2xl bg-white/12 p-3 ring-1 ring-white/12"><span className="block text-[0.62rem] font-bold text-white/65">Streak</span><strong className="mt-1 block text-xl font-black text-white">{profile.dailyLoginLastClaimDateKey === yesterdayKey ? profile.dailyLoginStreak + 1 : 1}</strong></div>
+                <div className="rounded-2xl bg-white/12 p-3 ring-1 ring-white/12"><span className="block text-[0.62rem] font-bold text-white/65">Gesamt GP</span><strong className="mt-1 block text-xl font-black text-white">{profile.glowPoints}</strong></div>
+              </div>
+            </div>
+            <div className="space-y-4 p-5">
+              <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+                <p className="text-xs font-bold text-slate-500">Heute noch nicht abgeholt</p>
+                <p className="mt-1 text-sm font-semibold leading-6 text-slate-700">Wenn du ihn später holen willst, findest du Daily Glow auch im Profil unter GlowPoints.</p>
+              </div>
+              {dailyGlowPromptMessage && <p className="text-sm font-bold text-violet-700">{dailyGlowPromptMessage}</p>}
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={closeDailyGlowPrompt} className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200">Später</button>
+                <button type="button" onClick={() => void claimDailyGlowFromPrompt()} disabled={isClaimingDailyGlowPrompt} className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-violet-800 disabled:opacity-50">{isClaimingDailyGlowPrompt ? "Speichere…" : "Jetzt abholen"}</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      )}
+
 
       {isNavigationOpen && (
         <div

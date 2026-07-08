@@ -331,6 +331,7 @@ const PublicProfileModal = ({
   onClose,
   onAddFriend,
   onRemoveFriend,
+  removeLabel,
 }: {
   profile: CircleRow;
   isSelf: boolean;
@@ -339,6 +340,7 @@ const PublicProfileModal = ({
   onClose: () => void;
   onAddFriend: () => void;
   onRemoveFriend: () => void;
+  removeLabel: string;
 }) => (
   <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-3 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true">
     <article className="max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-white p-5 text-slate-950 shadow-2xl ring-1 ring-slate-200 sm:p-6">
@@ -386,7 +388,7 @@ const PublicProfileModal = ({
           <button type="button" disabled={isBusy} onClick={onAddFriend} className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-violet-800 disabled:opacity-50">Als Freund hinzufügen</button>
         )}
         {!isSelf && isFriend && (
-          <button type="button" disabled={isBusy} onClick={onRemoveFriend} className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-700 ring-1 ring-rose-100 transition hover:bg-rose-100 disabled:opacity-50">Freund entfernen</button>
+          <button type="button" disabled={isBusy} onClick={onRemoveFriend} className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-black text-rose-700 ring-1 ring-rose-100 transition hover:bg-rose-100 disabled:opacity-50">{removeLabel}</button>
         )}
       </div>
     </article>
@@ -406,6 +408,7 @@ export default function StudyFriendsPanel({
   const [friendSearch, setFriendSearch] = useState("");
   const [goalInput, setGoalInput] = useState("600");
   const [selectedProfile, setSelectedProfile] = useState<CircleRow | null>(null);
+  const [pendingRemovalUid, setPendingRemovalUid] = useState<string | null>(null);
   const [isSavingSharing, setIsSavingSharing] = useState(false);
   const [isSavingPrivacy, setIsSavingPrivacy] = useState(false);
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
@@ -585,8 +588,22 @@ export default function StudyFriendsPanel({
 
   const handleRemoveSelectedProfileFriend = async () => {
     if (!selectedProfile || selectedProfile.isSelf) return;
+    if (pendingRemovalUid !== selectedProfile.uid) {
+      setPendingRemovalUid(selectedProfile.uid);
+      return;
+    }
     await removeFriend(selectedProfile.uid);
+    setPendingRemovalUid(null);
     setSelectedProfile(null);
+  };
+
+  const handleRemoveFriendWithConfirm = async (friendUid: string) => {
+    if (pendingRemovalUid !== friendUid) {
+      setPendingRemovalUid(friendUid);
+      return;
+    }
+    await removeFriend(friendUid);
+    setPendingRemovalUid(null);
   };
 
   const handleUpdateCircleGoal = async () => {
@@ -1312,7 +1329,7 @@ export default function StudyFriendsPanel({
                         <button
                           type="button"
                           className="self-start rounded-full bg-white px-3 py-1.5 text-xs font-black text-violet-700 ring-1 ring-violet-100 transition hover:bg-violet-50 disabled:opacity-50"
-                          onClick={() => setSelectedProfile(friend)}
+                          onClick={() => { setPendingRemovalUid(null); setSelectedProfile(friend); }}
                           disabled={isBusy}
                         >
                           Profil
@@ -1320,10 +1337,10 @@ export default function StudyFriendsPanel({
                         <button
                           type="button"
                           className="self-start rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-500 ring-1 ring-slate-200 transition hover:bg-rose-50 hover:text-rose-700 hover:ring-rose-100 disabled:opacity-50"
-                          onClick={() => void removeFriend(friend.uid)}
+                          onClick={() => void handleRemoveFriendWithConfirm(friend.uid)}
                           disabled={isBusy}
                         >
-                          Entfernen
+                          {pendingRemovalUid === friend.uid ? "Wirklich?" : "Entfernen"}
                         </button>
                       </div>
                     </div>
@@ -1383,9 +1400,10 @@ export default function StudyFriendsPanel({
           isSelf={selectedProfile.uid === user.uid}
           isFriend={friendIds.includes(selectedProfile.uid)}
           isBusy={isBusy}
-          onClose={() => setSelectedProfile(null)}
+          onClose={() => { setSelectedProfile(null); setPendingRemovalUid(null); }}
           onAddFriend={() => void handleAddSelectedProfileAsFriend()}
           onRemoveFriend={() => void handleRemoveSelectedProfileFriend()}
+          removeLabel={pendingRemovalUid === selectedProfile?.uid ? "Wirklich entfernen" : "Freund entfernen"}
         />
       )}
     </section>

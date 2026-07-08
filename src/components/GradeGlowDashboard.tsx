@@ -62,6 +62,7 @@ type EditInput = {
 
 export type DashboardPage =
   | "overview"
+  | "profile"
   | "insights"
   | "friends"
   | "exams"
@@ -103,6 +104,13 @@ const dashboardNavItems: DashboardNavItem[] = [
     label: "Überblick",
     description: "Schnitt, ECTS und Fortschritt",
     emoji: "✨",
+  },
+  {
+    id: "profile",
+    href: "/profile",
+    label: "Profil",
+    description: "Lerntrend, Schnitt und persönliche Statistik",
+    emoji: "◌",
   },
   {
     id: "insights",
@@ -242,7 +250,7 @@ const mobileTabItems: Array<{ href: string; label: string; icon: string; match: 
   { href: "/exams", label: "Plan", icon: "▦", match: ["exams"] },
   { href: "/timer", label: "Timer", icon: "◉", match: ["timer"], tone: "primary" },
   { href: "/friends", label: "Circle", icon: "◎", match: ["friends"], featureId: "friends" },
-  { href: "/settings", label: "Profil", icon: "◌", match: [] },
+  { href: "/profile", label: "Profil", icon: "◌", match: ["profile"] },
 ];
 
 type StoredActiveStudyTimer = {
@@ -287,6 +295,41 @@ const formatCompactDuration = (seconds: number) => {
   if (hours > 0) return `${hours}:${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
   return `${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
 };
+
+const formatStudyMinutesLabel = (minutes: number) => {
+  const safeMinutes = Math.max(0, Math.round(minutes));
+  if (safeMinutes < 60) return `${safeMinutes} min`;
+  const hours = Math.floor(safeMinutes / 60);
+  const rest = safeMinutes % 60;
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+};
+
+const startOfLocalDay = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+const startOfLocalWeek = (date: Date) => {
+  const start = startOfLocalDay(date);
+  const day = start.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  start.setDate(start.getDate() + mondayOffset);
+  return start;
+};
+
+const addDaysLocal = (date: Date, days: number) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+};
+
+const startOfLocalMonth = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), 1);
+
+const createLocalDateFromKey = (dateKey: string) => {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+};
+
 
 
 export default function GradeGlowDashboard({
@@ -980,6 +1023,76 @@ export default function GradeGlowDashboard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modules, totalTargetEcts]);
 
+  const profileStudyStats = useMemo(() => {
+    const now = new Date();
+    const thisWeekStart = startOfLocalWeek(now);
+    const nextWeekStart = addDaysLocal(thisWeekStart, 7);
+    const lastWeekStart = addDaysLocal(thisWeekStart, -7);
+    const thisMonthStart = startOfLocalMonth(now);
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const doneSessions = exams.flatMap((exam) =>
+      exam.studySessions
+        .filter((session) => session.isDone && !session.isHidden)
+        .map((session) => ({ ...session, subjectTitle: exam.moduleName || exam.title })),
+    );
+
+    const sumMinutesBetween = (start: Date, end: Date) =>
+      doneSessions.reduce((sum, session) => {
+        const sessionDate = createLocalDateFromKey(session.dateKey);
+        if (!sessionDate || sessionDate < start || sessionDate >= end) return sum;
+        return sum + session.durationMinutes;
+      }, 0);
+
+    const totalDoneMinutes = doneSessions.reduce((sum, session) => sum + session.durationMinutes, 0);
+    const thisWeekMinutes = sumMinutesBetween(thisWeekStart, nextWeekStart);
+    const lastWeekMinutes = sumMinutesBetween(lastWeekStart, thisWeekStart);
+    const thisMonthMinutes = sumMinutesBetween(thisMonthStart, nextMonthStart);
+    const lastMonthMinutes = sumMinutesBetween(lastMonthStart, thisMonthStart);
+    const avgSessionMinutes = doneSessions.length > 0 ? Math.round(totalDoneMinutes / doneSessions.length) : 0;
+    const mostRecentSession = [...doneSessions].sort((a, b) => `${b.dateKey} ${b.time}`.localeCompare(`${a.dateKey} ${a.time}`))[0] ?? null;
+    const topSubject = doneSessions.reduce<Record<string, { title: string; minutes: number }>>((subjects, session) => {
+      const key = session.subjectTitle || session.focus || session.title;
+      const current = subjects[key] ?? { title: key, minutes: 0 };
+      current.minutes += session.durationMinutes;
+      subjects[key] = current;
+      return subjects;
+    }, {});
+    const topSubjectRow = Object.values(topSubject).sort((a, b) => b.minutes - a.minutes)[0] ?? null;
+
+    const weekTrendSentence = thisWeekMinutes === 0
+      ? "Diese Woche ist noch leer. Starte einen kurzen Fokusblock und dein Trend füllt sich."
+      : thisWeekMinutes < lastWeekMinutes
+        ? "Du hast diese Woche weniger gelernt als letzte Woche, aber trotzdem Fortschritt gemacht."
+        : thisWeekMinutes > lastWeekMinutes
+          ? "Du hast diese Woche mehr gelernt als letzte Woche. Gute Richtung."
+          : "Du hältst dein Lernpensum diese Woche stabil.";
+
+    const monthTrendSentence = thisMonthMinutes === 0
+      ? "Für diesen Monat gibt es noch keine abgeschlossene Lernzeit."
+      : thisMonthMinutes < lastMonthMinutes
+        ? "Dieser Monat liegt noch unter dem letzten Monat — du kannst ihn mit kleinen Sessions wieder hochziehen."
+        : thisMonthMinutes > lastMonthMinutes
+          ? "Dieser Monat liegt über dem letzten Monat. Dein Lernrhythmus wird stärker."
+          : "Dieser Monat ist ungefähr auf dem Niveau vom letzten Monat.";
+
+    return {
+      progressPercent: Math.min(Math.max(analytics.progress, 0), 100),
+      totalDoneMinutes,
+      thisWeekMinutes,
+      lastWeekMinutes,
+      thisMonthMinutes,
+      lastMonthMinutes,
+      avgSessionMinutes,
+      doneSessionCount: doneSessions.length,
+      weekTrendSentence,
+      monthTrendSentence,
+      mostRecentSession,
+      topSubjectRow,
+    };
+  }, [analytics.progress, exams]);
+
   const target = targetAverage ? parseNumber(targetAverage) : 0;
   const remainingGradedEcts = targetRemainingEcts
     ? parseNumber(targetRemainingEcts)
@@ -1158,6 +1271,18 @@ export default function GradeGlowDashboard({
     .filter((exam) => exam.status !== "done" && !exam.isHidden)
     .sort((a, b) => a.examDate.localeCompare(b.examDate));
   const nextMobileExam = upcomingMobileExams[0] ?? null;
+  const nextMobileExamDaysLabel = nextMobileExam
+    ? (() => {
+        const examDate = createLocalDateFromKey(nextMobileExam.examDate);
+        if (!examDate) return "Datum offen";
+        const diffDays = Math.ceil((startOfLocalDay(examDate).getTime() - startOfLocalDay(new Date()).getTime()) / 86_400_000);
+        if (diffDays < 0) return "überfällig";
+        if (diffDays === 0) return "heute";
+        if (diffDays === 1) return "noch 1 Tag";
+        return `noch ${diffDays} Tage`;
+      })()
+    : "Plan offen";
+
   const openStudySessionsCount = exams.reduce(
     (count, exam) => count + exam.studySessions.filter((session) => !session.isDone && !session.isHidden).length,
     0,
@@ -1553,13 +1678,20 @@ export default function GradeGlowDashboard({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 border-t border-violet-100 p-4 sm:p-5">
+            <div className="grid grid-cols-3 gap-2 border-t border-violet-100 p-4 sm:p-5">
+              <Link
+                href="/profile"
+                className="rounded-2xl bg-violet-50 px-3 py-3 text-center text-sm font-black text-violet-900 ring-1 ring-violet-100 transition hover:-translate-y-0.5 hover:bg-violet-100"
+                onClick={() => setIsNavigationOpen(false)}
+              >
+                Profil
+              </Link>
               <Link
                 href="/settings"
                 className="rounded-2xl bg-slate-50 px-3 py-3 text-center text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50 hover:text-violet-700"
                 onClick={() => setIsNavigationOpen(false)}
               >
-                Profil
+                Einstellungen
               </Link>
               <button
                 type="button"
@@ -1595,7 +1727,7 @@ export default function GradeGlowDashboard({
 
           <div className="flex shrink-0 items-center gap-2">
             <Link href="/feedback" className="gg-mobile-icon-button gg-mobile-icon-button-light" aria-label="Feedback senden">✎</Link>
-            <Link href="/settings" className="gg-mobile-profile-chip">
+            <Link href="/profile" className="gg-mobile-profile-chip">
               {renderAvatar("flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-100 text-[0.78rem] font-black text-violet-700")}
               <span className="truncate">{userLabel}</span>
             </Link>
@@ -1837,7 +1969,7 @@ export default function GradeGlowDashboard({
             <section className="gg-mobile-home lg:hidden">
               <div className="gg-mobile-hero-card gg-mobile-today-card">
                 <div className="min-w-0">
-                  <p className="gg-mobile-kicker text-white/70">Heute</p>
+                  <p className="gg-mobile-kicker text-white/70">Heute · {nextMobileExamDaysLabel}</p>
                   <h2 className="mt-1 truncate text-[1.02rem] font-black text-white">{globalTimer ? "Timer läuft" : nextMobileExam ? nextMobileExam.title : "Lernplan starten"}</h2>
                   <p className="mt-1 text-[0.68rem] font-semibold leading-4 text-white/65">
                     {globalTimer
@@ -1847,23 +1979,7 @@ export default function GradeGlowDashboard({
                         : "Lege eine Prüfung an und GradeGlow baut dir den Plan."}
                   </p>
                 </div>
-                <Link href={globalTimer ? "/timer" : "/exams"} className="shrink-0 rounded-full bg-white px-3 py-2 text-[0.68rem] font-black text-slate-950">{globalTimer ? "Timer" : "Öffnen"}</Link>
-              </div>
-
-              <div className="gg-mobile-section-heading">
-                <p className="gg-mobile-kicker">Schnellzugriff</p>
-                <strong>Starte direkt dort, wo du weitermachen willst</strong>
-              </div>
-
-              <div className="gg-mobile-action-grid">
-                <Link href="/timer"><span>▶</span><strong>Timer</strong><small>Fokus starten</small></Link>
-                <Link href="/exams"><span>▦</span><strong>Plan</strong><small>{openStudySessionsCount} offen</small></Link>
-                {enabledFeatureIds.has("friends") ? (
-                  <Link href="/friends"><span>●</span><strong>Circle</strong><small>Freunde</small></Link>
-                ) : (
-                  <Link href="/modules"><span>□</span><strong>Module</strong><small>Studium</small></Link>
-                )}
-                <Link href="/settings"><span>◌</span><strong>Profil</strong><small>Mehr</small></Link>
+                <Link href={globalTimer ? "/timer" : "/exams"} className="shrink-0 rounded-full bg-white/90 px-3 py-2 text-[0.68rem] font-black text-slate-950 ring-1 ring-white/40">{globalTimer ? "Timer" : nextMobileExamDaysLabel}</Link>
               </div>
 
               {entitlement.plan === "free" && (
@@ -1879,8 +1995,8 @@ export default function GradeGlowDashboard({
               <div className="gg-mobile-feed-card">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="gg-mobile-kicker">Fortschritt</p>
-                    <strong className="block text-[0.98rem] font-black text-slate-950">{analytics.passedEcts} von {totalTargetEcts} ECTS</strong>
+                    <p className="gg-mobile-kicker">Uni-Fortschritt</p>
+                    <strong className="block text-[0.98rem] font-black text-slate-950">{analytics.passedEcts} von {totalTargetEcts} ECTS geschafft</strong>
                     <p className="mt-1 text-[0.68rem] font-semibold text-slate-500">{openStudySessionsCount > 0 ? `${openStudySessionsCount} offene Lernsessions warten auf dich.` : "Keine offenen Sessions — perfekt für einen neuen Fokusblock."}</p>
                   </div>
                   <span className="rounded-full bg-violet-50 px-3 py-2 text-[0.72rem] font-black text-violet-700 ring-1 ring-violet-100">{analytics.progress.toFixed(0)}%</span>
@@ -1896,7 +2012,7 @@ export default function GradeGlowDashboard({
 
               <div className="gg-mobile-progress-card">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-black text-slate-950">Studienfortschritt</p>
+                  <p className="font-black text-slate-950">Uni-Fortschritt</p>
                   <p className="text-[0.72rem] font-black text-violet-700">{analytics.progress.toFixed(0)}%</p>
                 </div>
                 <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200">
@@ -2080,6 +2196,94 @@ export default function GradeGlowDashboard({
             </details>
             <div className="hidden lg:block"><PwaInstallCard /></div>
           </>
+        )}
+
+
+        {!isCurrentPageBlocked && page === "profile" && (
+          <section id="profile" className="gg-profile-page scroll-mt-6">
+            <div className={`gg-profile-hero ${profileBannerClassName}`}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  {renderAvatar("flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-white/15 text-2xl font-black text-white ring-1 ring-white/15")}
+                  <div className="min-w-0">
+                    <p className="gg-mobile-kicker text-white/65">Profil</p>
+                    <h2 className="truncate text-2xl font-black tracking-tight text-white">{userLabel}</h2>
+                    <p className="mt-1 truncate text-sm font-semibold text-white/70">{degreeProgramLabel}</p>
+                  </div>
+                </div>
+                <Link href="/settings" className="shrink-0 rounded-full bg-white/95 px-3 py-2 text-xs font-black text-slate-950 ring-1 ring-white/40">
+                  Bearbeiten
+                </Link>
+              </div>
+
+              <div className="mt-5 grid grid-cols-3 gap-2">
+                <div className="gg-profile-hero-stat">
+                  <span>Schnitt</span>
+                  <strong>{analytics.average > 0 ? formatGrade(analytics.average) : "—"}</strong>
+                </div>
+                <div className="gg-profile-hero-stat">
+                  <span>Semester</span>
+                  <strong>{profile.currentSemester || 1}</strong>
+                </div>
+                <div className="gg-profile-hero-stat">
+                  <span>Streak</span>
+                  <strong>{profile.currentStudyStreakDays || 0}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="gg-profile-card gg-profile-progress-card">
+              <div className="gg-profile-ring" style={{ background: `conic-gradient(var(--gg-accent-500, rgb(124,58,237)) ${profileStudyStats.progressPercent * 3.6}deg, rgba(226,232,240,0.95) 0deg)` }}>
+                <div>
+                  <strong>{analytics.average > 0 ? formatGrade(analytics.average) : "—"}</strong>
+                  <span>Ø · Sem. {profile.currentSemester || 1}</span>
+                </div>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="gg-mobile-kicker">Uni-Fortschritt</p>
+                <h3>{Math.round(profileStudyStats.progressPercent)}% vom Ziel</h3>
+                <p>{analytics.passedEcts} von {totalTargetEcts} ECTS sind geschafft. Diese Grafik zeigt deinen Studienfortschritt, nicht nur Lernzeit.</p>
+              </div>
+            </div>
+
+            <div className="gg-profile-trend-card">
+              <p className="gg-mobile-kicker">Wochentrend</p>
+              <h3>{profileStudyStats.weekTrendSentence}</h3>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <div><span>Diese Woche</span><strong>{formatStudyMinutesLabel(profileStudyStats.thisWeekMinutes)}</strong></div>
+                <div><span>Letzte Woche</span><strong>{formatStudyMinutesLabel(profileStudyStats.lastWeekMinutes)}</strong></div>
+              </div>
+            </div>
+
+            <div className="gg-profile-grid">
+              <div className="gg-profile-card">
+                <p className="gg-mobile-kicker">Monat</p>
+                <h3>{formatStudyMinutesLabel(profileStudyStats.thisMonthMinutes)}</h3>
+                <p>{profileStudyStats.monthTrendSentence}</p>
+              </div>
+              <div className="gg-profile-card">
+                <p className="gg-mobile-kicker">Lernzeit gesamt</p>
+                <h3>{formatStudyMinutesLabel(profileStudyStats.totalDoneMinutes)}</h3>
+                <p>{profileStudyStats.doneSessionCount} abgeschlossene Sessions · Ø {formatStudyMinutesLabel(profileStudyStats.avgSessionMinutes)}</p>
+              </div>
+              <div className="gg-profile-card">
+                <p className="gg-mobile-kicker">Stärkstes Fach</p>
+                <h3>{profileStudyStats.topSubjectRow?.title || "Noch offen"}</h3>
+                <p>{profileStudyStats.topSubjectRow ? `${formatStudyMinutesLabel(profileStudyStats.topSubjectRow.minutes)} abgeschlossene Lernzeit.` : "Sobald du Sessions abschließt, erscheint hier dein Fokusfach."}</p>
+              </div>
+              <div className="gg-profile-card">
+                <p className="gg-mobile-kicker">Letzte Session</p>
+                <h3>{profileStudyStats.mostRecentSession?.title || "Noch keine"}</h3>
+                <p>{profileStudyStats.mostRecentSession ? `${profileStudyStats.mostRecentSession.dateKey} · ${formatStudyMinutesLabel(profileStudyStats.mostRecentSession.durationMinutes)}` : "Starte im Timer oder Plan deine erste Session."}</p>
+              </div>
+            </div>
+
+            <div className="gg-profile-settings-row">
+              <Link href="/settings">Einstellungen öffnen</Link>
+              <Link href="/settings#features">Sichtbare Bereiche</Link>
+              <Link href="/backup">Export & Daten</Link>
+            </div>
+          </section>
         )}
 
         {!isCurrentPageBlocked && page === "insights" && (
@@ -3316,7 +3520,7 @@ export default function GradeGlowDashboard({
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link href="/feedback" className="transition hover:text-violet-700">Feedback</Link>
             {isBetaDiagnosticsUser && <Link href="/diagnostics" className="transition hover:text-violet-700">Diagnose</Link>}
-            <Link href="/settings" className="transition hover:text-violet-700">Profil & Backup</Link>
+            <Link href="/profile" className="transition hover:text-violet-700">Profil</Link><Link href="/settings" className="transition hover:text-violet-700">Einstellungen</Link>
             <Link href="/legal" className="transition hover:text-violet-700">Legal Hub</Link>
             {entitlement.plan === "admin" && <Link href="/admin" className="transition hover:text-violet-700">Admin</Link>}
           </div>

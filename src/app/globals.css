@@ -3612,3 +3612,121 @@ body {
     bottom: max(env(safe-area-inset-bottom, 0px) + 0.18rem, 0.3rem) !important;
   }
 }
+
+/* UI FIX 3 REPAIR -------------------------------------------------------
+   The previous top blocker moved the header into the status area. This repair
+   removes the top overlay/header, keeps feedback as a tiny floating action,
+   and adds real bottom space behind/after the tab bar. */
+@media (max-width: 1023px) {
+  .gg-mobile-top-blocker,
+  .gg-mobile-appbar {
+    display: none !important;
+  }
+
+  .gg-app-shell {
+    padding-top: max(calc(env(safe-area-inset-top, 0px) + 0.9rem), 2.1rem) !important;
+    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 6.25rem), 6.7rem) !important;
+    overflow-x: clip !important;
+  }
+
+  .gg-mobile-floating-feedback {
+    position: fixed;
+    top: max(calc(env(safe-area-inset-top, 0px) + 0.55rem), 1rem);
+    right: max(calc(env(safe-area-inset-right, 0px) + 0.9rem), 0.9rem);
+    z-index: 54;
+    display: flex;
+    height: 2.25rem;
+    width: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--gg-border, #e2e8f0) 70%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--gg-surface, #ffffff) 64%, transparent);
+    color: var(--gg-app-text, #0f172a);
+    text-decoration: none;
+    font-weight: 950;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(20px) saturate(150%);
+  }
+
+  .gg-mobile-bottom-blocker {
+    display: block !important;
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    z-index: 38;
+    height: max(calc(env(safe-area-inset-bottom, 0px) + 4.6rem), 5rem);
+    width: min(84%, 21rem);
+    transform: translateX(-50%);
+    border: 1px solid color-mix(in srgb, var(--gg-border, rgba(255,255,255,0.18)) 45%, transparent);
+    border-bottom: 0;
+    border-radius: 2rem 2rem 0 0;
+    background: color-mix(in srgb, var(--gg-surface, #ffffff) 36%, transparent);
+    box-shadow: 0 -12px 34px rgba(2, 6, 23, 0.16);
+    backdrop-filter: blur(22px) saturate(145%);
+  }
+
+  .gg-mobile-tabbar {
+    left: 50% !important;
+    right: auto !important;
+    bottom: max(calc(env(safe-area-inset-bottom, 0px) + 0.55rem), 0.65rem) !important;
+    z-index: 46 !important;
+    width: min(76%, 20rem) !important;
+    min-height: 3.35rem !important;
+    transform: translateX(-50%) !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
+    border-radius: 1.35rem !important;
+    background: rgba(2, 6, 23, 0.38) !important;
+    padding: 0.3rem !important;
+    box-shadow: 0 14px 36px rgba(2, 6, 23, 0.22) !important;
+    backdrop-filter: blur(28px) saturate(155%) !important;
+  }
+
+  .gg-mobile-tabbar a {
+    min-height: 2.7rem !important;
+    border-radius: 1rem !important;
+    background: transparent !important;
+    padding: 0.32rem 0.12rem !important;
+    outline: 1px solid transparent !important;
+    outline-offset: -1px !important;
+  }
+
+  .gg-mobile-tabbar a.is-active {
+    background: rgba(255,255,255,0.1) !important;
+    outline-color: rgba(255,255,255,0.24) !important;
+  }
+
+  .gg-mobile-tabbar a.is-primary {
+    margin-top: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .gg-mobile-tabbar a.is-primary .gg-mobile-tab-icon {
+    height: auto !important;
+    width: auto !important;
+    background: transparent !important;
+    color: inherit !important;
+    box-shadow: none !important;
+  }
+
+  .gg-mobile-tab-icon {
+    font-size: 0.92rem !important;
+  }
+
+  .gg-mobile-tabbar a span:last-child {
+    font-size: 0.58rem !important;
+  }
+
+  .gg-mobile-scroll-end-spacer {
+    display: block !important;
+    min-height: max(calc(env(safe-area-inset-bottom, 0px) + 5.5rem), 6rem);
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 1023px) {
+  .gg-app-shell {
+    padding-top: max(calc(env(safe-area-inset-top, 0px) + 0.95rem), 2.3rem) !important;
+    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 6.4rem), 7rem) !important;
+  }
+}

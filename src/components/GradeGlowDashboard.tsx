@@ -1399,7 +1399,6 @@ export default function GradeGlowDashboard({
     (count, exam) => count + exam.studySessions.filter((session) => session.isDone && !session.isHidden).length,
     0,
   );
-  const mobileHeaderTitle = page === "overview" ? "Für dich" : activeNavItem.label;
   const globalTimerExam = globalTimer ? exams.find((exam) => exam.id === globalTimer.examId) ?? null : null;
   const globalTimerElapsedSeconds = globalTimer ? Math.max(0, Math.floor((globalTimerNow - globalTimer.startedAt) / 1000)) : 0;
   const globalTimerModeLabel = globalTimer?.mode === "pomodoro" ? "Pomodoro" : globalTimer?.mode === "stopwatch" ? "Stoppuhr" : "Fokus-Timer";
@@ -1614,6 +1613,8 @@ export default function GradeGlowDashboard({
 
       <div className="gg-mobile-top-blocker pointer-events-none lg:hidden" aria-hidden="true" />
       <div className="gg-mobile-bottom-blocker pointer-events-none lg:hidden" aria-hidden="true" />
+
+      <Link href="/feedback" className="gg-mobile-floating-feedback lg:hidden" aria-label="Feedback senden">✎</Link>
 
       {foregroundMessage && (
         <div className="fixed left-1/2 top-3 z-50 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-[1.5rem] bg-violet-950/95 p-3 text-white shadow-2xl shadow-violet-950/25 ring-1 ring-white/10 backdrop-blur sm:top-5">
@@ -1847,25 +1848,6 @@ export default function GradeGlowDashboard({
       )}
 
       <div className="gg-app-shell mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+4.8rem)] pt-[calc(env(safe-area-inset-top,0px)+0.7rem)] sm:gap-6 sm:px-6 lg:px-8 lg:pb-8 lg:pt-[calc(env(safe-area-inset-top,0px)+2rem)]">
-        <header className="gg-mobile-appbar lg:hidden">
-          <button
-            type="button"
-            className="gg-mobile-icon-button shrink-0"
-            onClick={() => setIsNavigationOpen(true)}
-            aria-label="Menü öffnen"
-          >
-            ☰
-          </button>
-
-          <div className="gg-mobile-appbar-title">
-            <p className="gg-mobile-kicker">{mobileHeaderTitle}</p>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2">
-            <Link href="/feedback" className="gg-mobile-icon-button gg-mobile-icon-button-light" aria-label="Feedback senden">✎</Link>
-          </div>
-        </header>
-
         <header className="hidden overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl shadow-violet-950/20 ring-1 ring-white/10 lg:block">
           <div className="relative p-4 sm:p-7 lg:p-8">
             <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-fuchsia-500/25 blur-3xl" />
@@ -3658,6 +3640,8 @@ export default function GradeGlowDashboard({
             onUpdateModule={updateModuleDetails}
           />
         )}
+
+        <div className="gg-mobile-scroll-end-spacer lg:hidden" aria-hidden="true" />
 
         <footer className="hidden flex-col items-center justify-between gap-3 pb-2 text-xs font-bold text-slate-400 sm:flex-row lg:flex">
           <span>GradeGlow Beta 2026</span>

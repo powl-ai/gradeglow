@@ -3346,3 +3346,269 @@ body {
     bottom: max(env(safe-area-inset-bottom, 0px) + 0.1rem, 0.36rem) !important;
   }
 }
+
+/* UI FIX 3 -------------------------------------------------------------- */
+@media (max-width: 1023px) {
+  .gg-mobile-top-blocker,
+  .gg-mobile-bottom-blocker {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(90%, 22rem);
+    border-radius: 999px;
+    z-index: 35;
+    background: color-mix(in srgb, var(--gg-accent-500, #7c3aed) 18%, white 82%);
+    opacity: 0.85;
+    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(18px) saturate(150%);
+  }
+
+  .gg-mobile-top-blocker {
+    top: max(env(safe-area-inset-top, 0px) + 0.2rem, 0.35rem);
+    height: 2.65rem;
+  }
+
+  .gg-mobile-bottom-blocker {
+    bottom: max(env(safe-area-inset-bottom, 0px) + 0.15rem, 0.25rem);
+    height: 4.3rem;
+    background: color-mix(in srgb, var(--gg-surface, #ffffff) 70%, transparent);
+  }
+
+  .gg-app-shell {
+    padding-top: max(calc(env(safe-area-inset-top, 0px) + 2.45rem), 4.45rem) !important;
+    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 5.5rem), 6.2rem) !important;
+  }
+
+  .gg-mobile-appbar {
+    top: max(env(safe-area-inset-top, 0px) + 0.45rem, 0.55rem) !important;
+    left: 50% !important;
+    transform: translateX(-50%);
+    width: min(90%, 22rem) !important;
+    min-height: 2.35rem !important;
+    padding: 0.45rem 0.65rem !important;
+    border-radius: 999px !important;
+    background: color-mix(in srgb, var(--gg-surface, #ffffff) 58%, transparent) !important;
+    box-shadow: none !important;
+  }
+
+  .gg-mobile-appbar-title {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .gg-mobile-appbar-title .gg-mobile-kicker {
+    font-size: 0.82rem !important;
+    font-weight: 900 !important;
+    color: color-mix(in srgb, var(--gg-accent-700, #6d28d9) 72%, #0f172a) !important;
+  }
+
+  .gg-mobile-appbar h1,
+  .gg-mobile-appbar-title > p:not(.gg-mobile-kicker) {
+    display: none !important;
+  }
+
+  .gg-mobile-icon-button,
+  .gg-mobile-icon-button-light {
+    width: 2.15rem !important;
+    height: 2.15rem !important;
+    border-radius: 999px !important;
+  }
+
+  .gg-mobile-tabbar {
+    width: min(82%, 21rem) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%);
+    bottom: max(env(safe-area-inset-bottom, 0px) + 0.32rem, 0.42rem) !important;
+    padding: 0.35rem !important;
+    min-height: 3.65rem !important;
+    background: rgba(2, 6, 23, 0.42) !important;
+    backdrop-filter: blur(28px) saturate(155%) !important;
+  }
+
+  .gg-mobile-tabbar a {
+    gap: 0.18rem !important;
+    min-width: 0;
+    padding: 0.42rem 0.2rem !important;
+  }
+
+  .gg-mobile-tabbar a span:last-child {
+    font-size: 0.63rem !important;
+  }
+
+  .gg-mobile-tabbar a.is-primary,
+  .gg-mobile-tabbar a.is-primary .gg-mobile-tab-icon {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .gg-mobile-home,
+  .gg-timer-only-page,
+  .gg-profile-page,
+  .gg-planner-panel {
+    gap: 0.9rem !important;
+  }
+
+  .gg-plan-mobile-intro {
+    border-radius: 1.6rem;
+    background: rgba(255,255,255,0.88);
+    padding: 1rem;
+    box-shadow: 0 10px 30px rgba(124,58,237,0.08);
+    border: 1px solid rgba(221,214,254,0.85);
+  }
+
+  .gg-plan-mobile-intro h2 {
+    margin-top: 0.2rem;
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #0f172a;
+  }
+
+  .gg-plan-mobile-intro p:last-child {
+    margin-top: 0.35rem;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: #475569;
+    font-weight: 700;
+  }
+
+  .gg-planner-panel > .rounded-3xl:first-child > .mt-5.grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .gg-planner-panel .rounded-3xl.bg-white\/90 > .flex.flex-col.gap-3.lg\:flex-row {
+    gap: 0.8rem !important;
+  }
+
+  .gg-planner-panel .rounded-3xl.bg-white\/90 .grid.gap-2.sm\:flex.sm\:flex-wrap.sm\:justify-end {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gg-timer-card {
+    padding: 1.1rem !important;
+  }
+
+  .gg-timer-subtitle,
+  .gg-timer-hint {
+    font-size: 0.78rem !important;
+    line-height: 1.45 !important;
+  }
+
+  .gg-profile-page .gg-profile-card,
+  .gg-profile-page .gg-profile-trend-card {
+    padding: 1rem !important;
+  }
+
+  .gg-profile-range-switch {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.35rem;
+    width: 100%;
+    border-radius: 999px;
+    background: rgba(241,245,249,0.9);
+    padding: 0.25rem;
+  }
+
+  .gg-profile-range-switch button {
+    border-radius: 999px;
+    padding: 0.55rem 0.2rem;
+    font-size: 0.73rem;
+    font-weight: 900;
+    color: #64748b;
+  }
+
+  .gg-profile-range-switch button.is-active {
+    background: #fff;
+    color: var(--gg-accent-700, #6d28d9);
+    box-shadow: 0 6px 16px rgba(148, 163, 184, 0.18);
+  }
+
+  .gg-profile-chart {
+    display: grid;
+    gap: 0.7rem;
+  }
+
+  .gg-profile-chart-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.45rem;
+  }
+
+  .gg-profile-chart-row div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .gg-profile-chart-row span {
+    font-size: 0.76rem;
+    font-weight: 800;
+    color: #64748b;
+  }
+
+  .gg-profile-chart-row strong {
+    font-size: 0.86rem;
+    font-weight: 900;
+    color: #0f172a;
+  }
+
+  .gg-profile-chart-bar {
+    height: 0.7rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(226,232,240,0.9);
+  }
+
+  .gg-profile-chart-bar i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--gg-accent-500, #8b5cf6), var(--gg-accent-300, #c4b5fd));
+  }
+
+  .gg-profile-chart-row.is-muted .gg-profile-chart-bar i {
+    background: linear-gradient(90deg, #94a3b8, #cbd5e1);
+  }
+
+  input,
+  textarea,
+  select,
+  .planner-detail-input {
+    font-size: 16px !important;
+    color: #0f172a !important;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #94a3b8 !important;
+    opacity: 1;
+  }
+
+  textarea,
+  .planner-detail-input,
+  .gg-timer-form select,
+  .gg-timer-form input {
+    background: rgba(255,255,255,0.92) !important;
+    border-color: rgba(203,213,225,0.9) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 1023px) {
+  .gg-mobile-top-blocker {
+    top: max(env(safe-area-inset-top, 0px) + 0.3rem, 0.4rem);
+  }
+
+  .gg-mobile-appbar {
+    top: max(env(safe-area-inset-top, 0px) + 0.55rem, 0.65rem) !important;
+  }
+
+  .gg-mobile-bottom-blocker,
+  .gg-mobile-tabbar {
+    bottom: max(env(safe-area-inset-bottom, 0px) + 0.18rem, 0.3rem) !important;
+  }
+}

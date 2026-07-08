@@ -393,6 +393,7 @@ export default function GradeGlowDashboard({
   const [standaloneTimerExamId, setStandaloneTimerExamId] = useState("");
   const [standaloneTimerMode, setStandaloneTimerMode] = useState<StoredActiveStudyTimer["mode"]>("focus");
   const [standaloneTimerMinutes, setStandaloneTimerMinutes] = useState("30");
+  const [profileTrendRange, setProfileTrendRange] = useState<"week" | "month" | "year">("week");
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const quickRailRef = useRef<HTMLElement | null>(null);
@@ -1093,6 +1094,9 @@ export default function GradeGlowDashboard({
     const thisMonthStart = startOfLocalMonth(now);
     const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const thisYearStart = new Date(now.getFullYear(), 0, 1);
+    const nextYearStart = new Date(now.getFullYear() + 1, 0, 1);
+    const lastYearStart = new Date(now.getFullYear() - 1, 0, 1);
 
     const doneSessions = exams.flatMap((exam) =>
       exam.studySessions
@@ -1112,6 +1116,8 @@ export default function GradeGlowDashboard({
     const lastWeekMinutes = sumMinutesBetween(lastWeekStart, thisWeekStart);
     const thisMonthMinutes = sumMinutesBetween(thisMonthStart, nextMonthStart);
     const lastMonthMinutes = sumMinutesBetween(lastMonthStart, thisMonthStart);
+    const thisYearMinutes = sumMinutesBetween(thisYearStart, nextYearStart);
+    const lastYearMinutes = sumMinutesBetween(lastYearStart, thisYearStart);
     const avgSessionMinutes = doneSessions.length > 0 ? Math.round(totalDoneMinutes / doneSessions.length) : 0;
     const mostRecentSession = [...doneSessions].sort((a, b) => `${b.dateKey} ${b.time}`.localeCompare(`${a.dateKey} ${a.time}`))[0] ?? null;
     const topSubject = doneSessions.reduce<Record<string, { title: string; minutes: number }>>((subjects, session) => {
@@ -1139,6 +1145,14 @@ export default function GradeGlowDashboard({
           ? "Dieser Monat liegt über dem letzten Monat. Dein Lernrhythmus wird stärker."
           : "Dieser Monat ist ungefähr auf dem Niveau vom letzten Monat.";
 
+    const yearTrendSentence = thisYearMinutes === 0
+      ? "Dieses Jahr ist noch keine Lernzeit gespeichert."
+      : thisYearMinutes < lastYearMinutes
+        ? "Dieses Jahr liegst du noch unter dem letzten Jahr, sammelst aber bereits Fortschritt."
+        : thisYearMinutes > lastYearMinutes
+          ? "Dieses Jahr bist du stärker unterwegs als im letzten Jahr."
+          : "Dieses Jahr hältst du dein Niveau aus dem letzten Jahr.";
+
     return {
       progressPercent: Math.min(Math.max(analytics.progress, 0), 100),
       totalDoneMinutes,
@@ -1146,14 +1160,47 @@ export default function GradeGlowDashboard({
       lastWeekMinutes,
       thisMonthMinutes,
       lastMonthMinutes,
+      thisYearMinutes,
+      lastYearMinutes,
       avgSessionMinutes,
       doneSessionCount: doneSessions.length,
       weekTrendSentence,
       monthTrendSentence,
+      yearTrendSentence,
       mostRecentSession,
       topSubjectRow,
     };
   }, [analytics.progress, exams]);
+
+  const profileTrendMeta = {
+    week: {
+      label: "Woche",
+      currentLabel: "Diese Woche",
+      previousLabel: "Letzte Woche",
+      currentMinutes: profileStudyStats.thisWeekMinutes,
+      previousMinutes: profileStudyStats.lastWeekMinutes,
+      sentence: profileStudyStats.weekTrendSentence,
+    },
+    month: {
+      label: "Monat",
+      currentLabel: "Dieser Monat",
+      previousLabel: "Letzter Monat",
+      currentMinutes: profileStudyStats.thisMonthMinutes,
+      previousMinutes: profileStudyStats.lastMonthMinutes,
+      sentence: profileStudyStats.monthTrendSentence,
+    },
+    year: {
+      label: "Jahr",
+      currentLabel: "Dieses Jahr",
+      previousLabel: "Letztes Jahr",
+      currentMinutes: profileStudyStats.thisYearMinutes,
+      previousMinutes: profileStudyStats.lastYearMinutes,
+      sentence: profileStudyStats.yearTrendSentence,
+    },
+  } as const;
+
+  const selectedProfileTrend = profileTrendMeta[profileTrendRange];
+  const profileTrendMaxMinutes = Math.max(selectedProfileTrend.currentMinutes, selectedProfileTrend.previousMinutes, 1);
 
   const target = targetAverage ? parseNumber(targetAverage) : 0;
   const remainingGradedEcts = targetRemainingEcts
@@ -1352,11 +1399,7 @@ export default function GradeGlowDashboard({
     (count, exam) => count + exam.studySessions.filter((session) => session.isDone && !session.isHidden).length,
     0,
   );
-  const mobilePageKicker = page === "overview" ? "Heute" : activeNavItem.label;
   const mobileHeaderTitle = page === "overview" ? "Für dich" : activeNavItem.label;
-  const mobileHeaderSubtitle = page === "overview"
-    ? (nextMobileExam ? `Nächste Prüfung: ${nextMobileExam.title}` : "Dein Studium auf einen Blick")
-    : activeNavItem.description;
   const globalTimerExam = globalTimer ? exams.find((exam) => exam.id === globalTimer.examId) ?? null : null;
   const globalTimerElapsedSeconds = globalTimer ? Math.max(0, Math.floor((globalTimerNow - globalTimer.startedAt) / 1000)) : 0;
   const globalTimerModeLabel = globalTimer?.mode === "pomodoro" ? "Pomodoro" : globalTimer?.mode === "stopwatch" ? "Stoppuhr" : "Fokus-Timer";
@@ -1568,6 +1611,9 @@ export default function GradeGlowDashboard({
         <div className="absolute right-[-10rem] top-40 h-[28rem] w-[28rem] rounded-full bg-violet-200/60 blur-3xl" />
         <div className="absolute bottom-[-12rem] left-1/2 h-[30rem] w-[30rem] -translate-x-1/2 rounded-full bg-pink-200/50 blur-3xl" />
       </div>
+
+      <div className="gg-mobile-top-blocker pointer-events-none lg:hidden" aria-hidden="true" />
+      <div className="gg-mobile-bottom-blocker pointer-events-none lg:hidden" aria-hidden="true" />
 
       {foregroundMessage && (
         <div className="fixed left-1/2 top-3 z-50 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-[1.5rem] bg-violet-950/95 p-3 text-white shadow-2xl shadow-violet-950/25 ring-1 ring-white/10 backdrop-blur sm:top-5">
@@ -1812,17 +1858,11 @@ export default function GradeGlowDashboard({
           </button>
 
           <div className="gg-mobile-appbar-title">
-            <p className="gg-mobile-kicker">{mobilePageKicker}</p>
-            <h1 className="truncate text-[1.02rem] font-black tracking-tight text-slate-950">{mobileHeaderTitle}</h1>
-            <p className="truncate text-[0.64rem] font-semibold text-slate-500">{mobileHeaderSubtitle}</p>
+            <p className="gg-mobile-kicker">{mobileHeaderTitle}</p>
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
             <Link href="/feedback" className="gg-mobile-icon-button gg-mobile-icon-button-light" aria-label="Feedback senden">✎</Link>
-            <Link href="/profile" className="gg-mobile-profile-chip">
-              {renderAvatar("flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-100 text-[0.78rem] font-black text-violet-700")}
-              <span className="truncate">{userLabel}</span>
-            </Link>
           </div>
         </header>
 
@@ -2074,16 +2114,6 @@ export default function GradeGlowDashboard({
                 <Link href={globalTimer ? "/timer" : "/exams"} className="shrink-0 rounded-full bg-white/90 px-3 py-2 text-[0.68rem] font-black text-slate-950 ring-1 ring-white/40">{globalTimer ? "Timer" : nextMobileExamDaysLabel}</Link>
               </div>
 
-              {entitlement.plan === "free" && (
-                <Link href="/premium" className="gg-mobile-plus-teaser">
-                  <span>
-                    <strong>Plus Preview</strong>
-                    <small>Fake-Live aktiv · kein Kauf</small>
-                  </span>
-                  <b>ansehen</b>
-                </Link>
-              )}
-
               <div className="gg-mobile-feed-card">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -2102,15 +2132,6 @@ export default function GradeGlowDashboard({
                 <div className="gg-mobile-stat-row"><span>Erledigt</span><strong>{doneStudySessionsCount}</strong></div>
               </div>
 
-              <div className="gg-mobile-progress-card">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-black text-slate-950">Uni-Fortschritt</p>
-                  <p className="text-[0.72rem] font-black text-violet-700">{analytics.progress.toFixed(0)}%</p>
-                </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200">
-                  <div className="h-full rounded-full gg-overview-progress" style={{ width: `${Math.min(analytics.progress, 100)}%` }} />
-                </div>
-              </div>
             </section>
 
             <div className="hidden lg:block">
@@ -2126,7 +2147,7 @@ export default function GradeGlowDashboard({
               />
             </div>
 
-            <details className="gg-mobile-collapsible gg-mobile-secondary-panel lg:hidden">
+            <details className="gg-mobile-collapsible gg-mobile-secondary-panel lg:hidden hidden">
               <summary>
                 <span><span className="gg-mobile-kicker">Beta</span>Ready-Check</span>
                 <strong>{profileComplete ? "OK" : "Offen"}</strong>
@@ -2233,7 +2254,7 @@ export default function GradeGlowDashboard({
               />
             </div>
 
-            <details className="gg-mobile-collapsible lg:hidden">
+            <details className="gg-mobile-collapsible lg:hidden hidden">
               <summary><span><span className="gg-mobile-kicker">Limits</span>Free Nutzung</span><strong>›</strong></summary>
               <div className="gg-mobile-collapsible-body">
                 <PlanUsagePanel
@@ -2282,7 +2303,7 @@ export default function GradeGlowDashboard({
               <div className="hidden lg:block"><GlowRewardsPanel profile={profile} exams={exams} saveProfile={saveProfile} limits={limits} planLabel={planLabels[entitlement.plan]} /></div>
             )}
 
-            <details className="gg-mobile-collapsible lg:hidden">
+            <details className="gg-mobile-collapsible lg:hidden hidden">
               <summary><span><span className="gg-mobile-kicker">PWA</span>Installieren & Update</span><strong>›</strong></summary>
               <div className="gg-mobile-collapsible-body"><PwaInstallCard /></div>
             </details>
@@ -2327,23 +2348,51 @@ export default function GradeGlowDashboard({
             <div className="gg-profile-card gg-profile-progress-card">
               <div className="gg-profile-ring" style={{ background: `conic-gradient(var(--gg-accent-500, rgb(124,58,237)) ${profileStudyStats.progressPercent * 3.6}deg, rgba(226,232,240,0.95) 0deg)` }}>
                 <div>
-                  <strong>{analytics.average > 0 ? formatGrade(analytics.average) : "—"}</strong>
-                  <span>Ø · Sem. {profile.currentSemester || 1}</span>
+                  <strong>{Math.round(profileStudyStats.progressPercent)}%</strong>
+                  <span>{analytics.passedEcts}/{totalTargetEcts} ECTS</span>
                 </div>
               </div>
               <div className="min-w-0 flex-1">
                 <p className="gg-mobile-kicker">Uni-Fortschritt</p>
-                <h3>{Math.round(profileStudyStats.progressPercent)}% vom Ziel</h3>
-                <p>{analytics.passedEcts} von {totalTargetEcts} ECTS sind geschafft. Diese Grafik zeigt deinen Studienfortschritt, nicht nur Lernzeit.</p>
+                <h3>{analytics.average > 0 ? `Schnitt ${formatGrade(analytics.average)}` : "Fortschritt im Blick"}</h3>
+                <p>{analytics.passedEcts} von {totalTargetEcts} ECTS sind geschafft. Dein Profil zeigt jetzt klarer Fortschritt, Lernzeit und Trend.</p>
               </div>
             </div>
 
             <div className="gg-profile-trend-card">
-              <p className="gg-mobile-kicker">Wochentrend</p>
-              <h3>{profileStudyStats.weekTrendSentence}</h3>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <div><span>Diese Woche</span><strong>{formatStudyMinutesLabel(profileStudyStats.thisWeekMinutes)}</strong></div>
-                <div><span>Letzte Woche</span><strong>{formatStudyMinutesLabel(profileStudyStats.lastWeekMinutes)}</strong></div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="gg-mobile-kicker">Lerntrend</p>
+                  <h3>{selectedProfileTrend.sentence}</h3>
+                </div>
+                <div className="gg-profile-range-switch">
+                  {(["week", "month", "year"] as const).map((range) => (
+                    <button
+                      key={range}
+                      type="button"
+                      className={profileTrendRange === range ? "is-active" : ""}
+                      onClick={() => setProfileTrendRange(range)}
+                    >
+                      {range === "week" ? "Woche" : range === "month" ? "Monat" : "Jahr"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="gg-profile-chart mt-4">
+                <div className="gg-profile-chart-row">
+                  <div>
+                    <span>{selectedProfileTrend.currentLabel}</span>
+                    <strong>{formatStudyMinutesLabel(selectedProfileTrend.currentMinutes)}</strong>
+                  </div>
+                  <div className="gg-profile-chart-bar"><i style={{ width: `${Math.max(8, (selectedProfileTrend.currentMinutes / profileTrendMaxMinutes) * 100)}%` }} /></div>
+                </div>
+                <div className="gg-profile-chart-row is-muted">
+                  <div>
+                    <span>{selectedProfileTrend.previousLabel}</span>
+                    <strong>{formatStudyMinutesLabel(selectedProfileTrend.previousMinutes)}</strong>
+                  </div>
+                  <div className="gg-profile-chart-bar"><i style={{ width: `${Math.max(8, (selectedProfileTrend.previousMinutes / profileTrendMaxMinutes) * 100)}%` }} /></div>
+                </div>
               </div>
             </div>
 
@@ -2426,7 +2475,12 @@ export default function GradeGlowDashboard({
         )}
 
         {!isCurrentPageBlocked && page === "exams" && (
-          <section id="exams" className="scroll-mt-6">
+          <section id="exams" className="scroll-mt-6 space-y-3">
+            <div className="gg-plan-mobile-intro lg:hidden">
+              <p className="gg-mobile-kicker">Plan</p>
+              <h2>Weniger Chaos, mehr Ablauf</h2>
+              <p>1. Prüfung anlegen · 2. Lernblöcke prüfen · 3. Im Kalender abhaken oder verschieben.</p>
+            </div>
             <GradeGlowPlanner
               modules={modules}
               exams={exams}
@@ -2450,7 +2504,7 @@ export default function GradeGlowDashboard({
                 <div>
                   <p className="gg-mobile-kicker">Fokus</p>
                   <h2>Timer</h2>
-                  <p className="gg-timer-subtitle">Nur Dauer, Fach und Start. Planung bleibt im Plan-Tab.</p>
+                  <p className="gg-timer-subtitle">Fach wählen, Dauer setzen, starten.</p>
                 </div>
                 {globalTimer && <span className="gg-timer-live-pill">läuft</span>}
               </div>
@@ -2504,9 +2558,7 @@ export default function GradeGlowDashboard({
               </div>
             </div>
 
-            <div className="gg-timer-hint">
-              Gespeicherte Timer landen automatisch als erledigte Lernzeit im passenden Fach. Lernblöcke verschieben und abhaken machst du weiter unter Plan.
-            </div>
+            <div className="gg-timer-hint">Gespeicherte Timer werden direkt als Lernzeit im passenden Fach abgelegt.</div>
           </section>
         )}
 

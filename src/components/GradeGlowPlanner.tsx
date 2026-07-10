@@ -840,7 +840,7 @@ export default function GradeGlowPlanner({
   });
   const compactUpcomingSessions = visibleStudySessions
     .filter((session) => {
-      const sessionDate = createLocalDateFromKey(session.dateKey);
+      const sessionDate = toDate(session.dateKey);
       return Boolean(sessionDate && sessionDate >= startOfLocalDay(new Date()) && !session.isHidden);
     })
     .slice(0, 6);

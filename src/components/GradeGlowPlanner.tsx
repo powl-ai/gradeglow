@@ -822,6 +822,28 @@ export default function GradeGlowPlanner({
     : timerMode === "focus"
       ? parsedTimerCustomMinutes
       : selectedTimerSession?.durationMinutes ?? (timerExam ? getExamSessionGoal(timerExam) : DEFAULT_SESSION_GOAL_MINUTES);
+  const examTitleById = new Map(sortedExams.map((exam) => [exam.id, exam.title]));
+  const compactWeekStrip = thisWeekDays.map((date) => {
+    const dateKey = getDateKey(date);
+    const sessions = visibleStudySessions.filter((session) => session.dateKey === dateKey);
+    const plannedMinutes = sessions.reduce((sum, session) => sum + session.durationMinutes, 0);
+    const doneMinutes = sessions.filter((session) => session.isDone).reduce((sum, session) => sum + session.durationMinutes, 0);
+    return {
+      dateKey,
+      label: date.toLocaleDateString("de-DE", { weekday: "short" }).replace('.', ''),
+      dayNumber: date.getDate(),
+      plannedMinutes,
+      doneMinutes,
+      sessionsCount: sessions.length,
+      isToday: dateKey === todayKey,
+    };
+  });
+  const compactUpcomingSessions = visibleStudySessions
+    .filter((session) => {
+      const sessionDate = createLocalDateFromKey(session.dateKey);
+      return Boolean(sessionDate && sessionDate >= startOfLocalDay(new Date()) && !session.isHidden);
+    })
+    .slice(0, 6);
 
   const normalizedFormDate = normalizeDateInput(form.examDate);
   const selectedCalendarDayExams = selectedCalendarDayKey ? examsByDate.get(selectedCalendarDayKey) ?? [] : [];
@@ -1269,6 +1291,62 @@ export default function GradeGlowPlanner({
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-500">Erledigt</p>
             <p className="mt-2 text-3xl font-black text-emerald-700">{formatMinutes(doneStudyMinutes)}</p>
             <p className="text-sm font-semibold text-emerald-600">abgehakte Lernzeit{activeFilterCount > 0 ? " im Filter" : ""}</p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-4 xl:grid-cols-[1.2fr_1fr]">
+          <div className="rounded-3xl bg-slate-950 p-4 text-white">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Lernkalender kompakt</p>
+                <h3 className="mt-2 text-xl font-black">Diese Woche im Fokus</h3>
+              </div>
+              <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-white/80">{formatMinutes(thisWeekStudyMinutes)} geplant</span>
+            </div>
+            <div className="mt-4 grid grid-cols-7 gap-2">
+              {compactWeekStrip.map((day) => {
+                const progress = day.plannedMinutes > 0 ? Math.round((day.doneMinutes / day.plannedMinutes) * 100) : 0;
+                return (
+                  <div key={day.dateKey} className={`rounded-2xl p-3 ring-1 ${day.isToday ? "bg-white text-slate-950 ring-white/70" : "bg-white/8 text-white ring-white/10"}`}>
+                    <p className={`text-[0.68rem] font-black uppercase tracking-[0.12em] ${day.isToday ? "text-emerald-700" : "text-white/55"}`}>{day.label}</p>
+                    <strong className="mt-1 block text-lg font-black">{day.dayNumber}</strong>
+                    <p className={`mt-3 text-[0.68rem] font-semibold ${day.isToday ? "text-slate-500" : "text-white/60"}`}>{day.sessionsCount} Block{day.sessionsCount === 1 ? "" : "e"}</p>
+                    <p className={`mt-1 text-xs font-black ${day.isToday ? "text-slate-900" : "text-white"}`}>{day.plannedMinutes > 0 ? formatMinutes(day.plannedMinutes) : "frei"}</p>
+                    <div className={`mt-3 h-1.5 overflow-hidden rounded-full ${day.isToday ? "bg-slate-200" : "bg-white/10"}`}>
+                      <div className="h-full rounded-full bg-emerald-400" style={{ width: `${progress}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-3xl bg-white/90 p-4 ring-1 ring-violet-100 backdrop-blur">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-500">Agenda</p>
+                <h3 className="mt-2 text-xl font-black tracking-tight text-slate-950">Nächste Lernblöcke</h3>
+              </div>
+              <button type="button" className="rounded-full bg-violet-50 px-3 py-2 text-xs font-black text-violet-700 ring-1 ring-violet-100" onClick={() => setCalendarCursorDate(new Date())}>Heute</button>
+            </div>
+            <div className="mt-4 space-y-2">
+              {compactUpcomingSessions.length === 0 ? (
+                <p className="rounded-2xl bg-slate-50 px-4 py-4 text-sm font-semibold text-slate-500 ring-1 ring-slate-200">Keine kommenden Lernblöcke. Lege im Plan eine neue Einheit an oder generiere deinen Fokus neu.</p>
+              ) : compactUpcomingSessions.map((session) => (
+                <button
+                  key={session.id}
+                  type="button"
+                  className="flex w-full items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-left ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:bg-violet-50 hover:ring-violet-100"
+                  onClick={() => jumpToExamDetails(session.examId, session.id)}
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-slate-950">{session.title || "Lernblock"}</p>
+                    <p className="mt-1 text-xs font-semibold text-slate-500">{formatDate(session.dateKey)} · {session.time} · {examTitleById.get(session.examId) ?? "Prüfung"}</p>
+                  </div>
+                  <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ${session.isDone ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" : "bg-white text-violet-700 ring-1 ring-violet-100"}`}>{formatMinutes(session.durationMinutes)}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

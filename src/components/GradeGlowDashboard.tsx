@@ -245,13 +245,41 @@ const ACTIVE_TIMER_STORAGE_KEY = "gradeglow-active-study-timer-v1";
 const QUICK_RAIL_SCROLL_STORAGE_KEY = "gradeglow-quick-rail-scroll-left-v1";
 const WELCOME_QUERY_PARAM = "welcome";
 
-const mobileTabItems: Array<{ href: string; label: string; icon: string; match: DashboardPage[]; featureId?: GradeGlowFeatureId; tone?: "default" | "primary" }> = [
-  { href: "/", label: "Home", icon: "⌂", match: ["overview"] },
-  { href: "/exams", label: "Plan", icon: "▦", match: ["exams"] },
-  { href: "/timer", label: "Timer", icon: "◉", match: ["timer"], tone: "primary" },
-  { href: "/friends", label: "Circle", icon: "◎", match: ["friends"], featureId: "friends" },
-  { href: "/profile", label: "Profil", icon: "◌", match: ["profile"] },
+type MobileTabIconName = "home" | "plan" | "timer" | "circle" | "profile";
+
+const mobileTabItems: Array<{ href: string; label: string; icon: MobileTabIconName; match: DashboardPage[]; featureId?: GradeGlowFeatureId; tone?: "default" | "primary" }> = [
+  { href: "/", label: "Home", icon: "home", match: ["overview"] },
+  { href: "/exams", label: "Plan", icon: "plan", match: ["exams"] },
+  { href: "/timer", label: "Timer", icon: "timer", match: ["timer"], tone: "primary" },
+  { href: "/friends", label: "Circle", icon: "circle", match: ["friends"], featureId: "friends" },
+  { href: "/profile", label: "Profil", icon: "profile", match: ["profile"] },
 ];
+
+function renderMobileTabIcon(icon: MobileTabIconName) {
+  const commonProps = {
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.9,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    className: "h-5 w-5",
+    "aria-hidden": true,
+  };
+
+  switch (icon) {
+    case "home":
+      return <svg {...commonProps}><path d="M4 10.5 12 4l8 6.5" /><path d="M6.5 9.5V20h11V9.5" /></svg>;
+    case "plan":
+      return <svg {...commonProps}><rect x="4" y="5" width="16" height="15" rx="2.5" /><path d="M8 3v4M16 3v4M4 9.5h16" /><path d="M8 13h3M13 13h3M8 16.5h3M13 16.5h3" /></svg>;
+    case "timer":
+      return <svg {...commonProps}><circle cx="12" cy="13" r="7.25" /><path d="M12 13 15.5 10.5" /><path d="M9 3h6" /><path d="M12 6V3" /></svg>;
+    case "circle":
+      return <svg {...commonProps}><path d="M7.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" /><path d="M16.5 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" /><path d="M3.5 18.5c.9-2.4 3-3.5 5.5-3.5s4.6 1.1 5.5 3.5" /><path d="M13.25 18.5c.66-1.75 2.15-2.75 4.25-2.75 1.34 0 2.48.38 3.33 1.16" /></svg>;
+    case "profile":
+      return <svg {...commonProps}><circle cx="12" cy="8" r="3.25" /><path d="M5 19c1.25-3.08 3.66-4.5 7-4.5S17.75 15.92 19 19" /></svg>;
+  }
+}
 
 type StoredActiveStudyTimer = {
   examId: string;
@@ -302,6 +330,15 @@ const formatStudyMinutesLabel = (minutes: number) => {
   const hours = Math.floor(safeMinutes / 60);
   const rest = safeMinutes % 60;
   return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+};
+
+const getLearningHeatLevel = (minutes: number, maxMinutes: number) => {
+  if (minutes <= 0 || maxMinutes <= 0) return 0;
+  const ratio = minutes / maxMinutes;
+  if (ratio >= 0.8) return 4;
+  if (ratio >= 0.55) return 3;
+  if (ratio >= 0.3) return 2;
+  return 1;
 };
 
 const startOfLocalDay = (date: Date) =>
@@ -1128,6 +1165,35 @@ export default function GradeGlowDashboard({
       return subjects;
     }, {});
     const topSubjectRow = Object.values(topSubject).sort((a, b) => b.minutes - a.minutes)[0] ?? null;
+    const minutesByDateKey = doneSessions.reduce<Record<string, number>>((map, session) => {
+      map[session.dateKey] = (map[session.dateKey] ?? 0) + session.durationMinutes;
+      return map;
+    }, {});
+    const weeklyTrend = Array.from({ length: 12 }, (_, index) => {
+      const offset = index - 11;
+      const start = addDaysLocal(thisWeekStart, offset * 7);
+      const end = addDaysLocal(start, 7);
+      return {
+        dateKey: getDateKey(start),
+        shortLabel: `${start.getDate()}.${start.getMonth() + 1}.`,
+        monthLabel: start.toLocaleDateString("de-DE", { month: "short" }).replace('.', ''),
+        minutes: sumMinutesBetween(start, end),
+      };
+    });
+    const heatmapStart = addDaysLocal(startOfLocalWeek(now), -35);
+    const learningCalendarDays = Array.from({ length: 42 }, (_, index) => {
+      const date = addDaysLocal(heatmapStart, index);
+      const dateKey = getDateKey(date);
+      const minutes = minutesByDateKey[dateKey] ?? 0;
+      return {
+        dateKey,
+        minutes,
+        label: date.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }),
+        dayNumber: date.getDate(),
+        isCurrentMonth: date.getMonth() === now.getMonth(),
+        isToday: dateKey === getDateKey(now),
+      };
+    });
 
     const weekTrendSentence = thisWeekMinutes === 0
       ? "Diese Woche ist noch leer. Starte einen kurzen Fokusblock und dein Trend füllt sich."
@@ -1169,6 +1235,9 @@ export default function GradeGlowDashboard({
       yearTrendSentence,
       mostRecentSession,
       topSubjectRow,
+      weeklyTrend,
+      learningCalendarDays,
+      maxDailyMinutes: Math.max(...Object.values(minutesByDateKey), 0),
     };
   }, [analytics.progress, exams]);
 
@@ -1200,7 +1269,21 @@ export default function GradeGlowDashboard({
   } as const;
 
   const selectedProfileTrend = profileTrendMeta[profileTrendRange];
-  const profileTrendMaxMinutes = Math.max(selectedProfileTrend.currentMinutes, selectedProfileTrend.previousMinutes, 1);
+  const profileWeeklyTrendMax = Math.max(...profileStudyStats.weeklyTrend.map((point) => point.minutes), 1);
+  const profileWeeklyTrendPoints = profileStudyStats.weeklyTrend
+    .map((point, index, points) => {
+      const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100;
+      const y = 86 - (point.minutes / profileWeeklyTrendMax) * 68;
+      return `${x},${y}`;
+    })
+    .join(" ");
+  const profileWeeklyTrendAreaPoints = `0,86 ${profileWeeklyTrendPoints} 100,86`;
+  const profileLearningCalendarMonthLabels = profileStudyStats.learningCalendarDays.reduce<Array<{ key: string; label: string; index: number }>>((labels, day, index) => {
+    if (day.dayNumber <= 7 || index === 0) {
+      labels.push({ key: `${day.dateKey}-month`, label: createLocalDateFromKey(day.dateKey)?.toLocaleDateString("de-DE", { month: "short" }) ?? "", index });
+    }
+    return labels;
+  }, []);
 
   const target = targetAverage ? parseNumber(targetAverage) : 0;
   const remainingGradedEcts = targetRemainingEcts
@@ -2360,20 +2443,86 @@ export default function GradeGlowDashboard({
                   ))}
                 </div>
               </div>
-              <div className="gg-profile-chart mt-4">
-                <div className="gg-profile-chart-row">
-                  <div>
-                    <span>{selectedProfileTrend.currentLabel}</span>
-                    <strong>{formatStudyMinutesLabel(selectedProfileTrend.currentMinutes)}</strong>
-                  </div>
-                  <div className="gg-profile-chart-bar"><i style={{ width: `${Math.max(8, (selectedProfileTrend.currentMinutes / profileTrendMaxMinutes) * 100)}%` }} /></div>
+
+              <div className="gg-profile-compare-grid">
+                <div className="gg-profile-compare-card">
+                  <span>{selectedProfileTrend.currentLabel}</span>
+                  <strong>{formatStudyMinutesLabel(selectedProfileTrend.currentMinutes)}</strong>
                 </div>
-                <div className="gg-profile-chart-row is-muted">
+                <div className="gg-profile-compare-card is-muted">
+                  <span>{selectedProfileTrend.previousLabel}</span>
+                  <strong>{formatStudyMinutesLabel(selectedProfileTrend.previousMinutes)}</strong>
+                </div>
+              </div>
+
+              <div className="gg-profile-line-chart mt-4">
+                <div className="gg-profile-line-chart-header">
                   <div>
-                    <span>{selectedProfileTrend.previousLabel}</span>
-                    <strong>{formatStudyMinutesLabel(selectedProfileTrend.previousMinutes)}</strong>
+                    <p>Letzte 12 Wochen</p>
+                    <strong>{formatStudyMinutesLabel(profileStudyStats.thisWeekMinutes)} diese Woche</strong>
                   </div>
-                  <div className="gg-profile-chart-bar"><i style={{ width: `${Math.max(8, (selectedProfileTrend.previousMinutes / profileTrendMaxMinutes) * 100)}%` }} /></div>
+                  <span>{profileStudyStats.weeklyTrend[profileStudyStats.weeklyTrend.length - 1]?.monthLabel ?? ""}</span>
+                </div>
+                <svg viewBox="0 0 100 90" preserveAspectRatio="none" className="gg-profile-line-chart-svg" aria-hidden="true">
+                  <path d={`M ${profileWeeklyTrendAreaPoints}`} className="gg-profile-line-chart-area" />
+                  <polyline points={profileWeeklyTrendPoints} className="gg-profile-line-chart-path" />
+                  {profileStudyStats.weeklyTrend.map((point, index, points) => {
+                    const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100;
+                    const y = 86 - (point.minutes / profileWeeklyTrendMax) * 68;
+                    return <circle key={point.dateKey} cx={x} cy={y} r={index === points.length - 1 ? 2.8 : 2.1} className={index === points.length - 1 ? "gg-profile-line-chart-dot is-active" : "gg-profile-line-chart-dot"} />;
+                  })}
+                </svg>
+                <div className="gg-profile-line-chart-labels">
+                  {profileStudyStats.weeklyTrend.map((point, index) => (
+                    <span key={point.dateKey} className={index === profileStudyStats.weeklyTrend.length - 1 ? "is-active" : ""}>{index % 2 === 0 ? point.monthLabel : point.shortLabel}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="gg-profile-card gg-profile-heatmap-card">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="gg-mobile-kicker">Lernkalender</p>
+                  <h3>Deine Lerntage auf einen Blick</h3>
+                  <p>Je dunkler das Feld, desto mehr Lernzeit hast du an diesem Tag abgeschlossen.</p>
+                </div>
+                <div className="gg-profile-heatmap-legend" aria-hidden="true">
+                  <span>wenig</span>
+                  <i data-level="0" />
+                  <i data-level="1" />
+                  <i data-level="2" />
+                  <i data-level="3" />
+                  <i data-level="4" />
+                  <span>viel</span>
+                </div>
+              </div>
+
+              <div className="gg-profile-heatmap-months">
+                {profileLearningCalendarMonthLabels.map((label) => (
+                  <span key={label.key} style={{ gridColumnStart: (label.index % 7) + 1 }}>{label.label}</span>
+                ))}
+              </div>
+              <div className="gg-profile-heatmap-layout">
+                <div className="gg-profile-heatmap-weekdays">
+                  {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((label) => (
+                    <span key={label}>{label}</span>
+                  ))}
+                </div>
+                <div className="gg-profile-heatmap-grid">
+                  {profileStudyStats.learningCalendarDays.map((day) => {
+                    const level = getLearningHeatLevel(day.minutes, profileStudyStats.maxDailyMinutes);
+                    return (
+                      <span
+                        key={day.dateKey}
+                        className={`gg-profile-heatmap-cell ${day.isCurrentMonth ? '' : 'is-muted'} ${day.isToday ? 'is-today' : ''}`}
+                        data-level={level}
+                        title={`${day.label}: ${formatStudyMinutesLabel(day.minutes)}`}
+                      >
+                        <i />
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -3659,9 +3808,15 @@ export default function GradeGlowDashboard({
         {visibleMobileTabItems.map((item) => {
           const isActive = item.match.includes(page);
           return (
-            <Link key={`${item.href}-${item.label}`} href={item.href} className={`${isActive ? "is-active" : ""} ${item.tone === "primary" ? "is-primary" : ""}`.trim()}>
-              <span className="gg-mobile-tab-icon">{item.icon}</span>
-              <span>{item.label}</span>
+            <Link
+              key={`${item.href}-${item.label}`}
+              href={item.href}
+              aria-label={item.label}
+              title={item.label}
+              className={`${isActive ? "is-active" : ""} ${item.tone === "primary" ? "is-primary" : ""}`.trim()}
+            >
+              <span className="gg-mobile-tab-icon">{renderMobileTabIcon(item.icon)}</span>
+              <span className="sr-only">{item.label}</span>
             </Link>
           );
         })}

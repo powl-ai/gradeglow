@@ -882,37 +882,6 @@ export default function StudyFriendsPanel({
               )}
             </div>
 
-            <div className="mt-4 rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-                Schnellcheck
-              </p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
-                  <p className="text-[0.68rem] font-black uppercase tracking-[0.12em] text-slate-400">
-                    Schritt 1
-                  </p>
-                  <p className="mt-1 text-xs font-bold leading-5 text-slate-200">
-                    Sharing aktivieren und eigenen Code kopieren.
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
-                  <p className="text-[0.68rem] font-black uppercase tracking-[0.12em] text-slate-400">
-                    Schritt 2
-                  </p>
-                  <p className="mt-1 text-xs font-bold leading-5 text-slate-200">
-                    Freundescode oder Circle-Code rechts einfügen.
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10">
-                  <p className="text-[0.68rem] font-black uppercase tracking-[0.12em] text-slate-400">
-                    Schritt 3
-                  </p>
-                  <p className="mt-1 text-xs font-bold leading-5 text-slate-200">
-                    Leaderboard, Wochenziel und Privacy getrennt testen.
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 

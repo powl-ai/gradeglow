@@ -868,13 +868,13 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                     <button
                       key={option.id}
                       type="button"
-                      className={`gg-readable-option-card rounded-2xl p-3 text-left ring-1 transition hover:-translate-y-0.5 ${isEnabled ? "is-active" : ""}`}
+                      className={`gg-readable-option-card rounded-2xl p-3 text-left ring-1 transition hover:-translate-y-0.5 ${isEnabled ? "is-active bg-emerald-900 text-white ring-emerald-900 shadow-lg shadow-emerald-950/10" : "bg-white text-slate-900 ring-emerald-100 hover:bg-emerald-50"}`}
                       disabled={isSaving || !isProfileLoaded}
                       onClick={() => toggleFeaturePreference(option.id)}
                     >
                       <span className="flex items-center justify-between gap-3">
                         <span className="text-sm font-black">{option.title}</span>
-                        <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-black ${isEnabled ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" : "bg-slate-100 text-slate-500"}`}>
+                        <span className={`rounded-full px-2 py-0.5 text-[0.65rem] font-black ${isEnabled ? "bg-white/15 text-white ring-1 ring-white/15" : "bg-slate-100 text-slate-500"}`}>
                           {isEnabled ? "aktiv" : "aus"}
                         </span>
                       </span>

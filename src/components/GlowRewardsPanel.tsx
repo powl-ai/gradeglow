@@ -113,6 +113,9 @@ export default function GlowRewardsPanel({
     Math.max(0, nextDailyStreak - 1) * 2,
   );
   const nextDailyRewardPoints = 10 + nextDailyStreakBonus;
+  const upcomingDailyStreak = hasClaimedToday ? loginStreak + 1 : nextDailyStreak;
+  const upcomingDailyStreakBonus = Math.min(25, Math.max(0, upcomingDailyStreak - 1) * 2);
+  const upcomingDailyRewardPoints = 10 + upcomingDailyStreakBonus;
 
   const doneStudyDayKeys = useMemo(() => getDoneStudyDayKeys(exams), [exams]);
   const latestStudyAt = useMemo(
@@ -550,7 +553,7 @@ export default function GlowRewardsPanel({
                 <p className="text-xs text-white/70">Daily Login</p>
                 <p className="mt-1 text-2xl font-black">{loginStreak}</p>
                 <p className="mt-1 text-[0.68rem] font-bold text-white/60">
-                  nächster Claim: {nextDailyRewardPoints} GP
+                  nächster Claim: {upcomingDailyRewardPoints} GP
                 </p>
               </div>
               <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10">

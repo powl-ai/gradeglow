@@ -242,6 +242,7 @@ const emptyAssessmentInput: AssessmentInput = {
 };
 
 const ACTIVE_TIMER_STORAGE_KEY = "gradeglow-active-study-timer-v1";
+const LAST_TIMER_EXAM_STORAGE_KEY = "gradeglow-last-timer-exam-id-v1";
 const QUICK_RAIL_SCROLL_STORAGE_KEY = "gradeglow-quick-rail-scroll-left-v1";
 const WELCOME_QUERY_PARAM = "welcome";
 
@@ -434,10 +435,14 @@ export default function GradeGlowDashboard({
 
   const [globalTimer, setGlobalTimer] = useState<StoredActiveStudyTimer | null>(null);
   const [globalTimerNow, setGlobalTimerNow] = useState(() => Date.now());
-  const [standaloneTimerExamId, setStandaloneTimerExamId] = useState("");
+  const [standaloneTimerExamId, setStandaloneTimerExamId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(LAST_TIMER_EXAM_STORAGE_KEY) || "";
+  });
   const [standaloneTimerMode, setStandaloneTimerMode] = useState<StoredActiveStudyTimer["mode"]>("focus");
   const [standaloneTimerMinutes, setStandaloneTimerMinutes] = useState("30");
   const [profileTrendRange, setProfileTrendRange] = useState<"week" | "month" | "year">("week");
+  const [profileChartRange, setProfileChartRange] = useState<"4w" | "12w" | "year">("12w");
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const quickRailRef = useRef<HTMLElement | null>(null);
@@ -527,6 +532,20 @@ export default function GradeGlowDashboard({
       window.removeEventListener("storage", handleStorage);
     };
   }, []);
+
+  useEffect(() => {
+    if (!standaloneTimerExamId) return;
+    if (exams.some((exam) => exam.id === standaloneTimerExamId)) return;
+    setStandaloneTimerExamId("");
+    if (typeof window !== "undefined") window.localStorage.removeItem(LAST_TIMER_EXAM_STORAGE_KEY);
+  }, [exams, standaloneTimerExamId]);
+
+  const updateStandaloneTimerExamId = (examId: string) => {
+    setStandaloneTimerExamId(examId);
+    if (typeof window === "undefined") return;
+    if (examId) window.localStorage.setItem(LAST_TIMER_EXAM_STORAGE_KEY, examId);
+    else window.localStorage.removeItem(LAST_TIMER_EXAM_STORAGE_KEY);
+  };
 
   const totalTargetEcts =
     profile.targetEcts > 0 ? profile.targetEcts : DEFAULT_TARGET_ECTS;
@@ -1187,6 +1206,16 @@ export default function GradeGlowDashboard({
         minutes: sumMinutesBetween(start, end),
       };
     });
+    const monthlyTrend = Array.from({ length: 12 }, (_, index) => {
+      const start = new Date(now.getFullYear(), now.getMonth() - (11 - index), 1);
+      const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+      return {
+        dateKey: getDateKey(start),
+        shortLabel: start.toLocaleDateString("de-DE", { month: "short" }).replace('.', ''),
+        monthLabel: start.toLocaleDateString("de-DE", { month: "short" }).replace('.', ''),
+        minutes: sumMinutesBetween(start, end),
+      };
+    });
     const heatmapStart = addDaysLocal(startOfLocalWeek(now), -35);
     const learningCalendarDays = Array.from({ length: 42 }, (_, index) => {
       const date = addDaysLocal(heatmapStart, index);
@@ -1243,6 +1272,7 @@ export default function GradeGlowDashboard({
       mostRecentSession,
       topSubjectRow,
       weeklyTrend,
+      monthlyTrend,
       learningCalendarDays,
       maxDailyMinutes: Math.max(...Object.values(minutesByDateKey), 0),
     };
@@ -1276,15 +1306,20 @@ export default function GradeGlowDashboard({
   } as const;
 
   const selectedProfileTrend = profileTrendMeta[profileTrendRange];
-  const profileWeeklyTrendMax = Math.max(...profileStudyStats.weeklyTrend.map((point) => point.minutes), 1);
-  const profileWeeklyTrendPoints = profileStudyStats.weeklyTrend
+  const selectedProfileChartPoints = profileChartRange === "year"
+    ? profileStudyStats.monthlyTrend
+    : profileStudyStats.weeklyTrend.slice(profileChartRange === "4w" ? -4 : -12);
+  const profileChartMaxMinutes = Math.max(...selectedProfileChartPoints.map((point) => point.minutes), 1);
+  const profileChartPolylinePoints = selectedProfileChartPoints
     .map((point, index, points) => {
-      const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100;
-      const y = 86 - (point.minutes / profileWeeklyTrendMax) * 68;
+      const x = points.length === 1 ? 50 : 4 + (index / (points.length - 1)) * 92;
+      const y = 78 - (point.minutes / profileChartMaxMinutes) * 58;
       return `${x},${y}`;
     })
     .join(" ");
-  const profileWeeklyTrendAreaPoints = `0,86 ${profileWeeklyTrendPoints} 100,86`;
+  const profileChartAreaPoints = `4,78 ${profileChartPolylinePoints} 96,78`;
+  const profileChartHeadline = profileChartRange === "year" ? "Letzte 12 Monate" : profileChartRange === "4w" ? "Letzte 4 Wochen" : "Letzte 12 Wochen";
+  const profileChartCurrentMinutes = selectedProfileChartPoints[selectedProfileChartPoints.length - 1]?.minutes ?? 0;
   const profileLearningCalendarMonthLabels = profileStudyStats.learningCalendarDays.reduce<Array<{ key: string; label: string; index: number }>>((labels, day, index) => {
     if (day.dayNumber <= 7 || index === 0) {
       labels.push({ key: `${day.dateKey}-month`, label: createLocalDateFromKey(day.dateKey)?.toLocaleDateString("de-DE", { month: "short" }) ?? "", index });
@@ -1492,7 +1527,7 @@ export default function GradeGlowDashboard({
   const globalTimerExam = globalTimer ? exams.find((exam) => exam.id === globalTimer.examId) ?? null : null;
   const globalTimerElapsedSeconds = globalTimer ? Math.max(0, Math.floor((globalTimerNow - globalTimer.startedAt) / 1000)) : 0;
   const globalTimerModeLabel = globalTimer?.mode === "pomodoro" ? "Pomodoro" : globalTimer?.mode === "stopwatch" ? "Stoppuhr" : "Fokus-Timer";
-  const standaloneTimerExam = exams.find((exam) => exam.id === standaloneTimerExamId) ?? exams.find((exam) => exam.status !== "done" && !exam.isHidden) ?? exams[0] ?? null;
+  const standaloneTimerExam = exams.find((exam) => exam.id === standaloneTimerExamId) ?? null;
   const standaloneTimerGoalMinutes = standaloneTimerMode === "pomodoro" ? 25 : standaloneTimerMode === "stopwatch" ? 300 : Math.max(1, Math.min(300, Math.round(Number(standaloneTimerMinutes) || 30)));
   const standaloneTimerLimitSeconds = globalTimer ? Math.max(1, globalTimer.goalMinutes) * 60 : standaloneTimerGoalMinutes * 60;
   const standaloneTimerDisplaySeconds = globalTimer?.mode === "stopwatch"
@@ -1512,7 +1547,10 @@ export default function GradeGlowDashboard({
     };
     setGlobalTimer(nextTimer);
     setGlobalTimerNow(Date.now());
-    if (typeof window !== "undefined") window.localStorage.setItem(ACTIVE_TIMER_STORAGE_KEY, JSON.stringify(nextTimer));
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(ACTIVE_TIMER_STORAGE_KEY, JSON.stringify(nextTimer));
+      window.localStorage.setItem(LAST_TIMER_EXAM_STORAGE_KEY, standaloneTimerExam.id);
+    }
     void publishStudyActivity({
       user,
       profile,
@@ -2080,7 +2118,7 @@ export default function GradeGlowDashboard({
         </section>
       )}
 
-        {globalTimer && page !== "exams" && (
+        {globalTimer && !["overview", "exams", "timer"].includes(page) && (
           <section className="rounded-3xl bg-slate-950 p-4 text-white shadow-xl shadow-violet-950/10 ring-1 ring-white/10 sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -2171,6 +2209,13 @@ export default function GradeGlowDashboard({
         {!isCurrentPageBlocked && page === "overview" && (
           <>
             <section className="gg-mobile-home lg:hidden">
+              <div className="gg-mobile-home-logo-row">
+                <GradeGlowLogo size="sm" appIconId={profile.activeAppIconId} />
+                <div>
+                  <p className="gg-mobile-kicker">GradeGlow</p>
+                  <strong>Dein Lernhub</strong>
+                </div>
+              </div>
               <div className="gg-mobile-hero-card gg-mobile-today-card">
                 <div className="min-w-0">
                   <p className="gg-mobile-kicker text-white/70">Heute · {nextMobileExamDaysLabel}</p>
@@ -2465,23 +2510,37 @@ export default function GradeGlowDashboard({
               <div className="gg-profile-line-chart mt-4">
                 <div className="gg-profile-line-chart-header">
                   <div>
-                    <p>Letzte 12 Wochen</p>
-                    <strong>{formatStudyMinutesLabel(profileStudyStats.thisWeekMinutes)} diese Woche</strong>
+                    <p>{profileChartHeadline}</p>
+                    <strong>{formatStudyMinutesLabel(profileChartCurrentMinutes)} im aktuellen Zeitraum</strong>
                   </div>
-                  <span>{profileStudyStats.weeklyTrend[profileStudyStats.weeklyTrend.length - 1]?.monthLabel ?? ""}</span>
+                  <div className="gg-profile-chart-range-switch" aria-label="Zeitraum für Lernzeitdiagramm">
+                    {(["4w", "12w", "year"] as const).map((range) => (
+                      <button
+                        key={range}
+                        type="button"
+                        className={profileChartRange === range ? "is-active" : ""}
+                        onClick={() => setProfileChartRange(range)}
+                      >
+                        {range === "4w" ? "4W" : range === "12w" ? "12W" : "Jahr"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <svg viewBox="0 0 100 90" preserveAspectRatio="none" className="gg-profile-line-chart-svg" aria-hidden="true">
-                  <path d={`M ${profileWeeklyTrendAreaPoints}`} className="gg-profile-line-chart-area" />
-                  <polyline points={profileWeeklyTrendPoints} className="gg-profile-line-chart-path" />
-                  {profileStudyStats.weeklyTrend.map((point, index, points) => {
-                    const x = points.length === 1 ? 50 : (index / (points.length - 1)) * 100;
-                    const y = 86 - (point.minutes / profileWeeklyTrendMax) * 68;
-                    return <circle key={point.dateKey} cx={x} cy={y} r={index === points.length - 1 ? 2.8 : 2.1} className={index === points.length - 1 ? "gg-profile-line-chart-dot is-active" : "gg-profile-line-chart-dot"} />;
-                  })}
-                </svg>
+                <div className="gg-profile-chart-canvas">
+                  <div className="gg-profile-chart-grid" aria-hidden="true"><span /><span /><span /></div>
+                  <svg viewBox="0 0 100 90" preserveAspectRatio="none" className="gg-profile-line-chart-svg" aria-hidden="true">
+                    <path d={`M ${profileChartAreaPoints}`} className="gg-profile-line-chart-area" />
+                    <polyline points={profileChartPolylinePoints} className="gg-profile-line-chart-path" />
+                    {selectedProfileChartPoints.map((point, index, points) => {
+                      const x = points.length === 1 ? 50 : 4 + (index / (points.length - 1)) * 92;
+                      const y = 78 - (point.minutes / profileChartMaxMinutes) * 58;
+                      return <circle key={point.dateKey} cx={x} cy={y} r={index === points.length - 1 ? 2.25 : 1.55} className={index === points.length - 1 ? "gg-profile-line-chart-dot is-active" : "gg-profile-line-chart-dot"} />;
+                    })}
+                  </svg>
+                </div>
                 <div className="gg-profile-line-chart-labels">
-                  {profileStudyStats.weeklyTrend.map((point, index) => (
-                    <span key={point.dateKey} className={index === profileStudyStats.weeklyTrend.length - 1 ? "is-active" : ""}>{index % 2 === 0 ? point.monthLabel : point.shortLabel}</span>
+                  {selectedProfileChartPoints.map((point, index) => (
+                    <span key={point.dateKey} className={index === selectedProfileChartPoints.length - 1 ? "is-active" : ""}>{profileChartRange === "year" ? point.monthLabel : index % 2 === 0 ? point.monthLabel : point.shortLabel}</span>
                   ))}
                 </div>
               </div>
@@ -2656,8 +2715,9 @@ export default function GradeGlowDashboard({
                 <div className="gg-timer-form">
                   <label>
                     <span>Fach / Prüfung</span>
-                    <select value={standaloneTimerExam?.id ?? ""} onChange={(event) => setStandaloneTimerExamId(event.target.value)} disabled={!exams.length}>
-                      {exams.length === 0 && <option>Erst Prüfung im Plan anlegen</option>}
+                    <select value={standaloneTimerExamId} onChange={(event) => updateStandaloneTimerExamId(event.target.value)} disabled={!exams.length}>
+                      <option value="">Fach/Klausur auswählen</option>
+                      {exams.length === 0 && <option value="" disabled>Erst Prüfung im Plan anlegen</option>}
                       {exams.map((exam) => (
                         <option key={exam.id} value={exam.id}>{exam.moduleName || exam.title}</option>
                       ))}

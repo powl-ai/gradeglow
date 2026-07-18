@@ -4095,3 +4095,409 @@ body {
     grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 }
+
+/* UI fix 5: repair mobile scale, transparent icon-only hotbar, Apple-like planner density. */
+@media (max-width: 1023px) {
+  .gg-mobile-bottom-blocker,
+  .gg-mobile-tabbar::before {
+    display: none !important;
+  }
+
+  .gg-app-shell {
+    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 7.25rem), 8.25rem) !important;
+  }
+
+  .gg-mobile-scroll-end-spacer {
+    height: 11.5rem !important;
+  }
+
+  .gg-mobile-tabbar {
+    left: 50% !important;
+    right: auto !important;
+    bottom: max(env(safe-area-inset-bottom, 0px) + 0.7rem, 0.85rem) !important;
+    width: min(18rem, calc(100vw - 3.5rem)) !important;
+    min-height: auto !important;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 0.45rem !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    transform: translateX(-50%) !important;
+  }
+
+  .gg-mobile-tabbar a,
+  .gg-mobile-tabbar a.is-primary,
+  .gg-mobile-tabbar a.is-active,
+  .gg-mobile-tabbar a.is-primary.is-active {
+    min-height: 3.05rem !important;
+    width: 3.05rem !important;
+    height: 3.05rem !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    display: grid !important;
+    place-items: center !important;
+    border: 1px solid rgba(255,255,255,0.22) !important;
+    border-radius: 1.18rem !important;
+    background: rgba(4, 18, 14, 0.58) !important;
+    color: rgba(236, 253, 245, 0.82) !important;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.18) !important;
+    backdrop-filter: blur(18px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
+    transform: none !important;
+  }
+
+  .gg-mobile-tabbar a.is-active,
+  .gg-mobile-tabbar a.is-primary.is-active {
+    border-color: rgba(236, 253, 245, 0.45) !important;
+    background: rgba(236, 253, 245, 0.18) !important;
+    color: #ffffff !important;
+  }
+
+  .gg-mobile-tabbar a .gg-mobile-tab-icon,
+  .gg-mobile-tabbar a.is-primary .gg-mobile-tab-icon {
+    width: 1.35rem !important;
+    height: 1.35rem !important;
+    display: grid !important;
+    place-items: center !important;
+    background: transparent !important;
+    color: inherit !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+
+  .gg-mobile-tabbar a .gg-mobile-tab-icon svg {
+    width: 1.35rem !important;
+    height: 1.35rem !important;
+    display: block !important;
+  }
+
+  .gg-planner-panel {
+    gap: 0.9rem !important;
+  }
+
+  .gg-plan-mobile-intro,
+  .gg-planner-control-card,
+  .gg-plan-calendar-card,
+  .gg-plan-agenda-grid > div {
+    border-radius: 1.65rem !important;
+  }
+
+  .gg-plan-mobile-intro {
+    padding: 1rem !important;
+  }
+
+  .gg-plan-mobile-intro h2 {
+    font-size: clamp(1.25rem, 7vw, 2rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  .gg-plan-mobile-intro p:last-child,
+  .gg-planner-control-card p,
+  .gg-plan-agenda-grid p {
+    font-size: 0.84rem !important;
+    line-height: 1.35 !important;
+  }
+
+  .gg-planner-control-card {
+    padding: 0.95rem !important;
+  }
+
+  .gg-planner-control-card h2 {
+    font-size: 1.45rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .gg-planner-control-card .rounded-2xl {
+    border-radius: 1.2rem !important;
+  }
+
+  .gg-planner-control-card button,
+  .gg-planner-control-card select,
+  .gg-planner-control-card input {
+    min-height: 2.75rem !important;
+    font-size: 0.88rem !important;
+  }
+
+  .gg-plan-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.65rem !important;
+  }
+
+  .gg-plan-summary-grid > div {
+    border-radius: 1.35rem !important;
+    padding: 0.85rem !important;
+    min-height: auto !important;
+  }
+
+  .gg-plan-summary-grid p:first-child {
+    letter-spacing: 0.12em !important;
+    font-size: 0.62rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .gg-plan-summary-grid .text-3xl,
+  .gg-plan-summary-grid .text-xl {
+    font-size: 1.15rem !important;
+    line-height: 1.15 !important;
+  }
+
+  .gg-plan-summary-grid .rounded-full {
+    padding: 0.35rem 0.6rem !important;
+    font-size: 0.68rem !important;
+  }
+
+  .gg-plan-agenda-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  .gg-plan-agenda-grid > div {
+    padding: 0.9rem !important;
+  }
+
+  .gg-plan-agenda-grid h3 {
+    font-size: 1.18rem !important;
+    line-height: 1.12 !important;
+  }
+
+  .gg-plan-agenda-grid .grid-cols-7 {
+    gap: 0.35rem !important;
+  }
+
+  .gg-plan-agenda-grid .grid-cols-7 > div {
+    border-radius: 1rem !important;
+    padding: 0.5rem 0.38rem !important;
+  }
+
+  .gg-plan-agenda-grid .grid-cols-7 strong {
+    font-size: 0.98rem !important;
+  }
+
+  .gg-plan-agenda-grid .grid-cols-7 p {
+    font-size: 0.56rem !important;
+    line-height: 1.15 !important;
+  }
+
+  .gg-plan-calendar-card {
+    background: rgba(2, 6, 23, 0.94) !important;
+    color: white !important;
+    border-color: rgba(255,255,255,0.08) !important;
+    box-shadow: 0 20px 42px rgba(0,0,0,0.18) !important;
+  }
+
+  .gg-plan-calendar-card > div {
+    padding: 0.65rem !important;
+  }
+
+  .gg-plan-calendar-card .grid-cols-7:first-child {
+    color: rgba(255,255,255,0.52) !important;
+    font-size: 0.66rem !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  .gg-plan-calendar-card .grid-cols-7:not(:first-child) {
+    gap: 0.18rem !important;
+  }
+
+  .gg-plan-calendar-card .grid-cols-7:not(:first-child) > div {
+    min-height: 6.2rem !important;
+    border-radius: 0 !important;
+    padding: 0.35rem !important;
+    border: 0 !important;
+    border-top: 1px solid rgba(255,255,255,0.12) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .gg-plan-calendar-card .grid-cols-7:not(:first-child) > div > div:first-child span:first-child {
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    background: transparent !important;
+    color: rgba(255,255,255,0.9) !important;
+    font-size: 1.05rem !important;
+    font-weight: 800 !important;
+  }
+
+  .gg-plan-calendar-card button[title*="Details öffnen"],
+  .gg-plan-calendar-card button[title*="Verschieben"] {
+    border-radius: 0.42rem !important;
+    padding: 0.12rem 0.28rem !important;
+    font-size: 0.56rem !important;
+    line-height: 1.05 !important;
+    min-height: 0 !important;
+    color: white !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .gg-plan-calendar-card button[title*="Details öffnen"] {
+    background: rgba(236, 72, 153, 0.5) !important;
+  }
+
+  .gg-plan-calendar-card button[title*="Verschieben"] {
+    background: rgba(14, 165, 233, 0.45) !important;
+  }
+
+  .gg-plan-calendar-card p.truncate {
+    border-radius: 0.42rem !important;
+    padding: 0.12rem 0.28rem !important;
+    font-size: 0.55rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .gg-plan-calendar-card .mt-4.rounded-2xl {
+    display: none !important;
+  }
+
+  .planner-detail-input,
+  .gg-planner-panel input,
+  .gg-planner-panel select,
+  .gg-planner-panel textarea {
+    font-size: 16px !important;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 1023px) {
+  .gg-mobile-tabbar {
+    bottom: max(env(safe-area-inset-bottom, 0px) + 0.85rem, 1rem) !important;
+  }
+}
+
+
+@media (max-width: 1023px) {
+  .gg-planner-panel .bg-slate-950 .rounded-2xl.p-3,
+  .gg-planner-panel .bg-slate-950 label.rounded-2xl {
+    padding: 0.72rem !important;
+    border-radius: 1rem !important;
+  }
+
+  .gg-planner-panel .bg-slate-950 input,
+  .gg-planner-panel .bg-slate-950 select,
+  .gg-planner-panel .bg-slate-950 textarea {
+    padding-top: 0.48rem !important;
+    padding-bottom: 0.48rem !important;
+    font-size: 0.95rem !important;
+  }
+
+  .gg-planner-panel .bg-slate-950 .text-lg,
+  .gg-planner-panel .bg-slate-950 .text-2xl,
+  .gg-planner-panel .bg-slate-950 .text-3xl {
+    font-size: 1.15rem !important;
+    line-height: 1.18 !important;
+  }
+}
+
+/* Timer/home/profile polish patch ----------------------------------------- */
+.gg-profile-chart-range-switch {
+  display: inline-flex;
+  gap: 0.25rem;
+  border-radius: 999px;
+  background: rgba(241, 245, 249, 0.82);
+  padding: 0.25rem;
+  box-shadow: inset 0 0 0 1px rgba(226, 232, 240, 0.85);
+}
+
+.gg-profile-chart-range-switch button {
+  border-radius: 999px;
+  padding: 0.42rem 0.68rem;
+  font-size: 0.68rem;
+  font-weight: 900;
+  color: #64748b;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.gg-profile-chart-range-switch button.is-active {
+  background: #fff;
+  color: #064e3b;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.gg-profile-chart-canvas {
+  position: relative;
+  margin-top: 0.85rem;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.92), rgba(255, 255, 255, 0.96));
+}
+
+.gg-profile-chart-grid {
+  position: absolute;
+  inset: 0.75rem 0.9rem 0.75rem 0.9rem;
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  pointer-events: none;
+}
+
+.gg-profile-chart-grid span {
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.gg-profile-line-chart-svg {
+  position: relative;
+  margin-top: 0 !important;
+  height: 11rem !important;
+  padding: 0.5rem 0.65rem 0.65rem;
+}
+
+.gg-profile-line-chart-area {
+  fill: rgba(16, 185, 129, 0.075) !important;
+}
+
+.gg-profile-line-chart-path {
+  stroke-width: 1.25 !important;
+  filter: drop-shadow(0 4px 8px rgba(16, 185, 129, 0.16));
+}
+
+.gg-profile-line-chart-dot {
+  r: 1.1;
+  fill: #ffffff !important;
+  stroke-width: 1.05 !important;
+}
+
+.gg-profile-line-chart-dot.is-active {
+  r: 1.85;
+  fill: #10b981 !important;
+  stroke: #ffffff !important;
+  stroke-width: 0.9 !important;
+}
+
+.gg-theme-dark .gg-profile-chart-range-switch {
+  background: rgba(15, 23, 42, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.gg-theme-dark .gg-profile-chart-range-switch button.is-active {
+  background: rgba(255,255,255,0.12);
+  color: #d1fae5;
+}
+
+.gg-theme-dark .gg-profile-chart-canvas {
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.2), rgba(2, 6, 23, 0.52));
+}
+
+@media (max-width: 1023px) {
+  .gg-mobile-home-logo-row {
+    display: flex !important;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .gg-mobile-tabbar a,
+  .gg-mobile-tabbar a.is-primary,
+  .gg-mobile-tabbar a.is-active,
+  .gg-mobile-tabbar a.is-primary.is-active {
+    width: 3rem !important;
+    height: 3rem !important;
+    min-height: 3rem !important;
+  }
+
+  .gg-profile-line-chart-svg {
+    height: 9.5rem !important;
+  }
+}

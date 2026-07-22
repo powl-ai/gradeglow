@@ -73,6 +73,8 @@ const migrateStudySessions = (rawSessions: unknown, examId: string): StudySessio
         isDone: record.isDone === true,
         isHidden: record.isHidden === true,
         isManual: record.isManual === true,
+        source: record.source === "manual" || record.isManual === true ? "manual" : "ai",
+        userEdited: record.userEdited === true,
         startedAtIso: asString(record.startedAtIso).trim() || undefined,
         completedAtIso: asString(record.completedAtIso).trim() || undefined,
       } satisfies StudySessionItem;

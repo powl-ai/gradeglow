@@ -4501,3 +4501,187 @@ body {
     height: 9.5rem !important;
   }
 }
+
+/* July 2026 planner + light theme repair ---------------------------------- */
+:root {
+  --background: #f4fbf7;
+  --foreground: #10261c;
+}
+
+html,
+body {
+  background: var(--gg-app-bg, var(--background)) !important;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: max(env(safe-area-inset-top, 0px), 0px);
+  background: var(--gg-app-bg, var(--background));
+  pointer-events: none;
+  z-index: 9998;
+}
+
+.gg-collapse-button {
+  min-height: 2.75rem;
+  border: 1px solid var(--gg-border, rgba(148, 163, 184, 0.28));
+  border-radius: 999px;
+  background: var(--gg-surface, rgba(255,255,255,0.9));
+  padding: 0.65rem 0.9rem;
+  color: var(--gg-app-text, #10261c);
+  font-size: 0.76rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.gg-theme-light,
+.gg-theme-system {
+  --gg-app-bg: #f4fbf7;
+  --gg-app-text: #10261c;
+  --gg-surface: rgba(255, 255, 255, 0.94);
+  --gg-surface-muted: #f2f7f4;
+  --gg-border: rgba(126, 203, 158, 0.38);
+  --gg-accent-50: #f3efff;
+  --gg-accent-100: #e9e0ff;
+  --gg-accent-500: #8b3df0;
+  --gg-accent-600: #7c2ee8;
+  --gg-accent-700: #6721ca;
+}
+
+.gg-theme-light .gg-planner-control-card,
+.gg-theme-system .gg-planner-control-card,
+.gg-theme-light .gg-plan-calendar-card,
+.gg-theme-system .gg-plan-calendar-card,
+.gg-theme-light .gg-plan-agenda-grid > div:last-child,
+.gg-theme-system .gg-plan-agenda-grid > div:last-child {
+  background: rgba(255,255,255,0.94) !important;
+  border-color: var(--gg-border) !important;
+  box-shadow: 0 12px 34px rgba(23, 72, 49, 0.07) !important;
+}
+
+.gg-theme-light .gg-mobile-stat-row,
+.gg-theme-system .gg-mobile-stat-row {
+  background: #f5f7f6 !important;
+}
+
+@media (max-width: 767px) {
+  .gg-planner-panel {
+    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .gg-plan-summary-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .gg-plan-agenda-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .gg-plan-agenda-grid > div {
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .gg-plan-agenda-grid .grid-cols-7 {
+    display: flex !important;
+    gap: 0.5rem !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x proximity;
+    padding-bottom: 0.35rem;
+  }
+
+  .gg-plan-agenda-grid .grid-cols-7 > div {
+    flex: 0 0 4.65rem !important;
+    min-width: 4.65rem !important;
+    padding: 0.7rem 0.55rem !important;
+    scroll-snap-align: start;
+  }
+
+  .gg-plan-agenda-grid .grid-cols-7 p,
+  .gg-plan-agenda-grid .grid-cols-7 strong,
+  .gg-plan-agenda-grid button p,
+  .gg-plan-agenda-grid button span {
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+  }
+
+  .gg-plan-agenda-grid button {
+    align-items: flex-start !important;
+  }
+
+  .gg-plan-agenda-grid button > div {
+    min-width: 0 !important;
+  }
+
+  .gg-plan-agenda-grid button p:first-child {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .gg-plan-calendar-card {
+    background: var(--gg-surface, #fff) !important;
+    color: var(--gg-app-text, #10261c) !important;
+    border-color: var(--gg-border, rgba(126,203,158,.35)) !important;
+    box-shadow: 0 12px 34px rgba(23,72,49,.08) !important;
+  }
+
+  .gg-plan-calendar-card > div {
+    overflow-x: auto !important;
+    padding: 0.8rem !important;
+  }
+
+  .gg-plan-calendar-card .grid-cols-7:first-child,
+  .gg-plan-calendar-card .grid-cols-7:not(:first-child) {
+    width: max-content !important;
+    min-width: 42rem !important;
+    grid-template-columns: repeat(7, minmax(5.5rem, 1fr)) !important;
+    gap: 0.45rem !important;
+  }
+
+  .gg-plan-calendar-card .grid-cols-7:first-child {
+    color: #718078 !important;
+  }
+
+  .gg-plan-calendar-card .grid-cols-7:not(:first-child) > div {
+    min-height: 7rem !important;
+    border-radius: 1rem !important;
+    padding: 0.55rem !important;
+    border: 1px solid rgba(126,203,158,.28) !important;
+    background: #fff !important;
+  }
+
+  .gg-plan-calendar-card .grid-cols-7:not(:first-child) > div > div:first-child span:first-child {
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+    display: grid !important;
+    place-items: center !important;
+    color: #203a2d !important;
+  }
+
+  .gg-plan-calendar-card button[title*="Details öffnen"],
+  .gg-plan-calendar-card button[title*="Verschieben"],
+  .gg-plan-calendar-card p.truncate {
+    min-height: 1.65rem !important;
+    border-radius: 0.55rem !important;
+    padding: 0.3rem 0.42rem !important;
+    font-size: 0.67rem !important;
+    line-height: 1.15 !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+  }
+
+  .gg-plan-calendar-card button[title*="Details öffnen"] {
+    background: #fff1f5 !important;
+    color: #be185d !important;
+  }
+
+  .gg-plan-calendar-card button[title*="Verschieben"] {
+    background: #f3efff !important;
+    color: #6d28d9 !important;
+  }
+}

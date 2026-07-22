@@ -145,6 +145,8 @@ export type StudySessionItem = {
   isDone: boolean;
   isHidden: boolean;
   isManual: boolean;
+  source?: "ai" | "manual";
+  userEdited?: boolean;
   startedAtIso?: string;
   completedAtIso?: string;
 };

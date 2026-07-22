@@ -5449,3 +5449,14 @@ body::before {
     font-size: clamp(2.35rem, 12vw, 4rem) !important;
   }
 }
+
+
+/* GradeGlow mobile dock centering hotfix 2026-07-22 */
+@media (max-width: 767px) {
+  .gg-mobile-tabbar {
+    left: 50% !important;
+    right: auto !important;
+    width: min(calc(100vw - 1.5rem), 27rem) !important;
+    transform: translateX(-50%) !important;
+  }
+}

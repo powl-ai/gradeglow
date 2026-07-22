@@ -413,6 +413,8 @@ export default function StudyFriendsPanel({
   const [isSavingPrivacy, setIsSavingPrivacy] = useState(false);
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
+  const [isSetupOpen, setIsSetupOpen] = useState(false);
+  const [pendingCircleDelete, setPendingCircleDelete] = useState(false);
 
   const { entitlement, limits, accessSyncMessage } = useGradeGlowAccess(user);
 
@@ -438,6 +440,7 @@ export default function StudyFriendsPanel({
     joinCircle,
     updateCircleWeeklyGoal,
     leaveCircle,
+    deleteCircle,
   } = useStudyFriends({
     user,
     profile,
@@ -688,7 +691,23 @@ export default function StudyFriendsPanel({
         </div>
       )}
 
-      <div className="mt-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+      <button
+        type="button"
+        onClick={() => setIsSetupOpen((current) => !current)}
+        className="mt-5 flex w-full items-center gap-3 rounded-[1.75rem] bg-slate-950 p-4 text-left text-white ring-1 ring-slate-900 transition active:scale-[0.99]"
+      >
+        <Avatar image={profile.avatarDataUrl || user.photoURL || ""} label={ownPublicProfile.displayName} size="lg" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-base font-black">{ownPublicProfile.displayName}</p>
+          <p className="truncate text-xs font-semibold text-slate-300">{ownPublicProfile.degreeProgram || "Studiengang nicht gesetzt"}</p>
+          <p className="mt-1 text-xs font-black tracking-wide text-emerald-200">{friendCode}</p>
+        </div>
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/10 text-xl font-black ring-1 ring-white/10">{isSetupOpen ? "×" : "+"}</span>
+      </button>
+
+      <p className="mt-2 px-1 text-xs font-semibold text-slate-500">Tippen, um Freunde oder einen Circle hinzuzufügen und deinen Circle zu verwalten.</p>
+
+      <div className={`${isSetupOpen ? "mt-4 grid" : "hidden"} gap-4 xl:grid-cols-[0.9fr_1.1fr]`}>
         <div className="rounded-[2rem] bg-slate-950 p-4 text-white ring-1 ring-slate-900 sm:p-5">
           <div className="flex items-center gap-3">
             <Avatar
@@ -779,14 +798,30 @@ export default function StudyFriendsPanel({
                 </p>
               </div>
               {activeCircle && (
-                <button
-                  type="button"
-                  className="shrink-0 rounded-2xl bg-white/10 px-4 py-2.5 text-xs font-black text-rose-100 ring-1 ring-white/10 transition hover:bg-rose-500/20 disabled:opacity-50"
-                  onClick={() => void leaveCircle(activeCircle.id)}
-                  disabled={isBusy}
-                >
-                  Circle verlassen
-                </button>
+                <div className="shrink-0">
+                  {pendingCircleDelete ? (
+                    <div className="flex gap-2">
+                      <button type="button" className="rounded-2xl bg-white/10 px-3 py-2.5 text-xs font-black text-white ring-1 ring-white/10" onClick={() => setPendingCircleDelete(false)}>Abbrechen</button>
+                      <button
+                        type="button"
+                        className="rounded-2xl bg-rose-600 px-3 py-2.5 text-xs font-black text-white disabled:opacity-50"
+                        disabled={isBusy}
+                        onClick={() => void (isActiveCircleOwner ? deleteCircle(activeCircle.id) : leaveCircle(activeCircle.id)).then(() => setPendingCircleDelete(false))}
+                      >
+                        Bestätigen
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="rounded-2xl bg-white/10 px-4 py-2.5 text-xs font-black text-rose-100 ring-1 ring-white/10 transition hover:bg-rose-500/20 disabled:opacity-50"
+                      onClick={() => setPendingCircleDelete(true)}
+                      disabled={isBusy}
+                    >
+                      {isActiveCircleOwner ? "Circle löschen" : "Circle verlassen"}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 

@@ -94,7 +94,11 @@ service cloud.firestore {
     }
 
     match /users/{userId}/studyCircles/{circleId} {
-      allow read, write: if isOwner(userId) || isAdmin();
+      allow read, create, update: if isOwner(userId) || isAdmin();
+      allow delete: if isOwner(userId)
+        || isAdmin()
+        || (isSignedIn()
+          && get(/databases/$(database)/documents/studyCircles/$(circleId)).data.ownerUid == request.auth.uid);
     }
 
     match /users/{userId}/gradeglow/{documentId} {

@@ -7,6 +7,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   updateDoc,
   serverTimestamp,
@@ -1105,6 +1106,44 @@ export function useStudyFriends({ user, profile, exams, limits, profileReady = t
     }
   };
 
+  const deleteCircle = async (circleId: string) => {
+    if (!canUseCloudSocial || !db || !circleId) return;
+
+    const circle = circles.find((item) => item.id === circleId);
+    if (!circle || circle.ownerUid !== user.uid) {
+      setMessage("Nur der Circle-Owner kann den Circle löschen.");
+      return;
+    }
+
+    setIsBusy(true);
+    setMessage("");
+
+    try {
+      const membersSnapshot = await getDocs(
+        collection(db, STUDY_CIRCLES_COLLECTION, circleId, "members"),
+      );
+      const batch = writeBatch(db);
+
+      membersSnapshot.docs.forEach((memberDoc) => {
+        batch.delete(memberDoc.ref);
+        batch.delete(
+          doc(db!, "users", memberDoc.id, STUDY_CIRCLES_COLLECTION, circleId),
+        );
+      });
+
+      batch.delete(doc(db, STUDY_CIRCLE_CODES_COLLECTION, circle.circleCode));
+      batch.delete(doc(db, STUDY_CIRCLES_COLLECTION, circleId));
+      await batch.commit();
+
+      setActiveCircleId("");
+      setMessage("Circle dauerhaft gelöscht.");
+    } catch (error) {
+      setMessage(getFriendErrorMessage(error));
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
   return {
     canUseCloudSocial,
     ownPublicProfile,
@@ -1127,5 +1166,6 @@ export function useStudyFriends({ user, profile, exams, limits, profileReady = t
     joinCircle,
     updateCircleWeeklyGoal,
     leaveCircle,
+    deleteCircle,
   };
 }

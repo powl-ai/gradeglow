@@ -5076,3 +5076,181 @@ body::before {
 @media (prefers-reduced-motion: reduce) {
   .gg-timer-ring.is-running { animation: none; }
 }
+
+/* GradeGlow mobile calendar + hotbar hardening patch 2026-07-22 ----------- */
+@media (max-width: 767px) {
+  /* The real month calendar must always fit the viewport. Earlier rules in
+     this file intentionally used a wide horizontal calendar; these final
+     overrides remove that behaviour completely. */
+  .gg-plan-calendar-card,
+  .gg-plan-calendar-card > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .gg-plan-calendar-card > div {
+    padding: 0.45rem !important;
+  }
+
+  .gg-plan-calendar-card .gg-month-weekdays,
+  .gg-plan-calendar-card .gg-month-grid {
+    display: grid !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    gap: 0.14rem !important;
+    overflow: visible !important;
+  }
+
+  .gg-plan-calendar-card .gg-month-weekdays > div {
+    min-width: 0 !important;
+    padding: 0.3rem 0 !important;
+    font-size: 0.5rem !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  .gg-plan-calendar-card .gg-month-grid > .gg-calendar-day {
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 4.25rem !important;
+    padding: 0.2rem !important;
+    border-radius: 0.58rem !important;
+    overflow: hidden !important;
+  }
+
+  .gg-calendar-day > div:first-child {
+    justify-content: center !important;
+  }
+
+  .gg-calendar-day > div:first-child span:first-child {
+    width: 1.22rem !important;
+    height: 1.22rem !important;
+    font-size: 0.58rem !important;
+  }
+
+  .gg-calendar-day .mt-1\.5 {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    align-content: flex-start !important;
+    gap: 0.08rem !important;
+    margin-top: 0.16rem !important;
+  }
+
+  .gg-calendar-day button,
+  .gg-calendar-day p.truncate {
+    flex: 0 0 auto !important;
+    width: 0.62rem !important;
+    height: 0.62rem !important;
+    min-width: 0.62rem !important;
+    min-height: 0.62rem !important;
+    max-width: 0.62rem !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    overflow: hidden !important;
+    color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .gg-calendar-day button::after {
+    content: "" !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: inherit !important;
+    background: currentColor !important;
+  }
+
+  .gg-calendar-day button.bg-rose-50 { color: #e11d48 !important; background: #e11d48 !important; }
+  .gg-calendar-day button.bg-violet-50 { color: var(--gg-accent-600) !important; background: var(--gg-accent-600) !important; }
+  .gg-calendar-day button.bg-emerald-50 { color: #059669 !important; background: #059669 !important; }
+  .gg-calendar-day p.truncate { display: none !important; }
+
+  /* Compact weekly preview: seven days, no horizontal scrolling and no
+     overflowing duration labels. */
+  .gg-compact-week-grid {
+    display: grid !important;
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    gap: 0.2rem !important;
+    overflow: hidden !important;
+  }
+
+  .gg-compact-week-day {
+    min-width: 0 !important;
+    padding: 0.42rem 0.15rem !important;
+    border-radius: 0.82rem !important;
+    text-align: center !important;
+    overflow: hidden !important;
+  }
+
+  .gg-compact-week-day > p:first-child {
+    font-size: 0.48rem !important;
+    letter-spacing: 0.05em !important;
+  }
+
+  .gg-compact-week-day strong {
+    font-size: 0.9rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .gg-compact-week-count {
+    display: none !important;
+  }
+
+  .gg-compact-week-duration {
+    margin-top: 0.42rem !important;
+    font-size: 0.48rem !important;
+    line-height: 1.05 !important;
+    white-space: nowrap !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  .gg-compact-week-day > div:last-child {
+    margin-top: 0.35rem !important;
+    height: 0.2rem !important;
+  }
+
+  /* Light theme dock: inactive slots stay quiet, active slot is unmistakable. */
+  .gg-theme-light .gg-mobile-tabbar,
+  .gg-theme-system .gg-mobile-tabbar {
+    width: min(19.5rem, calc(100vw - 1.4rem)) !important;
+    gap: 0.32rem !important;
+    padding: 0.38rem !important;
+    border: 1px solid rgba(126, 203, 158, 0.34) !important;
+    border-radius: 1.55rem !important;
+    background: rgba(247, 253, 249, 0.82) !important;
+    box-shadow: 0 14px 36px rgba(20, 65, 44, 0.14) !important;
+    backdrop-filter: blur(20px) saturate(145%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(145%) !important;
+  }
+
+  .gg-theme-light .gg-mobile-tabbar a,
+  .gg-theme-system .gg-mobile-tabbar a,
+  .gg-theme-light .gg-mobile-tabbar a.is-primary,
+  .gg-theme-system .gg-mobile-tabbar a.is-primary {
+    width: 3rem !important;
+    height: 3rem !important;
+    min-height: 3rem !important;
+    border: 1px solid rgba(31, 74, 52, 0.16) !important;
+    background: rgba(24, 55, 42, 0.62) !important;
+    color: rgba(247, 253, 249, 0.82) !important;
+    box-shadow: none !important;
+  }
+
+  .gg-theme-light .gg-mobile-tabbar a.is-active,
+  .gg-theme-system .gg-mobile-tabbar a.is-active,
+  .gg-theme-light .gg-mobile-tabbar a.is-primary.is-active,
+  .gg-theme-system .gg-mobile-tabbar a.is-primary.is-active {
+    border: 2px solid var(--gg-accent-600) !important;
+    background: var(--gg-accent-600) !important;
+    color: #fff !important;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--gg-accent-500) 18%, transparent), 0 10px 24px color-mix(in srgb, var(--gg-accent-600) 26%, transparent) !important;
+    transform: translateY(-0.16rem) scale(1.04) !important;
+  }
+}

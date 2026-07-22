@@ -1365,15 +1365,15 @@ export default function GradeGlowPlanner({
               </div>
               <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-white/80">{formatMinutes(thisWeekStudyMinutes)} geplant</span>
             </div>
-            <div className="mt-4 grid grid-cols-7 gap-2">
+            <div className="gg-compact-week-grid mt-4 grid grid-cols-7 gap-2">
               {compactWeekStrip.map((day) => {
                 const progress = day.plannedMinutes > 0 ? Math.round((day.doneMinutes / day.plannedMinutes) * 100) : 0;
                 return (
-                  <div key={day.dateKey} className={`rounded-2xl p-3 ring-1 ${day.isToday ? "bg-white text-slate-950 ring-white/70" : "bg-white/8 text-white ring-white/10"}`}>
+                  <div key={day.dateKey} className={`gg-compact-week-day rounded-2xl p-3 ring-1 ${day.isToday ? "bg-white text-slate-950 ring-white/70" : "bg-white/8 text-white ring-white/10"}`}>
                     <p className={`text-[0.68rem] font-black uppercase tracking-[0.12em] ${day.isToday ? "text-emerald-700" : "text-white/55"}`}>{day.label}</p>
                     <strong className="mt-1 block text-lg font-black">{day.dayNumber}</strong>
-                    <p className={`mt-3 text-[0.68rem] font-semibold ${day.isToday ? "text-slate-500" : "text-white/60"}`}>{day.sessionsCount} Block{day.sessionsCount === 1 ? "" : "e"}</p>
-                    <p className={`mt-1 text-xs font-black ${day.isToday ? "text-slate-900" : "text-white"}`}>{day.plannedMinutes > 0 ? formatMinutes(day.plannedMinutes) : "frei"}</p>
+                    <p className={`gg-compact-week-count mt-3 text-[0.68rem] font-semibold ${day.isToday ? "text-slate-500" : "text-white/60"}`}>{day.sessionsCount} Block{day.sessionsCount === 1 ? "" : "e"}</p>
+                    <p className={`gg-compact-week-duration mt-1 text-xs font-black ${day.isToday ? "text-slate-900" : "text-white"}`}>{day.plannedMinutes > 0 ? formatMinutes(day.plannedMinutes) : "frei"}</p>
                     <div className={`mt-3 h-1.5 overflow-hidden rounded-full ${day.isToday ? "bg-slate-200" : "bg-white/10"}`}>
                       <div className="h-full rounded-full bg-emerald-400" style={{ width: `${progress}%` }} />
                     </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent, CSSProperties, FormEvent } from "react";
 import GlowRewardsPanel from "./GlowRewardsPanel";
 import GradeGlowInsights from "./GradeGlowInsights";
 import GradeGlowLogo from "./GradeGlowLogo";
@@ -1533,6 +1533,11 @@ export default function GradeGlowDashboard({
   const standaloneTimerDisplaySeconds = globalTimer?.mode === "stopwatch"
     ? globalTimerElapsedSeconds
     : Math.max(0, standaloneTimerLimitSeconds - globalTimerElapsedSeconds);
+  const standaloneTimerProgress = globalTimer
+    ? globalTimer.mode === "stopwatch"
+      ? Math.min(100, (standaloneTimerDisplaySeconds / standaloneTimerLimitSeconds) * 100)
+      : Math.min(100, ((standaloneTimerLimitSeconds - standaloneTimerDisplaySeconds) / standaloneTimerLimitSeconds) * 100)
+    : 0;
 
   const startStandaloneTimer = () => {
     if (!standaloneTimerExam) return;
@@ -2534,7 +2539,7 @@ export default function GradeGlowDashboard({
                     {selectedProfileChartPoints.map((point, index, points) => {
                       const x = points.length === 1 ? 50 : 4 + (index / (points.length - 1)) * 92;
                       const y = 78 - (point.minutes / profileChartMaxMinutes) * 58;
-                      return <circle key={point.dateKey} cx={x} cy={y} r={index === points.length - 1 ? 2.25 : 1.55} className={index === points.length - 1 ? "gg-profile-line-chart-dot is-active" : "gg-profile-line-chart-dot"} />;
+                      return <circle key={point.dateKey} cx={x} cy={y} r={index === points.length - 1 ? 2.25 : 1.55} className={index === points.length - 1 ? "gg-profile-line-chart-dot is-active" : "gg-profile-line-chart-dot"}><title>{`${point.shortLabel}: ${formatStudyMinutesLabel(point.minutes)}`}</title></circle>;
                     })}
                   </svg>
                 </div>
@@ -2701,9 +2706,20 @@ export default function GradeGlowDashboard({
                 {globalTimer && <span className="gg-timer-live-pill">läuft</span>}
               </div>
 
-              <div className="gg-timer-display">
-                <span>{globalTimer ? formatCompactDuration(standaloneTimerDisplaySeconds) : `${standaloneTimerGoalMinutes}:00`}</span>
-                <small>{globalTimer ? `${globalTimerModeLabel} · ${globalTimer.title}` : "bereit"}</small>
+              <div className="gg-timer-stage">
+                <div
+                  className={`gg-timer-ring ${globalTimer ? "is-running" : ""}`}
+                  style={{ "--gg-timer-progress": `${standaloneTimerProgress * 3.6}deg` } as CSSProperties}
+                >
+                  <div className="gg-timer-ring-inner">
+                    <span>{globalTimer ? formatCompactDuration(standaloneTimerDisplaySeconds) : `${standaloneTimerGoalMinutes}:00`}</span>
+                    <small>{globalTimer ? `${globalTimerModeLabel} · ${globalTimer.title}` : "bereit"}</small>
+                  </div>
+                </div>
+                <div className="gg-timer-stage-meta">
+                  <span>{standaloneTimerMode === "pomodoro" ? "Pomodoro" : standaloneTimerMode === "stopwatch" ? "Freies Lernen" : "Fokus-Session"}</span>
+                  <strong>{standaloneTimerExam?.moduleName || standaloneTimerExam?.title || "Fach noch auswählen"}</strong>
+                </div>
               </div>
 
               {!globalTimer && (

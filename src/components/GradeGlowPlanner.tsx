@@ -46,6 +46,13 @@ type StudyForm = {
 
 type StudyTimerMode = "stopwatch" | "focus" | "pomodoro";
 
+type ExamDetailNumberDraft = {
+  studyStartDays: string;
+  targetStudyHours: string;
+  dailyStudyLimitHours: string;
+  sessionGoalMinutes: string;
+};
+
 type ActiveStudyTimer = {
   examId: string;
   sessionId: string | null;
@@ -623,6 +630,12 @@ export default function GradeGlowPlanner({
   const [studyRewardMessage, setStudyRewardMessage] = useState("");
   const [isSummaryOpen, setIsSummaryOpen] = useState(true);
   const [isAgendaOpen, setIsAgendaOpen] = useState(true);
+  const [examDetailNumberDraft, setExamDetailNumberDraft] = useState<ExamDetailNumberDraft>({
+    studyStartDays: "",
+    targetStudyHours: "",
+    dailyStudyLimitHours: "",
+    sessionGoalMinutes: "",
+  });
   const rewardedSessionIdsRef = useRef(new Set(normalizeRewardedStudySessionIds(profile.rewardedStudySessionIds)));
   const focusPanelRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -717,6 +730,64 @@ export default function GradeGlowPlanner({
     visibleExams.find((exam) => exam.status !== "done") ??
     visibleExams[0] ??
     null;
+
+  useEffect(() => {
+    if (!focusedExam) {
+      setExamDetailNumberDraft({ studyStartDays: "", targetStudyHours: "", dailyStudyLimitHours: "", sessionGoalMinutes: "" });
+      return;
+    }
+
+    setExamDetailNumberDraft({
+      studyStartDays: String(focusedExam.studyStartDays || DEFAULT_STUDY_START_DAYS),
+      targetStudyHours: getExamTargetStudyMinutes(focusedExam) > 0
+        ? String(Math.round((getExamTargetStudyMinutes(focusedExam) / 60) * 10) / 10)
+        : "",
+      dailyStudyLimitHours: String(Math.round((getExamDailyLimit(focusedExam) / 60) * 10) / 10),
+      sessionGoalMinutes: String(getExamSessionGoal(focusedExam)),
+    });
+  }, [focusedExam?.id]);
+
+  const commitExamDetailNumber = (field: keyof ExamDetailNumberDraft) => {
+    if (!focusedExam) return;
+    const rawValue = examDetailNumberDraft[field].trim().replace(",", ".");
+
+    if (field === "studyStartDays") {
+      const value = Math.max(1, Math.min(365, Math.round(Number(rawValue) || DEFAULT_STUDY_START_DAYS)));
+      updateExam(focusedExam.id, (exam) => ({ ...exam, studyStartDays: value }));
+      setExamDetailNumberDraft((current) => ({ ...current, studyStartDays: String(value) }));
+      return;
+    }
+
+    if (field === "targetStudyHours") {
+      const value = rawValue === "" ? 0 : Math.max(0, Math.min(2_000 * 60, Math.round((Number(rawValue) || 0) * 60)));
+      updateExam(focusedExam.id, (exam) => ({ ...exam, targetStudyMinutes: value }));
+      setExamDetailNumberDraft((current) => ({
+        ...current,
+        targetStudyHours: value > 0 ? String(Math.round((value / 60) * 10) / 10) : "",
+      }));
+      return;
+    }
+
+    if (field === "dailyStudyLimitHours") {
+      const value = clampMinutes((Number(rawValue) || 5) * 60, DEFAULT_DAILY_STUDY_LIMIT_MINUTES, 30, 720);
+      updateExam(focusedExam.id, (exam) => ({
+        ...exam,
+        dailyStudyLimitMinutes: value,
+        sessionGoalMinutes: Math.min(getExamSessionGoal(exam), value),
+      }));
+      setExamDetailNumberDraft((current) => ({
+        ...current,
+        dailyStudyLimitHours: String(Math.round((value / 60) * 10) / 10),
+        sessionGoalMinutes: String(Math.min(Number(current.sessionGoalMinutes) || getExamSessionGoal(focusedExam), value)),
+      }));
+      return;
+    }
+
+    const maxMinutes = getExamDailyLimit(focusedExam);
+    const value = clampMinutes(Number(rawValue), DEFAULT_SESSION_GOAL_MINUTES, 1, maxMinutes);
+    updateExam(focusedExam.id, (exam) => ({ ...exam, sessionGoalMinutes: value }));
+    setExamDetailNumberDraft((current) => ({ ...current, sessionGoalMinutes: String(value) }));
+  };
 
   useEffect(() => {
     if (!isLoaded || sortedExams.length === 0) return;
@@ -1962,7 +2033,14 @@ export default function GradeGlowPlanner({
                   </div>
                   <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
                     <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10 sm:col-span-2"><span className="text-xs text-slate-400">Titel</span><input className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-3 py-2 font-black text-white outline-none" value={focusedExam.title} onChange={(event) => updateExam(focusedExam.id, (exam) => ({ ...exam, title: event.target.value }))} /></label>
-                    <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><span className="text-xs text-slate-400">Datum</span><input type="date" className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-3 py-2 font-black text-white outline-none" value={focusedExam.examDate} onChange={(event) => event.target.value && updateExam(focusedExam.id, (exam) => ({ ...exam, examDate: event.target.value }))} /></label>
+                    <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><span className="text-xs text-slate-400">Datum</span><input type="date" className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-3 py-2 font-black text-white outline-none" value={focusedExam.examDate} onChange={(event) => {
+                      const nextDate = event.target.value;
+                      if (!nextDate) return;
+                      updateExam(focusedExam.id, (exam) => ({ ...exam, examDate: nextDate }));
+                      const parsedDate = toDate(nextDate);
+                      if (parsedDate) setCalendarCursorDate(parsedDate);
+                      setSelectedCalendarDayKey(nextDate);
+                    }} /></label>
                     <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><span className="text-xs text-slate-400">Uhrzeit</span><input type="time" className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-3 py-2 font-black text-white outline-none" value={normalizeTimeInput(focusedExam.examTime) || ""} onChange={(event) => updateExam(focusedExam.id, (exam) => ({ ...exam, examTime: event.target.value }))} /></label>
                     <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10 sm:col-span-2"><span className="text-xs text-slate-400">Fach</span><select className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-3 py-2 font-black text-white outline-none" value={focusedExam.moduleId ?? ""} onChange={(event) => { const selectedModule = modules.find((item) => item.id === event.target.value); updateExam(focusedExam.id, (exam) => ({ ...exam, moduleId: selectedModule?.id ?? null, moduleName: selectedModule?.name ?? "" })); }}><option value="">Kein Fach</option>{modules.map((module) => <option key={module.id} value={module.id}>{module.name}</option>)}</select></label>
                     <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10 sm:col-span-2"><span className="text-xs text-slate-400">Notiz</span><input className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-3 py-2 font-semibold text-white outline-none" value={focusedExam.notes} onChange={(event) => updateExam(focusedExam.id, (exam) => ({ ...exam, notes: event.target.value }))} placeholder="Raum, Hinweise oder Prüfungsdetails" /></label>
@@ -1971,10 +2049,10 @@ export default function GradeGlowPlanner({
                     <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><p className="text-xs text-slate-400">geplante Lernzeit</p><p className="mt-1 text-lg font-black">{focusedProgress ? formatMinutes(focusedProgress.plannedMinutes) : "0 min"}</p></div>
                     <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><p className="text-xs text-slate-400">erledigt</p><p className="mt-1 text-lg font-black">{focusedProgress ? formatMinutes(focusedProgress.doneMinutes) : "0 min"}</p></div>
                     <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><p className="text-xs text-slate-400">offen</p><p className="mt-1 text-lg font-black">{focusedProgress ? formatMinutes(focusedProgress.remainingMinutes) : "0 min"}</p></div>
-                    <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><span className="text-xs text-slate-400">Start Tage vorher</span><input className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-2 py-1 text-lg font-black text-white outline-none" inputMode="numeric" value={focusedExam.studyStartDays} onChange={(event) => { const value = Math.max(1, Math.round(Number(event.target.value) || DEFAULT_STUDY_START_DAYS)); updateExam(focusedExam.id, (exam) => ({ ...exam, studyStartDays: value })); }} /></label>
-                    <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><span className="text-xs text-slate-400">Gesamtpensum h</span><input className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-2 py-1 text-lg font-black text-white outline-none" inputMode="decimal" placeholder="Auto" value={getExamTargetStudyMinutes(focusedExam) > 0 ? String(Math.round((getExamTargetStudyMinutes(focusedExam) / 60) * 10) / 10) : ""} onChange={(event) => { const value = Math.max(0, Math.round((Number(event.target.value.replace(",", ".")) || 0) * 60)); updateExam(focusedExam.id, (exam) => ({ ...exam, targetStudyMinutes: value })); }} /></label>
-                    <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><span className="text-xs text-slate-400">Tag max. h</span><input className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-2 py-1 text-lg font-black text-white outline-none" inputMode="decimal" value={String(Math.round((getExamDailyLimit(focusedExam) / 60) * 10) / 10)} onChange={(event) => { const value = clampMinutes((Number(event.target.value.replace(",", ".")) || 5) * 60, DEFAULT_DAILY_STUDY_LIMIT_MINUTES, 30, 720); updateExam(focusedExam.id, (exam) => ({ ...exam, dailyStudyLimitMinutes: value, sessionGoalMinutes: Math.min(getExamSessionGoal(exam), value) })); }} /></label>
-                    <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><span className="text-xs text-slate-400">Einheit min</span><input className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-2 py-1 text-lg font-black text-white outline-none" inputMode="numeric" value={getExamSessionGoal(focusedExam)} onChange={(event) => { const value = clampMinutes(Number(event.target.value) || DEFAULT_SESSION_GOAL_MINUTES, DEFAULT_SESSION_GOAL_MINUTES, 15, getExamDailyLimit(focusedExam)); updateExam(focusedExam.id, (exam) => ({ ...exam, sessionGoalMinutes: value })); }} /></label>
+                    <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><span className="text-xs text-slate-400">Start Tage vorher</span><input className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-2 py-1 text-lg font-black text-white outline-none" inputMode="numeric" value={examDetailNumberDraft.studyStartDays} onChange={(event) => setExamDetailNumberDraft((current) => ({ ...current, studyStartDays: event.target.value }))} onBlur={() => commitExamDetailNumber("studyStartDays")} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} /></label>
+                    <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><span className="text-xs text-slate-400">Gesamtpensum h</span><input className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-2 py-1 text-lg font-black text-white outline-none" inputMode="decimal" placeholder="Auto" value={examDetailNumberDraft.targetStudyHours} onChange={(event) => setExamDetailNumberDraft((current) => ({ ...current, targetStudyHours: event.target.value }))} onBlur={() => commitExamDetailNumber("targetStudyHours")} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} /></label>
+                    <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><span className="text-xs text-slate-400">Tag max. h</span><input className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-2 py-1 text-lg font-black text-white outline-none" inputMode="decimal" value={examDetailNumberDraft.dailyStudyLimitHours} onChange={(event) => setExamDetailNumberDraft((current) => ({ ...current, dailyStudyLimitHours: event.target.value }))} onBlur={() => commitExamDetailNumber("dailyStudyLimitHours")} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} /></label>
+                    <label className="rounded-2xl bg-white/10 p-3 ring-1 ring-white/10"><span className="text-xs text-slate-400">Einheit min</span><input className="mt-1 w-full rounded-xl border border-white/10 bg-white/10 px-2 py-1 text-lg font-black text-white outline-none" inputMode="numeric" value={examDetailNumberDraft.sessionGoalMinutes} onChange={(event) => setExamDetailNumberDraft((current) => ({ ...current, sessionGoalMinutes: event.target.value }))} onBlur={() => commitExamDetailNumber("sessionGoalMinutes")} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} /></label>
                   </div>
                   <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10 ring-1 ring-white/10">
                     <div className="h-full rounded-full gg-chart-fill" style={{ width: `${focusedProgress?.percentage ?? 0}%` }} />

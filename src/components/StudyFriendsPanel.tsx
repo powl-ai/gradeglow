@@ -651,6 +651,24 @@ export default function StudyFriendsPanel({
 
   return (
     <section className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
+      <button
+        type="button"
+        onClick={() => setIsSetupOpen((current) => !current)}
+        className="mt-5 flex w-full items-center gap-3 rounded-[1.75rem] bg-slate-950 p-4 text-left text-white ring-1 ring-slate-900 transition active:scale-[0.99]"
+      >
+        <Avatar image={profile.avatarDataUrl || user.photoURL || ""} label={ownPublicProfile.displayName} size="lg" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-base font-black">{ownPublicProfile.displayName}</p>
+          <p className="truncate text-xs font-semibold text-slate-300">{ownPublicProfile.degreeProgram || "Studiengang nicht gesetzt"}</p>
+          <p className="mt-1 text-xs font-black tracking-wide text-emerald-200">{friendCode}</p>
+        </div>
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/10 text-xl font-black ring-1 ring-white/10">{isSetupOpen ? "×" : "+"}</span>
+      </button>
+
+      <p className="mt-2 px-1 text-xs font-semibold text-slate-500">Tippen, um Freunde oder einen Circle hinzuzufügen und deinen Circle zu verwalten.</p>
+
+      <div className={`${isSetupOpen ? "mt-4 grid" : "hidden"} gap-4`}>
+        <div className="rounded-[2rem] bg-white p-4 ring-1 ring-slate-200 sm:p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-sm font-bold text-violet-700">Study Circle</p>
@@ -691,23 +709,8 @@ export default function StudyFriendsPanel({
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => setIsSetupOpen((current) => !current)}
-        className="mt-5 flex w-full items-center gap-3 rounded-[1.75rem] bg-slate-950 p-4 text-left text-white ring-1 ring-slate-900 transition active:scale-[0.99]"
-      >
-        <Avatar image={profile.avatarDataUrl || user.photoURL || ""} label={ownPublicProfile.displayName} size="lg" />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-black">{ownPublicProfile.displayName}</p>
-          <p className="truncate text-xs font-semibold text-slate-300">{ownPublicProfile.degreeProgram || "Studiengang nicht gesetzt"}</p>
-          <p className="mt-1 text-xs font-black tracking-wide text-emerald-200">{friendCode}</p>
         </div>
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/10 text-xl font-black ring-1 ring-white/10">{isSetupOpen ? "×" : "+"}</span>
-      </button>
-
-      <p className="mt-2 px-1 text-xs font-semibold text-slate-500">Tippen, um Freunde oder einen Circle hinzuzufügen und deinen Circle zu verwalten.</p>
-
-      <div className={`${isSetupOpen ? "mt-4 grid" : "hidden"} gap-4 xl:grid-cols-[0.9fr_1.1fr]`}>
+        <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <div className="rounded-[2rem] bg-slate-950 p-4 text-white ring-1 ring-slate-900 sm:p-5">
           <div className="flex items-center gap-3">
             <Avatar
@@ -1171,9 +1174,12 @@ export default function StudyFriendsPanel({
             <StudyCircleStatusCard status={debugStatus} />
           </details>
         </div>
+        </div>
       </div>
 
-      <div className="mt-5 rounded-[2rem] bg-white p-4 ring-1 ring-slate-200 sm:p-5">
+      {isSetupOpen && (
+        <div className="mt-4 grid gap-4">
+          <div className="rounded-[2rem] bg-white p-4 ring-1 ring-slate-200 sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-bold text-violet-700">
@@ -1207,7 +1213,7 @@ export default function StudyFriendsPanel({
         </div>
       </div>
 
-      <div className="mt-5 rounded-[2rem] bg-white p-4 ring-1 ring-slate-200 sm:p-5">
+          <div className="rounded-[2rem] bg-white p-4 ring-1 ring-slate-200 sm:p-5">
         <div className="mb-4">
           <p className="text-sm font-bold text-violet-700">Privacy Controls</p>
           <h3 className="text-xl font-black tracking-tight">
@@ -1242,6 +1248,9 @@ export default function StudyFriendsPanel({
           />
         </div>
       </div>
+
+        </div>
+      )}
 
       <div className="mt-5 rounded-[2rem] bg-slate-950 p-4 text-white ring-1 ring-slate-900 sm:p-5">
         <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">

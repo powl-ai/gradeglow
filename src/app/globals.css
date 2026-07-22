@@ -5460,3 +5460,27 @@ body::before {
     transform: translateX(-50%) !important;
   }
 }
+
+/* Stable viewport-centered mobile dock + collapsed Circle settings 2026-07-22 */
+@media (max-width: 767px) {
+  .gg-mobile-tabbar-shell {
+    position: fixed;
+    inset: auto 0 max(0.75rem, env(safe-area-inset-bottom)) 0;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    padding-inline: 0.75rem;
+    pointer-events: none;
+  }
+
+  .gg-mobile-tabbar-shell .gg-mobile-tabbar {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    width: min(100%, 24rem) !important;
+    margin: 0 auto !important;
+    pointer-events: auto;
+  }
+}

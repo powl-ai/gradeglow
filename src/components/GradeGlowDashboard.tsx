@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { ChangeEvent, CSSProperties, FormEvent } from "react";
 import GlowRewardsPanel from "./GlowRewardsPanel";
 import GradeGlowInsights from "./GradeGlowInsights";
@@ -382,6 +383,12 @@ export default function GradeGlowDashboard({
   onLogout,
   page = "overview",
 }: GradeGlowDashboardProps) {
+  const [isMobileDockMounted, setIsMobileDockMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMobileDockMounted(true);
+  }, []);
+
   const { modules, setModules, isLoaded, syncStatus, syncMessage, dataModel } =
     useGradeGlowModules(user);
   const {
@@ -3882,23 +3889,28 @@ export default function GradeGlowDashboard({
         </footer>
       </div>
 
-      <nav className="gg-mobile-tabbar lg:hidden" aria-label="GradeGlow App Navigation">
-        {visibleMobileTabItems.map((item) => {
-          const isActive = item.match.includes(page);
-          return (
-            <Link
-              key={`${item.href}-${item.label}`}
-              href={item.href}
-              aria-label={item.label}
-              title={item.label}
-              className={`${isActive ? "is-active" : ""} ${item.tone === "primary" ? "is-primary" : ""}`.trim()}
-            >
-              <span className="gg-mobile-tab-icon">{renderMobileTabIcon(item.icon)}</span>
-              <span className="sr-only">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      {isMobileDockMounted && createPortal(
+        <div className="gg-mobile-tabbar-shell lg:hidden">
+          <nav className="gg-mobile-tabbar" aria-label="GradeGlow App Navigation">
+            {visibleMobileTabItems.map((item) => {
+              const isActive = item.match.includes(page);
+              return (
+                <Link
+                  key={`${item.href}-${item.label}`}
+                  href={item.href}
+                  aria-label={item.label}
+                  title={item.label}
+                  className={`${isActive ? "is-active" : ""} ${item.tone === "primary" ? "is-primary" : ""}`.trim()}
+                >
+                  <span className="gg-mobile-tab-icon">{renderMobileTabIcon(item.icon)}</span>
+                  <span className="sr-only">{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>,
+        document.body,
+      )}
     </main>
   );
 }

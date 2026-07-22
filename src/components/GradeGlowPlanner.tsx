@@ -1346,9 +1346,15 @@ export default function GradeGlowPlanner({
           </div>
         </div>}
 
-        <div className="mt-5 flex items-center justify-between gap-3">
-          <div><p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Wochenfokus & Agenda</p><p className="mt-1 text-sm font-semibold text-slate-500">Kompakte Vorschau auf deine nächsten Blöcke</p></div>
-          <button type="button" className="gg-collapse-button" onClick={() => setIsAgendaOpen((open) => !open)} aria-expanded={isAgendaOpen}>{isAgendaOpen ? "Einklappen" : "Ausklappen"}</button>
+        <div className="gg-plan-agenda-toggle mt-5">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Wochenfokus & Agenda</p>
+            <p className="mt-1 text-sm font-semibold text-slate-500">Kalender kompakt und nächste Lernblöcke</p>
+          </div>
+          <button type="button" className="gg-collapse-button" onClick={() => setIsAgendaOpen((open) => !open)} aria-expanded={isAgendaOpen}>
+            <span>{isAgendaOpen ? "Einklappen" : "Ausklappen"}</span>
+            <span aria-hidden="true">{isAgendaOpen ? "⌃" : "⌄"}</span>
+          </button>
         </div>
         {isAgendaOpen && <div className="gg-plan-agenda-grid mt-3 grid gap-4 xl:grid-cols-[1.2fr_1fr]">
           <div className="rounded-3xl bg-slate-950 p-4 text-white">
@@ -1603,10 +1609,10 @@ export default function GradeGlowPlanner({
 
       <div className="gg-plan-calendar-card overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
         <div className="p-3 sm:p-5">
-          <div className={`grid grid-cols-7 gap-1 text-center text-[0.6rem] font-black uppercase tracking-[0.12em] text-slate-400 sm:gap-2 sm:text-xs`}>
+          <div className={`gg-month-weekdays grid grid-cols-7 gap-1 text-center text-[0.6rem] font-black uppercase tracking-[0.12em] text-slate-400 sm:gap-2 sm:text-xs`}>
             {weekdayLabels.map((weekday) => <div key={weekday} className="px-0.5 py-2">{weekday}</div>)}
           </div>
-          <div className={`grid grid-cols-7 gap-1 sm:gap-2`}>
+          <div className={`gg-month-grid grid grid-cols-7 gap-1 sm:gap-2`}>
             {calendarDays.map((date) => {
               const dateKey = getDateKey(date);
               const dayExams = examsByDate.get(dateKey) ?? [];
@@ -1619,7 +1625,7 @@ export default function GradeGlowPlanner({
               return (
                 <div
                   key={dateKey}
-                  className={`${calendarMode === "week" ? "min-h-40 sm:min-h-56 lg:min-h-64" : "min-h-24 sm:min-h-32"} overflow-hidden rounded-xl p-1.5 ring-1 transition sm:rounded-2xl sm:p-2.5 ${isDropTarget ? "ring-violet-300" : ""} ${isToday ? "bg-violet-50 ring-violet-300" : muted ? "bg-slate-50/70 ring-slate-100" : "bg-white ring-slate-200"}`}
+                  className={`gg-calendar-day ${calendarMode === "week" ? "min-h-40 sm:min-h-56 lg:min-h-64" : "min-h-24 sm:min-h-32"} overflow-hidden rounded-xl p-1.5 ring-1 transition sm:rounded-2xl sm:p-2.5 ${isDropTarget ? "ring-violet-300" : ""} ${isToday ? "bg-violet-50 ring-violet-300" : muted ? "bg-slate-50/70 ring-slate-100" : "bg-white ring-slate-200"}`}
                   onDragOver={(event) => {
                     if (!draggedSession) return;
                     event.preventDefault();

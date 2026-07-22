@@ -2521,7 +2521,7 @@ export default function GradeGlowDashboard({
                         className={profileChartRange === range ? "is-active" : ""}
                         onClick={() => setProfileChartRange(range)}
                       >
-                        {range === "4w" ? "4W" : range === "12w" ? "12W" : "Jahr"}
+                        {range === "4w" ? "4 Wochen" : range === "12w" ? "12 Wochen" : "1 Jahr"}
                       </button>
                     ))}
                   </div>
@@ -2673,11 +2673,6 @@ export default function GradeGlowDashboard({
 
         {!isCurrentPageBlocked && page === "exams" && (
           <section id="exams" className="scroll-mt-6 space-y-3">
-            <div className="gg-plan-mobile-intro lg:hidden">
-              <p className="gg-mobile-kicker">Plan</p>
-              <h2>Weniger Chaos, mehr Ablauf</h2>
-              <p>1. Prüfung anlegen · 2. Lernblöcke prüfen · 3. Im Kalender abhaken oder verschieben.</p>
-            </div>
             <GradeGlowPlanner
               modules={modules}
               exams={exams}

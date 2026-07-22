@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Dispatch, FormEvent, SetStateAction } from "react";
+import type { Dispatch, FormEvent, SetStateAction, TouchEvent } from "react";
 import { formatLimit } from "../lib/gradeglowAccess";
 import { getStudySessionRewardPoints, normalizeRewardedStudySessionIds } from "../lib/glowRewards";
 import { publishStudyActivity } from "../lib/studyActivity";
@@ -1245,6 +1245,26 @@ export default function GradeGlowPlanner({
     setCalendarCursorDate((current) => (calendarMode === "month" ? addMonths(current, direction) : addDays(current, direction * 7)));
   };
 
+  const calendarSwipeStart = useRef<{ x: number; y: number } | null>(null);
+
+  const handleCalendarTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+    calendarSwipeStart.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleCalendarTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    const start = calendarSwipeStart.current;
+    const touch = event.changedTouches[0];
+    calendarSwipeStart.current = null;
+    if (!start || !touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    if (Math.abs(deltaX) < 46 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.25) return;
+    moveCalendar(deltaX < 0 ? 1 : -1);
+  };
+
   const activeTimerExam = activeTimer ? sortedExams.find((exam) => exam.id === activeTimer.examId) ?? null : null;
   const activeTimerLimitMinutes = activeTimer ? getActiveTimerLimitMinutes(activeTimer, activeTimerExam) : 0;
   const activeTimerLimitSeconds = activeTimerLimitMinutes * 60;
@@ -1607,7 +1627,11 @@ export default function GradeGlowPlanner({
         </form>
       )}
 
-      <div className="gg-plan-calendar-card overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
+      <div
+        className="gg-plan-calendar-card overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur"
+        onTouchStart={handleCalendarTouchStart}
+        onTouchEnd={handleCalendarTouchEnd}
+      >
         <div className="p-3 sm:p-5">
           <div className={`gg-month-weekdays grid grid-cols-7 gap-1 text-center text-[0.6rem] font-black uppercase tracking-[0.12em] text-slate-400 sm:gap-2 sm:text-xs`}>
             {weekdayLabels.map((weekday) => <div key={weekday} className="px-0.5 py-2">{weekday}</div>)}

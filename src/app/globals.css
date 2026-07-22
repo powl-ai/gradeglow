@@ -5254,3 +5254,198 @@ body::before {
     transform: translateY(-0.16rem) scale(1.04) !important;
   }
 }
+
+/* Mobile PWA calendar density + premium dock correction 2026-07-22 -------
+   Final overrides: the month is a true seven-column viewport grid, while a
+   horizontal swipe changes the month instead of scrolling nested content. */
+@media (max-width: 767px) {
+  .gg-plan-calendar-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: clip !important;
+    touch-action: pan-y !important;
+    border-radius: 1.25rem !important;
+  }
+
+  .gg-plan-calendar-card > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    padding: 0.42rem !important;
+  }
+
+  .gg-plan-calendar-card .gg-month-weekdays,
+  .gg-plan-calendar-card .gg-month-grid,
+  .gg-plan-calendar-card .grid-cols-7:first-child,
+  .gg-plan-calendar-card .grid-cols-7:not(:first-child) {
+    display: grid !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    gap: 0.18rem !important;
+    overflow: hidden !important;
+  }
+
+  .gg-plan-calendar-card .gg-month-weekdays > div {
+    min-width: 0 !important;
+    padding: 0.3rem 0 0.24rem !important;
+    font-size: 0.52rem !important;
+    line-height: 1 !important;
+    letter-spacing: 0.06em !important;
+  }
+
+  .gg-plan-calendar-card .gg-month-grid > .gg-calendar-day,
+  .gg-plan-calendar-card .grid-cols-7:not(:first-child) > div {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 3.35rem !important;
+    height: 3.35rem !important;
+    border-radius: 0.68rem !important;
+    padding: 0.2rem 0.12rem !important;
+    border: 1px solid color-mix(in srgb, var(--gg-border) 76%, transparent) !important;
+    background: color-mix(in srgb, var(--gg-surface) 94%, var(--gg-surface-soft)) !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
+  }
+
+  .gg-calendar-day > div:first-child {
+    justify-content: center !important;
+    min-height: 1.2rem !important;
+  }
+
+  .gg-calendar-day > div:first-child span:first-child,
+  .gg-plan-calendar-card .grid-cols-7:not(:first-child) > div > div:first-child span:first-child {
+    width: 1.18rem !important;
+    height: 1.18rem !important;
+    font-size: 0.61rem !important;
+    line-height: 1 !important;
+  }
+
+  .gg-calendar-day .mt-1\.5 {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 0.1rem !important;
+    height: 0.72rem !important;
+    margin-top: 0.12rem !important;
+    overflow: hidden !important;
+  }
+
+  .gg-calendar-day button,
+  .gg-plan-calendar-card button[title*="Details öffnen"],
+  .gg-plan-calendar-card button[title*="Verschieben"] {
+    display: block !important;
+    flex: 0 1 0.72rem !important;
+    width: 0.72rem !important;
+    min-width: 0.28rem !important;
+    max-width: 0.72rem !important;
+    height: 0.22rem !important;
+    min-height: 0.22rem !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    color: transparent !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+  }
+
+  .gg-calendar-day button::after { display: none !important; }
+  .gg-calendar-day button.bg-rose-50 { background: #e11d48 !important; }
+  .gg-calendar-day button.bg-violet-50 { background: var(--gg-accent-600) !important; }
+  .gg-calendar-day button.bg-emerald-50 { background: #059669 !important; }
+  .gg-calendar-day p.truncate { display: none !important; }
+
+  /* One calm dock surface instead of five heavy boxes. */
+  .gg-mobile-tabbar,
+  .gg-theme-light .gg-mobile-tabbar,
+  .gg-theme-system .gg-mobile-tabbar {
+    left: max(env(safe-area-inset-left, 0px), 0.75rem) !important;
+    right: max(env(safe-area-inset-right, 0px), 0.75rem) !important;
+    bottom: max(env(safe-area-inset-bottom, 0px), 0.55rem) !important;
+    width: auto !important;
+    min-height: 3.75rem !important;
+    gap: 0.18rem !important;
+    padding: 0.34rem !important;
+    border: 1px solid color-mix(in srgb, var(--gg-border) 82%, transparent) !important;
+    border-radius: 1.35rem !important;
+    background: color-mix(in srgb, var(--gg-surface) 88%, transparent) !important;
+    box-shadow: 0 14px 34px rgba(15, 40, 28, 0.14) !important;
+    backdrop-filter: blur(22px) saturate(135%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(135%) !important;
+  }
+
+  .gg-mobile-tabbar a,
+  .gg-theme-light .gg-mobile-tabbar a,
+  .gg-theme-system .gg-mobile-tabbar a,
+  .gg-mobile-tabbar a.is-primary,
+  .gg-theme-light .gg-mobile-tabbar a.is-primary,
+  .gg-theme-system .gg-mobile-tabbar a.is-primary {
+    position: relative !important;
+    width: auto !important;
+    height: 3.05rem !important;
+    min-height: 3.05rem !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 1rem !important;
+    background: transparent !important;
+    color: color-mix(in srgb, var(--gg-app-text) 56%, transparent) !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    transform: none !important;
+  }
+
+  .gg-mobile-tabbar a.is-active,
+  .gg-theme-light .gg-mobile-tabbar a.is-active,
+  .gg-theme-system .gg-mobile-tabbar a.is-active,
+  .gg-mobile-tabbar a.is-primary.is-active,
+  .gg-theme-light .gg-mobile-tabbar a.is-primary.is-active,
+  .gg-theme-system .gg-mobile-tabbar a.is-primary.is-active {
+    border: 0 !important;
+    background: color-mix(in srgb, var(--gg-accent-500) 14%, var(--gg-surface)) !important;
+    color: var(--gg-accent-700, var(--gg-accent-600)) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gg-accent-500) 30%, transparent) !important;
+    transform: none !important;
+  }
+
+  .gg-mobile-tabbar a.is-active::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 0.22rem;
+    width: 0.28rem;
+    height: 0.28rem;
+    border-radius: 999px;
+    background: var(--gg-accent-600);
+    transform: translateX(-50%);
+    box-shadow: 0 0 0.55rem color-mix(in srgb, var(--gg-accent-600) 55%, transparent);
+  }
+
+  .gg-mobile-tabbar .gg-mobile-tab-icon,
+  .gg-mobile-tabbar a.is-primary .gg-mobile-tab-icon {
+    width: 2rem !important;
+    height: 2rem !important;
+    border-radius: 0.75rem !important;
+    background: transparent !important;
+  }
+
+  .gg-mobile-tabbar svg {
+    width: 1.35rem !important;
+    height: 1.35rem !important;
+  }
+
+  /* Smaller focus ring, especially on portrait PWA screens. */
+  .gg-timer-ring {
+    width: min(56vw, 12.75rem) !important;
+    padding: 0.5rem !important;
+    box-shadow: 0 16px 34px color-mix(in srgb, var(--gg-accent-600) 15%, transparent) !important;
+  }
+
+  .gg-timer-ring-inner span {
+    font-size: clamp(2.35rem, 12vw, 4rem) !important;
+  }
+}

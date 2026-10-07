@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Dispatch, FormEvent, SetStateAction, TouchEvent } from "react";
+import type { Dispatch, FormEvent, SetStateAction } from "react";
 import { formatLimit } from "../lib/gradeglowAccess";
 import { getStudySessionRewardPoints, normalizeRewardedStudySessionIds } from "../lib/glowRewards";
 import { publishStudyActivity } from "../lib/studyActivity";
+import StudyCalendar from "./StudyCalendar";
+import AppDialog from "./AppDialog";
+import type { CalendarEntry } from "../lib/calendarLayout";
 import type {
   AppUser,
   ExamKind,
@@ -33,7 +36,6 @@ type GradeGlowPlannerProps = {
 };
 
 type CalendarMode = "month" | "week";
-type CalendarContentFilter = "all" | "exams" | "study";
 
 type StudyForm = {
   examId: string;
@@ -76,12 +78,6 @@ const studyTimerModeOptions: { value: StudyTimerMode; label: string; description
   { value: "stopwatch", label: "Stoppuhr", description: "zählt hoch bis zum Speichern" },
 ];
 
-const calendarContentFilterOptions: { value: CalendarContentFilter; label: string; description: string }[] = [
-  { value: "all", label: "Alles", description: "Prüfungen und Lernplan" },
-  { value: "exams", label: "Nur Prüfungen", description: "Lernblöcke ausblenden" },
-  { value: "study", label: "Nur Lernplan", description: "Prüfungen ausblenden" },
-];
-
 const focusTimerPresets = [25, 30, 45, 60, 90, 120];
 
 const getTimerModeLabel = (mode: StudyTimerMode) =>
@@ -108,7 +104,6 @@ const statusOptions: { value: ExamStatus; label: string }[] = [
   { value: "done", label: "erledigt" },
 ];
 
-const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const PLANNER_CALENDAR_WEEK_DAYS = 7;
 const DEFAULT_LEARNING_PLAN_WEEK_DAYS = 6;
 
@@ -254,19 +249,6 @@ const formatTime = (timeString: string) => {
   return normalized ? `${normalized} Uhr` : "ohne Uhrzeit";
 };
 
-const formatMonthLabel = (date: Date) =>
-  new Intl.DateTimeFormat("de-DE", {
-    month: "long",
-    year: "numeric",
-  }).format(date);
-
-const formatShortDate = (date: Date) =>
-  new Intl.DateTimeFormat("de-DE", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-  }).format(date);
-
 const formatMinutes = (minutes: number) => {
   if (minutes < 60) return `${minutes} min`;
   const hours = Math.floor(minutes / 60);
@@ -306,12 +288,6 @@ const addDays = (date: Date, days: number) => {
   return next;
 };
 
-const addMonths = (date: Date, months: number) => {
-  const next = new Date(date);
-  next.setMonth(next.getMonth() + months);
-  return next;
-};
-
 const startOfWeek = (date: Date) => {
   const start = startOfLocalDay(date);
   const day = start.getDay();
@@ -329,9 +305,6 @@ const buildCalendarDays = (cursorDate: Date, mode: CalendarMode) => {
   const gridStart = startOfWeek(monthStart);
   return Array.from({ length: 42 }, (_, index) => addDays(gridStart, index));
 };
-
-const isSameMonth = (date: Date, cursorDate: Date) =>
-  date.getMonth() === cursorDate.getMonth() && date.getFullYear() === cursorDate.getFullYear();
 
 const getFinalGrade = (module: UniModule) => {
   if (module.assessments.length === 0) return module.grade;
@@ -402,15 +375,6 @@ const getStudyPhase = (daysUntil: number) => {
   if (daysUntil <= 10) return "aktive Aufgabenphase: rechnen, schreiben, abfragen";
   if (daysUntil <= 21) return "Grundlagen festigen + Lücken schließen";
   return "Stoff sammeln, grob planen, erste Wiederholung starten";
-};
-
-const getStudyLoadLabel = (studyMinutes: number, exams: number) => {
-  if (exams > 0 && studyMinutes === 0) return { label: "Prüfung", className: "bg-rose-50 text-rose-700" };
-  if (exams > 0) return { label: "Prüfung + Lernen", className: "bg-rose-50 text-rose-700" };
-  if (studyMinutes === 0) return { label: "frei", className: "bg-white text-slate-400" };
-  if (studyMinutes <= 90) return { label: "leicht", className: "bg-emerald-50 text-emerald-700" };
-  if (studyMinutes <= 180) return { label: "normal", className: "bg-violet-50 text-violet-700" };
-  return { label: "viel", className: "bg-amber-50 text-amber-700" };
 };
 
 const getPriorityWeight = (priority: ExamPriority) => {
@@ -607,8 +571,6 @@ export default function GradeGlowPlanner({
   const [form, setForm] = useState(emptyForm);
   const [manualStudyForm, setManualStudyForm] = useState<StudyForm>(emptyStudyForm);
   const [focusedExamId, setFocusedExamId] = useState<string | null>(null);
-  const [calendarMode, setCalendarMode] = useState<CalendarMode>("month");
-  const [calendarContentFilter, setCalendarContentFilter] = useState<CalendarContentFilter>("all");
   const [calendarCursorDate, setCalendarCursorDate] = useState(() => startOfLocalDay(new Date()));
   const [showHiddenItems, setShowHiddenItems] = useState(false);
   const [examFilterId, setExamFilterId] = useState("all");
@@ -623,13 +585,12 @@ export default function GradeGlowPlanner({
   const [timerCustomMinutes, setTimerCustomMinutes] = useState("30");
   const [timerNow, setTimerNow] = useState(() => Date.now());
   const [hasRestoredTimer, setHasRestoredTimer] = useState(false);
-  const [draggedSession, setDraggedSession] = useState<{ examId: string; sessionId: string } | null>(null);
   const [calendarMoveMessage, setCalendarMoveMessage] = useState("");
   const [selectedCalendarSessionId, setSelectedCalendarSessionId] = useState<string | null>(null);
   const [selectedCalendarDayKey, setSelectedCalendarDayKey] = useState<string | null>(null);
   const [studyRewardMessage, setStudyRewardMessage] = useState("");
-  const [isSummaryOpen, setIsSummaryOpen] = useState(true);
-  const [isAgendaOpen, setIsAgendaOpen] = useState(true);
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [isAgendaOpen, setIsAgendaOpen] = useState(false);
   const [examDetailNumberDraft, setExamDetailNumberDraft] = useState<ExamDetailNumberDraft>({
     studyStartDays: "",
     targetStudyHours: "",
@@ -834,17 +795,8 @@ export default function GradeGlowPlanner({
     ? sortSessions(focusedExam.studySessions).filter((session) => showHiddenItems || !session.isHidden)
     : [];
 
-  const calendarDays = useMemo(() => buildCalendarDays(calendarCursorDate, calendarMode), [calendarCursorDate, calendarMode]);
-
-  const calendarExams = useMemo(
-    () => (calendarContentFilter === "study" ? [] : visibleExams),
-    [calendarContentFilter, visibleExams],
-  );
-
-  const calendarStudySessions = useMemo(
-    () => (calendarContentFilter === "exams" ? [] : visibleStudySessions),
-    [calendarContentFilter, visibleStudySessions],
-  );
+  const calendarExams = visibleExams;
+  const calendarStudySessions = visibleStudySessions;
 
   const examsByDate = useMemo(() => {
     const grouped = new Map<string, ExamPlanItem[]>();
@@ -1128,17 +1080,6 @@ export default function GradeGlowPlanner({
     scrollToFocusPanel();
   };
 
-  const handleSessionDragStart = (examId: string, sessionId: string) => {
-    setDraggedSession({ examId, sessionId });
-    setCalendarMoveMessage("Ziehe den Lernblock auf einen anderen Kalendertag.");
-  };
-
-  const handleSessionDrop = (targetDateKey: string) => {
-    if (!draggedSession) return;
-    moveStudySessionToDate(draggedSession.examId, draggedSession.sessionId, targetDateKey);
-    setDraggedSession(null);
-  };
-
   const regenerateExamPlan = (examId: string) => {
     const exam = sortedExams.find((item) => item.id === examId);
     if (!exam) return;
@@ -1312,30 +1253,6 @@ export default function GradeGlowPlanner({
     setActiveTimer(null);
   };
 
-  const moveCalendar = (direction: -1 | 1) => {
-    setCalendarCursorDate((current) => (calendarMode === "month" ? addMonths(current, direction) : addDays(current, direction * 7)));
-  };
-
-  const calendarSwipeStart = useRef<{ x: number; y: number } | null>(null);
-
-  const handleCalendarTouchStart = (event: TouchEvent<HTMLDivElement>) => {
-    const touch = event.touches[0];
-    if (!touch) return;
-    calendarSwipeStart.current = { x: touch.clientX, y: touch.clientY };
-  };
-
-  const handleCalendarTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
-    const start = calendarSwipeStart.current;
-    const touch = event.changedTouches[0];
-    calendarSwipeStart.current = null;
-    if (!start || !touch) return;
-
-    const deltaX = touch.clientX - start.x;
-    const deltaY = touch.clientY - start.y;
-    if (Math.abs(deltaX) < 46 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.25) return;
-    moveCalendar(deltaX < 0 ? 1 : -1);
-  };
-
   const activeTimerExam = activeTimer ? sortedExams.find((exam) => exam.id === activeTimer.examId) ?? null : null;
   const activeTimerLimitMinutes = activeTimer ? getActiveTimerLimitMinutes(activeTimer, activeTimerExam) : 0;
   const activeTimerLimitSeconds = activeTimerLimitMinutes * 60;
@@ -1349,59 +1266,19 @@ export default function GradeGlowPlanner({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timerLimitReached]);
 
-  const calendarTitle =
-    calendarMode === "month"
-      ? formatMonthLabel(calendarCursorDate)
-      : `${formatShortDate(startOfWeek(calendarCursorDate))} – ${formatShortDate(addDays(startOfWeek(calendarCursorDate), PLANNER_CALENDAR_WEEK_DAYS - 1))}`;
-
   return (
     <section className="gg-planner-panel space-y-5 sm:space-y-6">
+      <StudyCalendar date={calendarCursorDate} onDateChange={setCalendarCursorDate}
+        entries={[
+          ...calendarExams.map((exam): CalendarEntry => ({ id: `exam:${exam.id}`, kind: "exam", title: exam.title, dateKey: exam.examDate, time: exam.examTime, durationMinutes: 45, moduleName: exam.moduleName })),
+          ...calendarStudySessions.map((session): CalendarEntry => ({ id: `study:${session.id}`, kind: "study", title: session.title || "Lernblock", dateKey: session.dateKey, time: session.time, durationMinutes: session.durationMinutes, isDone: session.isDone, moduleName: examTitleById.get(session.examId) })),
+        ]}
+        onOpen={(entry) => setSelectedCalendarDayKey(entry.dateKey)}
+        onMove={(entry, dateKey) => { const session = calendarStudySessions.find(item => `study:${item.id}` === entry.id); if (session) moveStudySessionToDate(session.examId, session.id, dateKey); }}
+        onAddExam={() => { setForm(current => ({ ...current, examDate: formatDateInput(getDateKey(calendarCursorDate)) })); setIsExamFormOpen(true); }}
+        onAddStudy={() => { setManualStudyForm(current => ({ ...current, date: formatDateInput(getDateKey(calendarCursorDate)) })); setIsManualStudyOpen(true); }} />
       <div className="gg-planner-control-card rounded-3xl bg-white/90 p-4 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p className="text-sm font-bold text-violet-700">Prüfungskalender</p>
-            <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Lernen planen, verschieben und abhaken</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Automatische Lernblöcke sind ein Vorschlag. Du kannst sie verschieben, abhaken, verstecken oder eigene Einheiten hinzufügen. Tageslimit und Session-Länge kannst du pro Prüfung selbst einstellen.
-            </p>
-          </div>
-
-          <div className="grid gap-2 sm:flex sm:flex-wrap sm:justify-end">
-            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
-              {(["month", "week"] as CalendarMode[]).map((mode) => (
-                <button key={mode} type="button" className={`rounded-xl px-3 py-2 text-sm font-black transition ${calendarMode === mode ? "bg-white text-violet-700 shadow-sm" : "text-slate-500"}`} onClick={() => setCalendarMode(mode)}>
-                  {mode === "month" ? "Monat" : "Woche"}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-3 gap-1 rounded-2xl bg-slate-100 p-1">
-              {calendarContentFilterOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={`rounded-xl px-3 py-2 text-xs font-black transition sm:text-sm ${calendarContentFilter === option.value ? "bg-white text-violet-700 shadow-sm" : "text-slate-500"}`}
-                  onClick={() => setCalendarContentFilter(option.value)}
-                  title={option.description}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
-
-            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-2xl bg-slate-50 p-1 ring-1 ring-slate-200 sm:min-w-80">
-              <button type="button" className="rounded-xl bg-white px-3 py-2 text-sm font-black text-slate-600 shadow-sm ring-1 ring-slate-200" onClick={() => moveCalendar(-1)} aria-label="Vorheriger Zeitraum">←</button>
-              <p className="truncate px-2 text-center text-sm font-black text-slate-700">{calendarTitle}</p>
-              <button type="button" className="rounded-xl bg-white px-3 py-2 text-sm font-black text-slate-600 shadow-sm ring-1 ring-slate-200" onClick={() => moveCalendar(1)} aria-label="Nächster Zeitraum">→</button>
-            </div>
-
-            <button type="button" className="rounded-2xl bg-violet-50 px-4 py-3 text-sm font-black text-violet-700 ring-1 ring-violet-100 transition hover:-translate-y-0.5" onClick={() => setCalendarCursorDate(new Date())}>
-              Heute anzeigen
-            </button>
-          </div>
-        </div>
-
+        <div className="gg-planner-management-heading"><h3>Dein Lernplan</h3><p>Fortschritt, Filter und Prüfungen verwalten.</p></div>
         <div className="mt-5 flex items-center justify-between gap-3">
           <div><p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Übersicht</p><p className="mt-1 text-sm font-semibold text-slate-500">Ziele und Fortschritt</p></div>
           <button type="button" className="gg-collapse-button" onClick={() => setIsSummaryOpen((open) => !open)} aria-expanded={isSummaryOpen}>{isSummaryOpen ? "Einklappen" : "Ausklappen"}</button>
@@ -1655,6 +1532,8 @@ export default function GradeGlowPlanner({
       </div>
 
       {isExamFormOpen && (
+        <AppDialog label="Prüfung hinzufügen" profile={profile} onClose={() => setIsExamFormOpen(false)}>
+          <button type="button" className="gg-dialog-close" aria-label="Prüfungsformular schließen" onClick={() => setIsExamFormOpen(false)}>×</button>
         <form className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6" onSubmit={handleSubmit}>
           <div className="mb-5">
             <p className="text-sm font-bold text-violet-700">Termin eintragen</p>
@@ -1681,9 +1560,12 @@ export default function GradeGlowPlanner({
           )}
           <button type="submit" className="mt-5 rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 disabled:opacity-50" disabled={!form.title.trim() || !normalizedFormDate || isTimeInvalid || isExamLimitReached}>Prüfung speichern & Lernplan erzeugen</button>
         </form>
+        </AppDialog>
       )}
 
       {isManualStudyOpen && (
+        <AppDialog label="Lernblock hinzufügen" profile={profile} onClose={() => setIsManualStudyOpen(false)}>
+          <button type="button" className="gg-dialog-close" aria-label="Lernformular schließen" onClick={() => setIsManualStudyOpen(false)}>×</button>
         <form className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6" onSubmit={addManualStudySession}>
           <div className="mb-5"><p className="text-sm font-bold text-violet-700">Manuell planen</p><h2 className="mt-1 text-2xl font-black tracking-tight">Lerneinheit hinzufügen</h2></div>
           <div className="grid gap-4 md:grid-cols-2">
@@ -1696,87 +1578,13 @@ export default function GradeGlowPlanner({
           </div>
           <button type="submit" className="mt-5 rounded-2xl bg-violet-700 px-5 py-3 text-sm font-black text-white shadow-lg shadow-violet-200 disabled:opacity-50" disabled={!sortedExams.length || !normalizedManualDate}>Lerneinheit speichern</button>
         </form>
+        </AppDialog>
       )}
 
-      <div
-        className="gg-plan-calendar-card overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur"
-        onTouchStart={handleCalendarTouchStart}
-        onTouchEnd={handleCalendarTouchEnd}
-      >
-        <div className="p-3 sm:p-5">
-          <div className={`gg-month-weekdays grid grid-cols-7 gap-1 text-center text-[0.6rem] font-black uppercase tracking-[0.12em] text-slate-400 sm:gap-2 sm:text-xs`}>
-            {weekdayLabels.map((weekday) => <div key={weekday} className="px-0.5 py-2">{weekday}</div>)}
-          </div>
-          <div className={`gg-month-grid grid grid-cols-7 gap-1 sm:gap-2`}>
-            {calendarDays.map((date) => {
-              const dateKey = getDateKey(date);
-              const dayExams = examsByDate.get(dateKey) ?? [];
-              const daySessions = studySessionsByDate.get(dateKey) ?? [];
-              const dayStudyMinutes = daySessions.reduce((sum, session) => sum + session.durationMinutes, 0);
-              const isToday = dateKey === todayKey;
-              const load = getStudyLoadLabel(dayStudyMinutes, dayExams.length);
-              const muted = calendarMode === "month" && !isSameMonth(date, calendarCursorDate);
-              const isDropTarget = Boolean(draggedSession);
-              return (
-                <div
-                  key={dateKey}
-                  className={`gg-calendar-day ${calendarMode === "week" ? "min-h-40 sm:min-h-56 lg:min-h-64" : "min-h-24 sm:min-h-32"} overflow-hidden rounded-xl p-1.5 ring-1 transition sm:rounded-2xl sm:p-2.5 ${isDropTarget ? "ring-violet-300" : ""} ${isToday ? "bg-violet-50 ring-violet-300" : muted ? "bg-slate-50/70 ring-slate-100" : "bg-white ring-slate-200"}`}
-                  onDragOver={(event) => {
-                    if (!draggedSession) return;
-                    event.preventDefault();
-                  }}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    handleSessionDrop(dateKey);
-                  }}
-                  onClick={() => setSelectedCalendarDayKey(dateKey)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") setSelectedCalendarDayKey(dateKey);
-                  }}
-                  title="Tagesübersicht öffnen"
-                >
-                  <div className="flex items-start justify-between gap-1"><span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[0.68rem] font-black sm:h-7 sm:w-7 sm:text-xs ${isToday ? "bg-violet-700 text-white" : muted ? "text-slate-300" : "text-slate-700"}`}>{date.getDate()}</span><span className={`hidden rounded-full px-2 py-1 text-[0.6rem] font-black sm:inline-flex ${load.className}`}>{load.label}</span></div>
-                  <div className="mt-1.5 space-y-1">
-                    {dayExams.slice(0, 1).map((exam) => { const kind = examKindOptions.find((option) => option.value === exam.kind); return <button key={exam.id} type="button" className="block w-full truncate rounded-lg bg-rose-50 px-1.5 py-1 text-left text-[0.58rem] font-black text-rose-700 ring-1 ring-rose-100 sm:rounded-xl sm:px-2 sm:text-[0.68rem]" onClick={(event) => { event.stopPropagation(); jumpToExamDetails(exam.id); }} title={`${exam.title} · Details öffnen`}><span className="sm:hidden">{kind?.emoji ?? "📌"}</span><span className="hidden sm:inline">{kind?.emoji ?? "📌"} {exam.title}</span></button>; })}
-                    {dayExams.length > 1 && <p className="truncate rounded-lg bg-rose-50 px-1.5 py-1 text-[0.58rem] font-bold text-rose-500 sm:rounded-xl sm:px-2 sm:text-[0.68rem]">+{dayExams.length - 1} Prüfung</p>}
-                    {daySessions.slice(0, calendarMode === "week" ? 8 : 2).map((session) => (
-                      <button
-                        key={session.id}
-                        type="button"
-                        draggable
-                        className={`block w-full cursor-grab truncate rounded-lg px-1.5 py-1 text-left text-[0.58rem] font-bold ring-1 active:cursor-grabbing sm:rounded-xl sm:px-2 sm:text-[0.68rem] ${session.isDone ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-violet-50 text-violet-700 ring-violet-100"}`}
-                        onClick={(event) => { event.stopPropagation(); jumpToExamDetails(session.examId, session.id); }}
-                        onDragStart={(event) => {
-                          event.stopPropagation();
-                          event.dataTransfer.effectAllowed = "move";
-                          event.dataTransfer.setData("text/plain", `${session.examId}:${session.id}`);
-                          handleSessionDragStart(session.examId, session.id);
-                        }}
-                        onDragEnd={() => setDraggedSession(null)}
-                        title={`${session.title}: ${formatMinutes(session.durationMinutes)} · zum Verschieben ziehen`}
-                      >
-                        {session.isDone ? "✓ " : ""}{session.title || "Lernblock"}
-                      </button>
-                    ))}
-                    {daySessions.length > (calendarMode === "week" ? 8 : 2) && <p className="truncate rounded-lg bg-violet-50 px-1.5 py-1 text-[0.58rem] font-bold text-violet-500 sm:rounded-xl sm:px-2 sm:text-[0.68rem]">+{daySessions.length - (calendarMode === "week" ? 8 : 2)} Lernblock</p>}
-                    {dayStudyMinutes > 0 && <p className="truncate rounded-lg bg-slate-50 px-1.5 py-1 text-[0.58rem] font-black text-slate-500 ring-1 ring-slate-100">Σ {formatMinutes(dayStudyMinutes)}</p>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"><p className="text-sm font-black text-slate-700">Legende</p><div className="mt-3 flex flex-wrap gap-2 text-xs font-black"><span className="rounded-full bg-rose-50 px-3 py-1 text-rose-700 ring-1 ring-rose-100">Prüfung</span><span className="rounded-full bg-violet-50 px-3 py-1 text-violet-700 ring-1 ring-violet-100">Lernblock</span><span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-100">erledigt</span><span className="rounded-full bg-amber-50 px-3 py-1 text-amber-700 ring-1 ring-amber-100">viel geplant</span><span className="rounded-full bg-white px-3 py-1 text-slate-600 ring-1 ring-slate-200">Ansicht: {calendarContentFilterOptions.find((option) => option.value === calendarContentFilter)?.label}</span></div>{calendarMoveMessage && <p className="mt-3 rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600 ring-1 ring-slate-200">{calendarMoveMessage}</p>}{studyRewardMessage && <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100">{studyRewardMessage}</p>}</div>
-        </div>
-      </div>
-
+      {calendarMoveMessage && <p role="status">{calendarMoveMessage}</p>}
+      {studyRewardMessage && <p role="status">{studyRewardMessage}</p>}
       {selectedCalendarDayKey && (
-        <div
-          className="fixed inset-0 z-50 flex items-end bg-slate-950/45 p-3 backdrop-blur-sm sm:items-center sm:justify-center sm:p-6"
-          onClick={() => setSelectedCalendarDayKey(null)}
-        >
+        <AppDialog label="Tagesübersicht" profile={profile} onClose={() => setSelectedCalendarDayKey(null)}>
           <div
             className="max-h-[88vh] w-full max-w-3xl overflow-y-auto rounded-[2rem] bg-white p-4 shadow-2xl shadow-slate-950/25 ring-1 ring-violet-100 sm:p-6"
             onClick={(event) => event.stopPropagation()}
@@ -1971,7 +1779,7 @@ export default function GradeGlowPlanner({
               </div>
             </div>
           </div>
-        </div>
+        </AppDialog>
       )}
 
       <section className="grid gap-5 2xl:grid-cols-[minmax(520px,0.95fr)_minmax(0,1.05fr)]">

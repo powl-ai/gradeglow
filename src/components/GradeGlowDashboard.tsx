@@ -9,6 +9,8 @@ import GlowRewardsPanel from "./GlowRewardsPanel";
 import GradeGlowInsights from "./GradeGlowInsights";
 import GradeGlowLogo from "./GradeGlowLogo";
 import GradeGlowPlanner from "./GradeGlowPlanner";
+import StudyHomeFeed from "./StudyHomeFeed";
+import AppDialog from "./AppDialog";
 import PlanUsagePanel from "./PlanUsagePanel";
 import PwaInstallCard from "./PwaInstallCard";
 import BetaNoticeCard from "./BetaNoticeCard";
@@ -1511,30 +1513,6 @@ export default function GradeGlowDashboard({
       ? "Dieser Bereich ist nur für Admins sichtbar und gehört nicht zur normalen Nutzer-App."
       : "Dieser Bereich ist nur für interne Beta-Tests sichtbar. Normales Feedback kannst du weiterhin senden.";
   const visibleMobileTabItems = mobileTabItems.filter((item) => !item.featureId || enabledFeatureIds.has(item.featureId));
-  const upcomingMobileExams = exams
-    .filter((exam) => exam.status !== "done" && !exam.isHidden)
-    .sort((a, b) => a.examDate.localeCompare(b.examDate));
-  const nextMobileExam = upcomingMobileExams[0] ?? null;
-  const nextMobileExamDaysLabel = nextMobileExam
-    ? (() => {
-        const examDate = createLocalDateFromKey(nextMobileExam.examDate);
-        if (!examDate) return "Datum offen";
-        const diffDays = Math.ceil((startOfLocalDay(examDate).getTime() - startOfLocalDay(new Date()).getTime()) / 86_400_000);
-        if (diffDays < 0) return "überfällig";
-        if (diffDays === 0) return "heute";
-        if (diffDays === 1) return "noch 1 Tag";
-        return `noch ${diffDays} Tage`;
-      })()
-    : "Plan offen";
-
-  const openStudySessionsCount = exams.reduce(
-    (count, exam) => count + exam.studySessions.filter((session) => !session.isDone && !session.isHidden).length,
-    0,
-  );
-  const doneStudySessionsCount = exams.reduce(
-    (count, exam) => count + exam.studySessions.filter((session) => session.isDone && !session.isHidden).length,
-    0,
-  );
   const globalTimerExam = globalTimer ? exams.find((exam) => exam.id === globalTimer.examId) ?? null : null;
   const globalTimerElapsedSeconds = globalTimer ? Math.max(0, Math.floor((globalTimerNow - globalTimer.startedAt) / 1000)) : 0;
   const globalTimerModeLabel = globalTimer?.mode === "pomodoro" ? "Pomodoro" : globalTimer?.mode === "stopwatch" ? "Stoppuhr" : "Fokus-Timer";
@@ -1755,11 +1733,6 @@ export default function GradeGlowDashboard({
         <div className="absolute bottom-[-12rem] left-1/2 h-[30rem] w-[30rem] -translate-x-1/2 rounded-full bg-pink-200/50 blur-3xl" />
       </div>
 
-      <div className="gg-mobile-top-blocker pointer-events-none lg:hidden" aria-hidden="true" />
-      <div className="gg-mobile-bottom-blocker pointer-events-none lg:hidden" aria-hidden="true" />
-
-      <Link href="/feedback" className="gg-mobile-floating-feedback lg:hidden" aria-label="Feedback senden">✎</Link>
-
       {foregroundMessage && (
         <div className="fixed left-1/2 top-3 z-50 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-[1.5rem] bg-violet-950/95 p-3 text-white shadow-2xl shadow-violet-950/25 ring-1 ring-white/10 backdrop-blur sm:top-5">
           <div className="flex items-start gap-3">
@@ -1816,7 +1789,7 @@ export default function GradeGlowDashboard({
       )}
 
       {showDailyGlowPrompt && isRewardsEnabled && (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/50 p-3 backdrop-blur-sm sm:items-center sm:p-6">
+        <AppDialog label="Daily Glow" profile={profile} onClose={closeDailyGlowPrompt} className="gg-daily-glow-dialog">
           <article className="w-full max-w-md overflow-hidden rounded-[2rem] bg-white shadow-2xl shadow-slate-950/25 ring-1 ring-slate-200">
             <div className={`p-5 text-white ${profileBannerClassName}`}>
               <p className="text-sm font-bold text-white/70">Daily Glow</p>
@@ -1837,12 +1810,12 @@ export default function GradeGlowDashboard({
               </div>
               {dailyGlowPromptMessage && <p className="text-sm font-bold text-violet-700">{dailyGlowPromptMessage}</p>}
               <div className="grid grid-cols-2 gap-2">
-                <button type="button" onClick={closeDailyGlowPrompt} className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200">Später</button>
+                <button type="button" onClick={closeDailyGlowPrompt} className="gg-dialog-secondary rounded-2xl px-4 py-3 text-sm font-black ring-1">Später</button>
                 <button type="button" onClick={() => void claimDailyGlowFromPrompt()} disabled={isClaimingDailyGlowPrompt} className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-violet-800 disabled:opacity-50">{isClaimingDailyGlowPrompt ? "Speichere…" : "Jetzt abholen"}</button>
               </div>
             </div>
           </article>
-        </div>
+        </AppDialog>
       )}
 
 
@@ -2101,7 +2074,8 @@ export default function GradeGlowDashboard({
 
 
         {page === "overview" && disabledOptionalFeatureCount > 0 && (
-          <section className="rounded-[2rem] bg-white/90 p-4 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-5">
+          <details className="gg-feature-notice rounded-[2rem] bg-white/90 p-4 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-5">
+            <summary>Deine App, deine Bereiche <span>›</span></summary>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-black text-violet-700">Feature-Auswahl</p>
@@ -2112,7 +2086,7 @@ export default function GradeGlowDashboard({
                 Features ändern
               </Link>
             </div>
-          </section>
+          </details>
         )}
 
       {showWelcomeBanner && page === "overview" && (
@@ -2226,49 +2200,7 @@ export default function GradeGlowDashboard({
 
         {!isCurrentPageBlocked && page === "overview" && (
           <>
-            <section className="gg-mobile-home lg:hidden">
-              <div className="gg-mobile-home-logo-row">
-                <GradeGlowLogo size="sm" appIconId={profile.activeAppIconId} appearance={profile.logoAppearance} />
-                <div>
-                  <p className="gg-mobile-kicker">GradeGlow</p>
-                  <strong>Dein Lernhub</strong>
-                </div>
-              </div>
-              <div className="gg-mobile-hero-card gg-mobile-today-card">
-                <div className="min-w-0">
-                  <p className="gg-mobile-kicker text-white/70">Heute · {nextMobileExamDaysLabel}</p>
-                  <h2 className="mt-1 truncate text-[1.02rem] font-black text-white">{globalTimer ? "Timer läuft" : nextMobileExam ? nextMobileExam.title : "Lernplan starten"}</h2>
-                  <p className="mt-1 text-[0.68rem] font-semibold leading-4 text-white/65">
-                    {globalTimer
-                      ? `${globalTimerModeLabel} · ${formatCompactDuration(globalTimerElapsedSeconds)} · ${globalTimerExam?.moduleName || globalTimer.title}`
-                      : nextMobileExam
-                        ? `${nextMobileExam.examDate}${nextMobileExam.moduleName ? ` · ${nextMobileExam.moduleName}` : ""}`
-                        : "Lege eine Prüfung an und GradeGlow baut dir den Plan."}
-                  </p>
-                </div>
-                <Link href={globalTimer ? "/timer" : "/exams"} className="shrink-0 rounded-full bg-white/90 px-3 py-2 text-[0.68rem] font-black text-slate-950 ring-1 ring-white/40">{globalTimer ? "Timer" : nextMobileExamDaysLabel}</Link>
-              </div>
-
-              <div className="gg-mobile-feed-card">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="gg-mobile-kicker">Uni-Fortschritt</p>
-                    <strong className="block text-[0.98rem] font-black text-slate-950">{analytics.passedEcts} von {totalTargetEcts} ECTS geschafft</strong>
-                    <p className="mt-1 text-[0.68rem] font-semibold text-slate-500">{openStudySessionsCount > 0 ? `${openStudySessionsCount} offene Lernsessions warten auf dich.` : "Keine offenen Sessions — perfekt für einen neuen Fokusblock."}</p>
-                  </div>
-                  <span className="rounded-full bg-violet-50 px-3 py-2 text-[0.72rem] font-black text-violet-700 ring-1 ring-violet-100">{analytics.progress.toFixed(0)}%</span>
-                </div>
-              </div>
-
-              <div className="gg-mobile-stat-list">
-                <div className="gg-mobile-stat-row"><span>Schnitt</span><strong>{analytics.average > 0 ? formatGrade(analytics.average) : "—"}</strong></div>
-                <div className="gg-mobile-stat-row"><span>ECTS</span><strong>{analytics.passedEcts}/{totalTargetEcts}</strong></div>
-                <div className="gg-mobile-stat-row"><span>Offene Sessions</span><strong>{openStudySessionsCount}</strong></div>
-                <div className="gg-mobile-stat-row"><span>Erledigt</span><strong>{doneStudySessionsCount}</strong></div>
-              </div>
-
-            </section>
-
+            <div className="lg:hidden"><StudyHomeFeed name={userLabel} exams={exams} passedEcts={analytics.passedEcts} targetEcts={totalTargetEcts} average={analytics.average} streak={profile.currentStudyStreakDays || 0} weekMinutes={profileStudyStats.thisWeekMinutes} timerRunning={Boolean(globalTimer)} /></div>
             {isBetaDiagnosticsUser && <div className="hidden lg:block">
               <BetaLaunchPanel
                 user={user}
@@ -3869,6 +3801,7 @@ export default function GradeGlowDashboard({
         {selectedModule && (
           <ModuleDetailModal
             module={selectedModule}
+            profile={profile}
             exams={exams}
             examsLoaded={areExamsLoaded}
             onClose={() => setSelectedModuleId(null)}
@@ -3911,7 +3844,7 @@ export default function GradeGlowDashboard({
                   className={`${isActive ? "is-active" : ""} ${item.tone === "primary" ? "is-primary" : ""}`.trim()}
                 >
                   <span className="gg-mobile-tab-icon">{renderMobileTabIcon(item.icon)}</span>
-                  <span className="sr-only">{item.label}</span>
+                  <span className="gg-mobile-tab-label">{item.label === "Plan" ? "Kalender" : item.label === "Timer" ? "Fokus" : item.label}</span>
                 </Link>
               );
             })}

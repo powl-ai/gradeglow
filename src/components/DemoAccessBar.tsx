@@ -15,7 +15,8 @@ export default function DemoAccessBar({ onRegister, onExit }: {
   }, []);
 
   return (
-    <section className="gg-demo-bar" aria-label="Probezugang">
+    <details className="gg-demo-bar" aria-label="Probezugang">
+      <summary>Demo · {plan === "free" ? "Basic" : "Pro"}<span>Optionen ⌄</span></summary>
       <div>
         <p className="font-bold">Du probierst GradeGlow aus.</p>
         <p className="mt-1 text-xs">Beispieldaten · Änderungen bleiben auf diesem Gerät.</p>
@@ -28,6 +29,6 @@ export default function DemoAccessBar({ onRegister, onExit }: {
         <button type="button" className="gg-demo-register" onClick={onRegister}>Konto erstellen</button>
         <button type="button" className="gg-demo-exit" onClick={() => void onExit()}>Beenden</button>
       </div>
-    </section>
+    </details>
   );
 }

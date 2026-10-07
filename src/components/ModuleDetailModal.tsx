@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import type { ExamPlanItem, ModuleStatus, UniModule } from "../types";
+import type { ExamPlanItem, GradeGlowProfile, ModuleStatus, UniModule } from "../types";
+import AppDialog from "./AppDialog";
 
 type ModuleDetailModalProps = {
+  profile?: GradeGlowProfile;
   module: UniModule;
   exams: ExamPlanItem[];
   examsLoaded: boolean;
@@ -206,6 +208,7 @@ const getRequirementText = ({
 };
 
 export default function ModuleDetailModal({
+  profile,
   module,
   exams,
   examsLoaded,
@@ -294,13 +297,7 @@ export default function ModuleDetailModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 p-3 backdrop-blur-sm sm:p-6"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="module-detail-title"
-      onClick={onClose}
-    >
+    <AppDialog label="Moduldetails" profile={profile} onClose={onClose}>
       <div
         className="mx-auto flex min-h-full w-full max-w-5xl items-end sm:items-center"
         onClick={(event) => event.stopPropagation()}
@@ -581,6 +578,6 @@ export default function ModuleDetailModal({
           </div>
         </section>
       </div>
-    </div>
+    </AppDialog>
   );
 }

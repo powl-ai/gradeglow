@@ -7,6 +7,7 @@ import { APPEARANCE_BOOTSTRAP_SCRIPT } from "../lib/appearance";
 import PwaRegister from "../components/PwaRegister";
 import AdSenseScript from "../components/AdSenseScript";
 import "./globals.css";
+import "./mobile-ui.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://gradeglow.app"),

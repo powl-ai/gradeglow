@@ -1,0 +1,244 @@
+/* The mobile shell owns its insets. Content, header and dock never add them twice. */
+:root {
+  --gg-safe-top: env(safe-area-inset-top, 0px);
+  --gg-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --gg-header-height: 3.5rem;
+}
+.gg-app-header { display: none; }
+.gg-themed { --gg-ui-accent: var(--gg-accent-700, #6d28d9); }
+html[data-color-mode="dark"] .gg-themed { --gg-ui-accent: var(--gg-accent-200, #ddd6fe); }
+
+/* Paint the entire auth document, including the home-indicator area. */
+html:has(.gg-auth-page), body:has(.gg-auth-page) {
+  background: radial-gradient(ellipse at 90% 90%, #b65f94 0, transparent 55%), linear-gradient(155deg, #421c72, #603192 58%, #8d457e) fixed !important;
+  background-size: cover !important;
+}
+html .gg-auth-page { min-height: 100dvh; flex: 1; background: transparent; }
+html .gg-auth-page::before { display: none; }
+
+/* Top-layer dialogs are unaffected by ancestors with blur/transform or dock z-index. */
+dialog.gg-app-dialog {
+  position: fixed; inset: 0; margin: 0; border: 0;
+  width: 100%; max-width: none; height: 100dvh; max-height: none;
+  padding: max(1rem, var(--gg-safe-top)) max(1rem, env(safe-area-inset-right, 0px)) max(1rem, var(--gg-safe-bottom)) max(1rem, env(safe-area-inset-left, 0px));
+  background: transparent !important; color: var(--gg-app-text); overflow: hidden;
+}
+dialog.gg-app-dialog[open] { display: grid; justify-items: center; align-items: center; }
+dialog.gg-app-dialog::backdrop { background: rgb(4 6 16 / .68); backdrop-filter: blur(7px); }
+.gg-app-dialog .gg-dialog-panel {
+  position: relative; width: min(100%, 44rem); min-width: 0;
+  max-height: calc(100dvh - max(1rem, var(--gg-safe-top)) - max(1rem, var(--gg-safe-bottom)));
+  overflow-y: auto; overscroll-behavior: contain; border-radius: 1.5rem;
+  background: var(--gg-surface); color: var(--gg-app-text); box-shadow: 0 24px 80px #0006;
+}
+.gg-app-dialog .gg-dialog-panel > article,
+.gg-app-dialog .gg-dialog-panel > form,
+.gg-app-dialog .gg-dialog-panel > div[class*="max-h"] { max-height: none !important; max-width: none; overflow: visible; }
+.gg-app-dialog .gg-dialog-panel section[class*="max-h"] { max-height: none !important; overflow: visible; }
+.gg-app-dialog .gg-dialog-panel input,
+.gg-app-dialog .gg-dialog-panel textarea,
+.gg-app-dialog .gg-dialog-panel select { color: var(--gg-app-text) !important; background-color: var(--gg-surface-soft) !important; }
+.gg-app-dialog button { min-height: 2.75rem; }
+.gg-app-dialog .gg-dialog-secondary { background: var(--gg-surface-soft) !important; color: var(--gg-app-text) !important; --tw-ring-color: var(--gg-border); }
+.gg-dialog-heading { display: flex; gap: 1rem; justify-content: space-between; align-items: center; padding: 1rem; }
+.gg-dialog-heading h2 { font-size: 1.2rem; font-weight: 750; }
+.gg-dialog-heading button, .gg-dialog-close { width: 2.75rem; height: 2.75rem; border-radius: 50%; color: var(--gg-app-text); background: var(--gg-surface-soft); font-size: 1.5rem; }
+.gg-dialog-close { float: right; position: sticky; top: .5rem; z-index: 3; margin: .5rem .5rem 0 0; }
+.gg-app-menu { display: grid; padding: 0 1rem 1rem; }
+.gg-app-menu a { display: flex; justify-content: space-between; gap: 1rem; padding: .85rem; border-radius: .8rem; min-height: 2.75rem; color: var(--gg-app-text); text-decoration: none; font-size: .95rem; }
+.gg-app-menu a[aria-current] { background: var(--gg-surface-soft); color: var(--gg-ui-accent); font-weight: 700; }
+
+/* A calm, useful feed, not a wall of dashboard statistics. */
+.gg-home-feed { display: grid; gap: 1rem; min-width: 0; }
+.gg-home-greeting { padding: .25rem .15rem .15rem; }
+.gg-home-greeting > p { color: var(--gg-muted); font-size: .8rem; text-transform: capitalize; }
+.gg-home-greeting h2 { margin-top: .45rem; color: var(--gg-app-text); font-size: clamp(1.45rem, 5.2vw, 1.9rem); font-weight: 750; line-height: 1.2; letter-spacing: -.04em; }
+.gg-home-feed .gg-feed-card { background: var(--gg-surface); border: 1px solid var(--gg-border); border-radius: 1.35rem; padding: 1rem; min-width: 0; box-shadow: none; }
+.gg-home-feed .gg-home-focus-card { display: grid; grid-template-columns: minmax(0, 1fr) clamp(5.25rem, 25vw, 8rem); gap: .25rem; align-items: center; border-radius: 1.5rem; padding: 1.1rem; background: linear-gradient(120deg, #f0e6ff, #fae9f1); border: 1px solid #d2b9ea; color: #302143; }
+html[data-color-mode="dark"] .gg-home-feed .gg-home-focus-card { background: linear-gradient(120deg, #2a2044, #343054); border-color: #5b4d75; color: #f8f1ff; }
+.gg-feed-eyebrow { display: block; font-size: .65rem; font-weight: 750; letter-spacing: .09em; line-height: 1.5; }
+.gg-home-focus-card h3 { margin-top: .65rem; font-size: clamp(1.25rem, 4.8vw, 1.7rem); line-height: 1.18; letter-spacing: -.035em; font-weight: 760; }
+.gg-home-focus-card p { margin-top: .65rem; font-size: .83rem; line-height: 1.5; opacity: .85; }
+.gg-glow-mascot { width: 100%; height: auto; overflow: visible; }
+.gg-home-feed .gg-feed-primary { display: inline-flex; align-items: center; justify-content: space-between; gap: .8rem; min-height: 2.75rem; margin-top: 1rem; border-radius: .85rem; background: #eedfff; color: #3e2359; font-size: .8rem; font-weight: 750; padding: .7rem .85rem; text-decoration: none; }
+html[data-color-mode="light"] .gg-home-feed .gg-feed-primary { background: #62408a; color: white; }
+.gg-feed-section-title { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
+.gg-feed-section-title h3 { font-size: .98rem; font-weight: 730; color: var(--gg-app-text); }
+.gg-feed-section-title > span, .gg-feed-section-title > a { color: var(--gg-ui-accent); font-size: .72rem; font-weight: 650; text-align: right; text-decoration: none; }
+.gg-home-week-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .25rem; margin: 1rem 0 .8rem; }
+.gg-home-week-days > div { display: flex; flex-direction: column; align-items: center; gap: .45rem; }
+.gg-home-week-days span { color: var(--gg-muted); font-size: .7rem; }
+.gg-home-week-days strong { width: clamp(1.75rem, 8vw, 2.5rem); aspect-ratio: 1; display: grid; place-items: center; border: 1px solid var(--gg-border); border-radius: 50%; font-size: .85rem; font-weight: 650; color: var(--gg-app-text); }
+.gg-home-week-days .is-today strong { border: 2px solid var(--gg-ui-accent); }
+.gg-home-week-days .is-done strong { background: var(--gg-accent-200); color: #392052; border-color: transparent; }
+.gg-home-feed .gg-feed-muted { color: var(--gg-muted); font-size: .76rem; line-height: 1.5; }
+.gg-home-task-list { display: grid; margin-top: .8rem; }
+.gg-home-task-list a { display: flex; align-items: flex-start; gap: .75rem; padding: .8rem 0; color: var(--gg-app-text); text-decoration: none; }
+.gg-home-task-list a + a { border-top: 1px solid var(--gg-border); }
+.gg-task-marker { flex-shrink: 0; width: .35rem; height: 2.7rem; border-radius: 1rem; background: var(--gg-accent-500); }
+.gg-home-task-list a > div { flex: 1; min-width: 0; }
+.gg-home-task-list strong { display: block; font-size: .88rem; font-weight: 700; overflow-wrap: anywhere; }
+.gg-home-task-list p { color: var(--gg-muted); font-size: .77rem; margin-top: .2rem; }
+.gg-home-task-list small { display: block; margin-top: .25rem; color: var(--gg-ui-accent); font-size: .73rem; }
+.gg-home-today-count { border-top: 1px solid var(--gg-border); padding-top: .75rem; }
+.gg-home-empty { padding-top: 1rem; font-size: .85rem; line-height: 1.5; color: var(--gg-muted); }
+.gg-home-empty a, .gg-feed-text-link { display: inline-flex; align-items: center; min-height: 2.75rem; color: var(--gg-ui-accent); font-size: .8rem; font-weight: 650; text-decoration: none; }
+.gg-home-feed .gg-home-exam { display: flex; gap: .85rem; align-items: center; color: var(--gg-app-text); text-decoration: none; }
+.gg-home-exam > div { flex: 1; min-width: 0; }
+.gg-home-exam strong { display: block; font-size: .93rem; margin-top: .3rem; overflow-wrap: anywhere; }
+.gg-home-exam p { font-size: .78rem; margin-top: .3rem; color: var(--gg-muted); }
+.gg-home-exam-icon { display: grid; place-items: center; background: var(--gg-surface-soft); color: var(--gg-ui-accent); border-radius: .85rem; width: 2.7rem; height: 2.7rem; font-size: 1.35rem; }
+.gg-home-progress-track { height: .55rem; border-radius: 1rem; overflow: hidden; background: var(--gg-border); margin: 1rem 0; }
+.gg-home-progress-track i { display: block; height: 100%; border-radius: inherit; background: var(--gg-accent-500); }
+.gg-home-progress-numbers { display: flex; justify-content: space-between; gap: .5rem; color: var(--gg-muted); font-size: .82rem; }
+.gg-home-progress-numbers strong { color: var(--gg-app-text); }
+.gg-home-signoff { text-align: center; font-size: .76rem; color: var(--gg-muted); padding: .5rem 0; }
+
+/* Calendar: readable dates above a real, independently scrollable 24-hour day. */
+.gg-study-calendar { min-width: 0; border: 1px solid var(--gg-border); border-radius: 1.35rem; background: var(--gg-surface); overflow: hidden; }
+.gg-study-calendar button { cursor: pointer; }
+.gg-study-calendar button:not(.gg-calendar-event) { min-height: 2.75rem !important; }
+.gg-calendar-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .85rem 1rem .35rem; }
+.gg-study-calendar .gg-calendar-month-title { display: flex; align-items: baseline; gap: .45rem; min-height: 2.75rem; color: var(--gg-app-text); font-size: 1.3rem !important; font-weight: 750; text-transform: capitalize; letter-spacing: -.025em; }
+.gg-calendar-month-title span { font-size: .75rem; font-weight: 500; color: var(--gg-muted); }
+.gg-calendar-toolbar-actions { display: flex; gap: .25rem; }
+.gg-calendar-toolbar-actions button { min-width: 2.75rem; min-height: 2.75rem; color: var(--gg-ui-accent); font-size: .85rem !important; font-weight: 700; border-radius: .8rem; }
+.gg-calendar-toolbar-actions button:last-child { font-size: 1.8rem !important; font-weight: 400; background: var(--gg-surface-soft); }
+.gg-calendar-add-options { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; padding: .4rem 1rem .8rem; }
+.gg-calendar-add-options button { min-height: 2.75rem; padding: .5rem; border: 1px solid var(--gg-border); color: var(--gg-ui-accent); font-size: .78rem; font-weight: 650; border-radius: .8rem; }
+.gg-calendar-view-row { display: flex; align-items: center; gap: .5rem; padding: .5rem 1rem .8rem; }
+.gg-calendar-view-switch { flex: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--gg-surface-soft); border-radius: .75rem; padding: .2rem; min-width: 0; }
+.gg-calendar-view-switch button { border-radius: .55rem; color: var(--gg-muted); font-size: .8rem !important; font-weight: 600; min-height: 2.5rem; }
+.gg-calendar-view-switch button[aria-pressed="true"] { background: var(--gg-ui-accent); color: #261637; }
+html[data-color-mode="light"] .gg-calendar-view-switch button[aria-pressed="true"] { color: white; }
+.gg-calendar-filter { max-width: 35%; }
+.gg-study-calendar .gg-calendar-filter select { width: 100%; min-height: 2.75rem; padding: .25rem .5rem; font-size: .76rem !important; background: var(--gg-surface) !important; color: var(--gg-app-text) !important; border: 1px solid var(--gg-border); border-radius: .75rem; }
+.gg-calendar-date-picker { padding: 0 .65rem .4rem; touch-action: pan-y; }
+.gg-calendar-weekday-labels, .gg-calendar-date-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .1rem; text-align: center; }
+.gg-calendar-weekday-labels span { font-size: .72rem; color: var(--gg-muted); padding: .35rem 0; }
+.gg-calendar-date-grid button { min-width: 0; min-height: 3.25rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .22rem; color: var(--gg-app-text); }
+.gg-calendar-date-grid button strong { width: 2rem; height: 2rem; display: grid; place-items: center; border-radius: 50%; font-size: 1.05rem; font-weight: 550; }
+.gg-calendar-date-grid button.is-today strong { color: #fb647c; font-weight: 750; }
+.gg-calendar-date-grid button.is-selected strong { background: var(--gg-ui-accent); color: #261637; }
+html[data-color-mode="light"] .gg-calendar-date-grid button.is-selected strong { color: white; }
+.gg-calendar-date-grid button.is-outside { opacity: .38; }
+.gg-calendar-date-dots { display: flex; align-items: center; justify-content: center; gap: .2rem; min-height: .35rem; }
+.gg-calendar-date-dots i, .gg-calendar-key i { width: .28rem; height: .28rem; border-radius: 50%; background: #b593f1; }
+.gg-study-calendar i[data-kind="exam"] { background: #f88da7; }
+.gg-calendar-day-heading { display: grid; grid-template-columns: 2.75rem 1fr 2.75rem; gap: .25rem; align-items: center; padding: .35rem .65rem; border-top: 1px solid var(--gg-border); border-bottom: 1px solid var(--gg-border); }
+.gg-calendar-day-heading h2 { font-size: .86rem; text-align: center; font-weight: 650; color: var(--gg-app-text); }
+.gg-calendar-day-heading button { min-height: 2.75rem; color: var(--gg-ui-accent); font-size: 1.6rem !important; }
+.gg-calendar-timeline-viewport { height: min(52dvh, 32rem); min-height: 13rem; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; position: relative; }
+.gg-calendar-timeline { position: relative; height: 1536px; margin-top: .65rem; margin-bottom: .65rem; }
+.gg-calendar-hour { position: absolute; width: 100%; display: flex; align-items: baseline; gap: .5rem; padding: 0 .5rem; }
+.gg-calendar-hour > span { width: 2.6rem; flex: 0 0 2.6rem; font-size: .65rem; line-height: 1; color: var(--gg-muted); transform: translateY(-.35rem); text-align: right; }
+.gg-calendar-hour > i { height: 1px; background: var(--gg-border); flex: 1; }
+.gg-calendar-event-lanes { position: absolute; inset: 0 .45rem 0 3.75rem; }
+.gg-calendar-event { position: absolute; display: flex; flex-direction: column; text-align: left; padding: .4rem .45rem; border-radius: .4rem; border-left: 3px solid #bfa0fb; background: #eee3ff; color: #3f2868; overflow: hidden; line-height: 1.2; }
+.gg-study-calendar .gg-calendar-event { min-height: 0 !important; }
+html[data-color-mode="dark"] .gg-calendar-event { background: #372f52; color: #e7d6ff; }
+.gg-calendar-event[data-kind="exam"] { background: #ffe5ec; color: #811c42; border-color: #fa85a9; }
+html[data-color-mode="dark"] .gg-calendar-event[data-kind="exam"] { background: #513046; color: #ffdae6; }
+.gg-calendar-event.is-done { border-color: #83cdb4; background: #e0f2e9; color: #155a42; }
+html[data-color-mode="dark"] .gg-calendar-event.is-done { background: #213d38; color: #b6efdc; }
+.gg-calendar-event strong { font-size: .78rem; font-weight: 650; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+.gg-calendar-event span { font-size: .69rem; margin-top: .2rem; white-space: nowrap; }
+.gg-calendar-event small { font-size: .67rem; margin-top: .2rem; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gg-calendar-event.is-short { padding-block: .2rem; }
+.gg-calendar-event.is-short span, .gg-calendar-event.is-short small { display: none; }
+.gg-calendar-now { position: absolute; inset-inline: .5rem; display: flex; align-items: center; pointer-events: none; gap: .5rem; color: #ff677c; }
+.gg-calendar-now span { width: 2.6rem; font-size: .65rem; background: var(--gg-surface); text-align: right; }
+.gg-calendar-now i { flex: 1; height: 1px; background: #ff677c; }
+.gg-calendar-untimed { display: flex; gap: .5rem; padding: .7rem; border-bottom: 1px solid var(--gg-border); }
+.gg-calendar-untimed > span { width: 3rem; color: var(--gg-muted); font-size: .65rem; }
+.gg-calendar-untimed > div { display: grid; gap: .35rem; flex: 1; }
+.gg-calendar-untimed button { min-height: 2.5rem; padding: .45rem .65rem; border-radius: .5rem; text-align: left; background: var(--gg-surface-soft); font-size: .8rem; color: var(--gg-app-text); }
+.gg-calendar-empty { padding: 1rem; color: var(--gg-muted); font-size: .8rem; border-top: 1px solid var(--gg-border); }
+.gg-calendar-key { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .6rem; border-top: 1px solid var(--gg-border); padding: .85rem 1rem; color: var(--gg-muted); font-size: .65rem; }
+.gg-calendar-key span { display: flex; align-items: center; gap: .35rem; }
+.gg-calendar-week-agenda { max-height: 32rem; overflow-y: auto; overscroll-behavior: contain; padding: .5rem 1rem; }
+.gg-calendar-agenda-day { display: grid; grid-template-columns: 2.5rem minmax(0, 1fr); gap: .8rem; padding: .75rem 0; border-bottom: 1px solid var(--gg-border); }
+.gg-calendar-agenda-day > button { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: .25rem; color: var(--gg-muted); min-height: 2.75rem; }
+.gg-calendar-agenda-day > button strong { font-size: 1.2rem; color: var(--gg-app-text); }
+.gg-calendar-agenda-day > button span { font-size: .72rem; }
+.gg-calendar-agenda-day > button.is-today strong { color: #fb647c; }
+.gg-calendar-agenda-day > div { min-width: 0; display: grid; gap: .35rem; }
+.gg-calendar-agenda-day p { font-size: .8rem; color: var(--gg-muted); padding: .75rem 0; }
+.gg-calendar-agenda-event { display: grid; grid-template-columns: 4.4rem minmax(0, 1fr); gap: .2rem .5rem; text-align: left; padding: .65rem; border-radius: .7rem; min-height: 2.75rem; color: var(--gg-app-text); background: var(--gg-surface-soft); border-left: 3px solid #b593f1; }
+.gg-calendar-agenda-event[data-kind="exam"] { border-color: #f88da7; }
+.gg-calendar-agenda-event > span { grid-row: span 2; font-size: .75rem; color: var(--gg-muted); }
+.gg-calendar-agenda-event strong { font-size: .82rem; overflow-wrap: anywhere; }
+.gg-calendar-agenda-event small { font-size: .7rem; color: var(--gg-muted); }
+.gg-planner-management-heading h3 { font-size: 1rem; font-weight: 700; }
+.gg-planner-management-heading p { color: var(--gg-muted); font-size: .8rem; margin-top: .3rem; }
+html .gg-demo-bar { display: block; padding: .2rem .85rem; border-radius: .85rem; background: var(--gg-surface-soft); border-color: var(--gg-border); color: var(--gg-app-text); }
+.gg-demo-bar > summary { display: flex; align-items: center; justify-content: space-between; min-height: 2.75rem; gap: .5rem; font-size: .76rem; font-weight: 650; cursor: pointer; }
+.gg-demo-bar > summary span { color: var(--gg-muted); font-weight: 500; }
+.gg-demo-bar[open] > div { padding-bottom: .7rem; }
+
+@media (max-width: 1023px) {
+  html { font-size: 16px !important; }
+  body:has(.gg-app-header) { padding: 0 !important; }
+  .gg-app-header {
+    display: block; position: fixed; inset: 0 0 auto; z-index: 50;
+    height: calc(var(--gg-safe-top) + var(--gg-header-height)); padding-top: var(--gg-safe-top);
+    background: var(--gg-document-bg, #f4fbf7); border-bottom: 1px solid rgb(127 127 155 / .16);
+    color: var(--foreground); isolation: isolate;
+  }
+  .gg-app-header-inner { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; align-items: center; gap: .65rem; height: var(--gg-header-height); padding-inline: max(.75rem, env(safe-area-inset-left, 0px)) max(.75rem, env(safe-area-inset-right, 0px)); max-width: 64rem; margin-inline: auto; }
+  .gg-app-header h1 { text-align: center; font-size: 1.08rem; font-weight: 720; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; letter-spacing: -.025em; }
+  .gg-app-header h1.gg-header-wordmark { font-size: 1.28rem; font-weight: 800; letter-spacing: -.055em; }
+  .gg-header-action { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 50%; color: inherit; text-decoration: none; }
+  .gg-header-action svg { width: 1.35rem; height: 1.35rem; }
+  .gg-header-action:hover { background: rgb(127 127 155 / .12); }
+  body:has(.gg-app-header) main.gg-themed { padding-top: calc(var(--gg-header-height) + var(--gg-safe-top)) !important; }
+  html body:has(.gg-app-header) .gg-app-shell { padding-top: 1rem !important; padding-inline: max(.9rem, env(safe-area-inset-left, 0px)) max(.9rem, env(safe-area-inset-right, 0px)) !important; padding-bottom: calc(var(--gg-safe-bottom) + 6rem) !important; gap: 1rem !important; overflow-x: visible !important; }
+  html body:has(.gg-app-header) main.gg-themed > .mx-auto:not(.gg-app-shell) { padding-top: 1rem !important; padding-bottom: calc(var(--gg-safe-bottom) + 2rem) !important; }
+  html .gg-mobile-scroll-end-spacer { display: none !important; }
+  html .gg-mobile-tabbar-shell { z-index: 60 !important; bottom: max(.55rem, var(--gg-safe-bottom)) !important; }
+  html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar { width: min(100%, 30rem) !important; min-height: 4rem !important; padding: .3rem !important; border-radius: 1.5rem !important; }
+  html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a,
+  html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a.is-primary { display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: .25rem; min-width: 0; height: 3.4rem !important; min-height: 3.4rem !important; padding: .3rem .15rem !important; border-radius: 1.15rem !important; }
+  html .gg-mobile-tabbar-shell .gg-mobile-tabbar a::after { display: none !important; }
+  html .gg-mobile-tabbar-shell .gg-mobile-tab-icon { height: 1.3rem !important; width: 1.3rem !important; display: grid !important; place-items: center; }
+  html .gg-mobile-tabbar-shell .gg-mobile-tab-icon svg { width: 1.3rem; height: 1.3rem; }
+  html .gg-mobile-tabbar-shell .gg-mobile-tabbar .gg-mobile-tab-label { display: block !important; position: static; height: auto; width: auto; overflow: visible; clip: auto; font-size: .65rem !important; font-weight: 650; line-height: 1.15; }
+  html .gg-mobile-floating-feedback, html .gg-mobile-top-blocker, html .gg-mobile-bottom-blocker { display: none !important; }
+  html .gg-profile-card { background: var(--gg-surface) !important; padding: 1rem; border-radius: 1.35rem; }
+  html .gg-profile-hero { padding: 1.1rem; border-radius: 1.4rem; }
+  html .gg-profile-card h3 { font-size: 1.1rem; line-height: 1.3; }
+  html .gg-profile-card p { font-size: .82rem; line-height: 1.5; }
+  html .gg-profile-progress-card { gap: .9rem; align-items: center; }
+  html .gg-profile-ring { width: 5.25rem; height: 5.25rem; min-width: 5.25rem; }
+  html .gg-profile-ring > div { background: var(--gg-surface) !important; }
+  html .gg-profile-ring strong { font-size: 1.45rem; }
+  html .gg-profile-ring span { font-size: .57rem; }
+  html .gg-profile-line-chart { background: var(--gg-surface-soft) !important; padding: .8rem; border-radius: 1rem; }
+  html .gg-profile-line-chart-header { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; }
+  html .gg-profile-line-chart-header > div:first-child { flex: 1 1 9rem; min-width: 0; }
+  html .gg-profile-line-chart-header > div:first-child strong { color: var(--gg-app-text); font-size: 1rem; line-height: 1.3; }
+  html .gg-profile-chart-range-switch { flex: 1 1 12rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); min-width: 0; padding: .2rem; background: var(--gg-surface); border-radius: .7rem; }
+  html .gg-profile-chart-range-switch button { min-height: 2.75rem; min-width: 0; width: 100%; padding: .35rem .15rem !important; font-size: .72rem !important; word-break: normal; overflow-wrap: normal; color: var(--gg-muted); }
+  html .gg-profile-chart-range-switch button.is-active { background: var(--gg-surface-soft); color: var(--gg-ui-accent); }
+  html .gg-profile-compare-card, html .gg-profile-compare-card.is-muted { background: var(--gg-surface-soft) !important; color: var(--gg-app-text); }
+  html .gg-profile-compare-card strong { color: var(--gg-app-text) !important; font-size: 1.05rem; min-height: 1.3rem; }
+  html .gg-profile-compare-card span { color: var(--gg-muted) !important; }
+  html .gg-app-shell .gg-planner-panel { display: grid; gap: 1rem; }
+  html .gg-app-shell .gg-planner-control-card { padding: 1rem !important; }
+  .gg-feature-notice > summary { display: flex; align-items: center; justify-content: space-between; min-height: 2.75rem; font-size: .78rem; font-weight: 650; cursor: pointer; color: var(--gg-muted); }
+  html .gg-feature-notice { order: 20; padding: .25rem .9rem !important; border-radius: .85rem; background: var(--gg-surface-soft); }
+  .gg-feature-notice[open] > div { padding: .5rem 0 1rem; }
+  .gg-menu-dialog .gg-dialog-panel { max-width: 28rem; }
+  .gg-daily-glow-dialog .gg-dialog-panel { max-width: 28rem; }
+}
+@media (max-width: 380px) {
+  .gg-home-feed .gg-home-focus-card { padding: .9rem; grid-template-columns: minmax(0, 1fr) 5.1rem; }
+  .gg-home-focus-card h3 { font-size: 1.2rem; }
+  .gg-calendar-toolbar { padding-inline: .65rem; }
+  .gg-calendar-month-title { font-size: 1.15rem; }
+  .gg-calendar-view-row { padding-inline: .65rem; }
+  .gg-calendar-date-grid button strong { width: 1.85rem; height: 1.85rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gg-app-header *, .gg-home-feed *, .gg-study-calendar *, .gg-app-dialog * { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
+}

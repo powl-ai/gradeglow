@@ -1,5 +1,4 @@
-import GradeGlowApp from "../../components/GradeGlowApp";
 
 export default function ScheduleRoute() {
-  return <GradeGlowApp page="schedule" />;
+  return null; // The persistent root host renders this view.
 }

@@ -1,5 +1,4 @@
-import GradeGlowApp from "../../components/GradeGlowApp";
 
 export default function InsightsRoute() {
-  return <GradeGlowApp page="insights" />;
+  return null; // The persistent root host renders this view.
 }

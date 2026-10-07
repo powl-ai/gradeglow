@@ -1,6 +1,6 @@
 import type { HTMLAttributes } from "react";
 import { getAppIconVisual } from "../lib/glowRewards";
-import type { AppIconId } from "../types";
+import type { AppIconId, LogoAppearance } from "../types";
 
 type LogoSize = "sm" | "md" | "lg";
 type LogoTone = "light" | "dark" | "glass";
@@ -9,6 +9,7 @@ type GradeGlowLogoProps = HTMLAttributes<HTMLDivElement> & {
   size?: LogoSize;
   tone?: LogoTone;
   appIconId?: AppIconId | string;
+  appearance?: LogoAppearance;
 };
 
 const sizeClasses: Record<LogoSize, string> = {
@@ -27,6 +28,7 @@ export default function GradeGlowLogo({
   size = "md",
   tone = "light",
   appIconId = "default",
+  appearance = "auto",
   className = "",
   ...props
 }: GradeGlowLogoProps) {
@@ -35,14 +37,15 @@ export default function GradeGlowLogo({
 
   return (
     <div
+      data-logo-appearance={usesDefaultIcon ? appearance : undefined}
       aria-label={`${iconVisual.label} GradeGlow Logo`}
-      className={`gg-logo-icon relative flex shrink-0 items-center justify-center overflow-hidden font-black tracking-[-0.14em] ring-1 ${sizeClasses[size]} ${usesDefaultIcon ? toneClasses[tone] : iconVisual.shellClassName} ${className}`}
+      className={`gg-logo-icon ${usesDefaultIcon ? "gg-logo-adaptive" : ""} relative flex shrink-0 items-center justify-center overflow-hidden font-black tracking-[-0.14em] ring-1 ${sizeClasses[size]} ${usesDefaultIcon ? toneClasses[tone] : iconVisual.shellClassName} ${className}`}
       {...props}
     >
-      <div className={`absolute inset-0 ${iconVisual.glowClassName}`} />
+      <div className={`gg-logo-glow absolute inset-0 ${iconVisual.glowClassName}`} />
       <span className={`relative translate-x-[-0.04em] ${usesDefaultIcon ? "" : iconVisual.glyphClassName}`}>G</span>
       <span className={`relative translate-x-[-0.12em] ${usesDefaultIcon ? "" : iconVisual.glyphClassName}`}>G</span>
-      <span className={`absolute right-[18%] top-[18%] text-[0.52em] leading-none drop-shadow-sm ${iconVisual.sparkleClassName}`}>
+      <span className={`gg-logo-sparkle absolute right-[18%] top-[18%] text-[0.52em] leading-none drop-shadow-sm ${iconVisual.sparkleClassName}`}>
         ✦
       </span>
     </div>

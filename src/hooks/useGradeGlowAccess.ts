@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../lib/firebase";
 import { DEFAULT_USER_PLAN, getPlanLimits, mergeEntitlementSources } from "../lib/gradeglowAccess";
+import { DEMO_PLAN_EVENT, getDemoPlan } from "../lib/guestDemo";
 import type { AppUser, GradeGlowEntitlement } from "../types";
 
 const ENTITLEMENTS_COLLECTION = "entitlements";
@@ -37,6 +38,17 @@ export function useGradeGlowAccess(user: AppUser) {
   const [message, setMessage] = useState("Free Plan aktiv");
 
   useEffect(() => {
+    if (user.provider === "demo") {
+      const update = () => {
+        const plan = getDemoPlan();
+        setEntitlement({ ...defaultEntitlement, plan, storedPlan: plan, premiumSource: "demo" });
+        setStatus("local");
+        setMessage(`${plan === "premium" ? "Pro" : "Basic"} · Probezugang`);
+      };
+      update();
+      window.addEventListener(DEMO_PLAN_EVENT, update);
+      return () => window.removeEventListener(DEMO_PLAN_EVENT, update);
+    }
     if (user.provider !== "firebase" || !isFirebaseConfigured || !db) {
       setEntitlement(defaultEntitlement);
       setStatus("local");

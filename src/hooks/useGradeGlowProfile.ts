@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../lib/firebase";
+import { readCachedAppearance } from "../lib/appearance";
 import { validPageThemeIds } from "../lib/gradeglowThemes";
 import type { AccentColor, AppIconId, AppUser, GradeGlowFeatureId, GradeGlowProfile, PageThemeId, StartMode, ThemeMode } from "../types";
 
@@ -195,6 +196,7 @@ const migrateProfile = (
     activeAvatarFrameId: getStringValue(profileObject.activeAvatarFrameId),
     activeProfileBannerId: getStringValue(profileObject.activeProfileBannerId),
     activeAppIconId: getAppIconId(profileObject.activeAppIconId),
+    logoAppearance: profileObject.logoAppearance === "light" || profileObject.logoAppearance === "dark" || profileObject.logoAppearance === "rose" ? profileObject.logoAppearance : "auto",
     activePageThemeId: getPageThemeId(profileObject.activePageThemeId),
     themeMode: getThemeMode(profileObject.themeMode),
     accentColor: getAccentColor(profileObject.accentColor),
@@ -240,15 +242,21 @@ export function useGradeGlowProfile(user: AppUser) {
       activeAvatarFrameId: "",
       activeProfileBannerId: "",
       activeAppIconId: "default",
+      logoAppearance: "auto",
       activePageThemeId: "default",
-      themeMode: "system",
+      themeMode: readCachedAppearance().themeMode,
       accentColor: "violet",
       enabledFeatureIds: [...DEFAULT_ENABLED_FEATURE_IDS],
     }),
     [fallbackDisplayName]
   );
 
-  const [profile, setProfile] = useState<GradeGlowProfile>(defaultProfile);
+  const [profile, setProfile] = useState<GradeGlowProfile>(() => {
+    try {
+      const cached = localStorage.getItem(storageKey);
+      return cached ? migrateProfile(JSON.parse(cached), fallbackDisplayName) : defaultProfile;
+    } catch { return defaultProfile; }
+  });
   const [isLoaded, setIsLoaded] = useState(false);
   const lastStableProfileRef = useRef<GradeGlowProfile>(defaultProfile);
   const [syncStatus, setSyncStatus] = useState<ProfileSyncStatus>("local");

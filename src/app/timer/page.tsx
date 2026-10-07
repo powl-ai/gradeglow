@@ -1,5 +1,4 @@
-import GradeGlowApp from "../../components/GradeGlowApp";
 
 export default function TimerRoute() {
-  return <GradeGlowApp page="timer" />;
+  return null; // The persistent root host renders this view.
 }

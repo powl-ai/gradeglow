@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { ChangeEvent, CSSProperties, FormEvent } from "react";
+import type { ChangeEvent, CSSProperties, FormEvent, ReactNode } from "react";
+import { useDocumentAppearance } from "../hooks/useDocumentAppearance";
 import GlowRewardsPanel from "./GlowRewardsPanel";
 import GradeGlowInsights from "./GradeGlowInsights";
 import GradeGlowLogo from "./GradeGlowLogo";
@@ -83,6 +84,7 @@ export type DashboardPage =
 type GradeGlowDashboardProps = {
   user: AppUser;
   onLogout: () => Promise<void>;
+  demoControls?: ReactNode;
   page?: DashboardPage;
 };
 
@@ -381,6 +383,7 @@ const getDateKey = (date: Date) => {
 export default function GradeGlowDashboard({
   user,
   onLogout,
+  demoControls,
   page = "overview",
 }: GradeGlowDashboardProps) {
   const [isMobileDockMounted, setIsMobileDockMounted] = useState(false);
@@ -461,6 +464,7 @@ export default function GradeGlowDashboard({
   const themeClassName = getThemeClassName(profile.themeMode);
   const effectivePageThemeId = getEffectivePageThemeId(profile.activePageThemeId, limits.premiumThemes);
   const themeStyle = getPageThemeStyle(effectivePageThemeId);
+  useDocumentAppearance(profile.themeMode, effectivePageThemeId, isProfileLoaded);
   const enabledFeatureIds = new Set(profile.enabledFeatureIds);
   const isRewardsEnabled = enabledFeatureIds.has("rewards");
   const todayKey = getTodayDateKey();
@@ -1704,7 +1708,7 @@ export default function GradeGlowDashboard({
     return (
       <main className={`gg-themed ${themeClassName} flex min-h-screen items-center justify-center bg-[#fbf7ff] px-4 text-slate-950`} data-accent={profile.accentColor} data-page-theme={effectivePageThemeId} style={themeStyle}>
         <div className="max-w-md rounded-[2rem] bg-white/95 p-6 text-center shadow-sm ring-1 ring-violet-100 backdrop-blur">
-          <GradeGlowLogo size="md" appIconId={profile.activeAppIconId} />
+          <GradeGlowLogo size="md" appIconId={profile.activeAppIconId} appearance={profile.logoAppearance} />
           <p className="mt-5 text-sm font-bold text-violet-700">{profileSyncMessage}</p>
           <h1 className="mt-2 text-2xl font-black tracking-tight">Deine Daten werden geladen…</h1>
           <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
@@ -2003,7 +2007,7 @@ export default function GradeGlowDashboard({
                     aria-label="Menü öffnen"
                     title="Menü öffnen"
                   >
-                    <GradeGlowLogo size="md" tone="light" appIconId={profile.activeAppIconId} />
+                    <GradeGlowLogo size="md" tone="light" appIconId={profile.activeAppIconId} appearance={profile.logoAppearance} />
                     <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[0.68rem] font-black leading-none text-slate-950 shadow-md ring-1 ring-white/50 transition group-hover:scale-105">
                       ☰
                     </span>
@@ -2091,6 +2095,8 @@ export default function GradeGlowDashboard({
           </div>
         </header>
 
+        {demoControls}
+
 
 
 
@@ -2116,7 +2122,7 @@ export default function GradeGlowDashboard({
               <p className="text-xs font-black uppercase tracking-[0.22em] text-fuchsia-200">Setup abgeschlossen</p>
               <h2 className="mt-2 text-2xl font-black tracking-tight">Willkommen bei GradeGlow.</h2>
               <p className="mt-2 text-sm font-semibold leading-6 text-slate-300">
-                Dein Profil und deine Feature-Auswahl sind gespeichert. Lege jetzt Module oder Prüfungen an und teste danach Export, Study Circle und Löschung einmal mit einem Testaccount.
+                Dein Profil ist bereit. Lege jetzt dein erstes Modul oder deine nächste Prüfung an.
               </p>
             </div>
             <button
@@ -2222,7 +2228,7 @@ export default function GradeGlowDashboard({
           <>
             <section className="gg-mobile-home lg:hidden">
               <div className="gg-mobile-home-logo-row">
-                <GradeGlowLogo size="sm" appIconId={profile.activeAppIconId} />
+                <GradeGlowLogo size="sm" appIconId={profile.activeAppIconId} appearance={profile.logoAppearance} />
                 <div>
                   <p className="gg-mobile-kicker">GradeGlow</p>
                   <strong>Dein Lernhub</strong>
@@ -2263,7 +2269,7 @@ export default function GradeGlowDashboard({
 
             </section>
 
-            <div className="hidden lg:block">
+            {isBetaDiagnosticsUser && <div className="hidden lg:block">
               <BetaLaunchPanel
                 user={user}
                 moduleCount={modules.length}
@@ -2274,7 +2280,7 @@ export default function GradeGlowDashboard({
                 cloudMessages={betaCloudMessages}
                 canOpenDiagnostics={isBetaDiagnosticsUser}
               />
-            </div>
+            </div>}
 
             <details className="gg-mobile-collapsible gg-mobile-secondary-panel lg:hidden hidden">
               <summary>
@@ -2395,7 +2401,7 @@ export default function GradeGlowDashboard({
               </div>
             </details>
 
-            <div className="hidden lg:block"><BetaNoticeCard compact /></div>
+            {isBetaDiagnosticsUser && <div className="hidden lg:block"><BetaNoticeCard compact /></div>}
 
             <section className="hidden rounded-3xl bg-white/85 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6 lg:block">
               <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
@@ -3878,7 +3884,7 @@ export default function GradeGlowDashboard({
         <div className="gg-mobile-scroll-end-spacer lg:hidden" aria-hidden="true" />
 
         <footer className="hidden flex-col items-center justify-between gap-3 pb-2 text-xs font-bold text-slate-400 sm:flex-row lg:flex">
-          <span>GradeGlow Beta 2026</span>
+          <span>GradeGlow</span>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link href="/feedback" className="transition hover:text-violet-700">Feedback</Link>
             {isBetaDiagnosticsUser && <Link href="/diagnostics" className="transition hover:text-violet-700">Diagnose</Link>}
@@ -3890,7 +3896,7 @@ export default function GradeGlowDashboard({
       </div>
 
       {isMobileDockMounted && createPortal(
-        <div className="gg-mobile-tabbar-shell lg:hidden">
+        <div className={`gg-mobile-tabbar-shell gg-themed ${themeClassName} lg:hidden`} data-accent={profile.accentColor} data-page-theme={effectivePageThemeId} style={themeStyle}>
           <nav className="gg-mobile-tabbar" aria-label="GradeGlow App Navigation">
             {visibleMobileTabItems.map((item) => {
               const isActive = item.match.includes(page);
@@ -3899,6 +3905,8 @@ export default function GradeGlowDashboard({
                   key={`${item.href}-${item.label}`}
                   href={item.href}
                   aria-label={item.label}
+                  aria-current={isActive ? "page" : undefined}
+                  prefetch={true}
                   title={item.label}
                   className={`${isActive ? "is-active" : ""} ${item.tone === "primary" ? "is-primary" : ""}`.trim()}
                 >

@@ -1,5 +1,4 @@
-import GradeGlowApp from "../../components/GradeGlowApp";
 
 export default function FriendsRoute() {
-  return <GradeGlowApp page="friends" />;
+  return null; // The persistent root host renders this view.
 }

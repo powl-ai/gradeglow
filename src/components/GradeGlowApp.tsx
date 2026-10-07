@@ -1,5 +1,6 @@
 "use client";
 
+import DemoAccessBar from "./DemoAccessBar";
 import AuthGate from "./AuthGate";
 import GradeGlowDashboard from "./GradeGlowDashboard";
 import ClientDiagnosticsLogger from "./ClientDiagnosticsLogger";
@@ -12,9 +13,9 @@ type GradeGlowAppProps = {
 export default function GradeGlowApp({ page = "overview" }: GradeGlowAppProps) {
   return (
     <AuthGate>
-      {({ user, logout }) => (
+      {({ user, logout, startRegistration }) => (
         <ClientDiagnosticsLogger user={user}>
-          <GradeGlowDashboard user={user} onLogout={logout} page={page} />
+          <GradeGlowDashboard key={user.uid} user={user} onLogout={logout} page={page} demoControls={user.provider === "demo" ? <DemoAccessBar onRegister={startRegistration} onExit={logout} /> : undefined} />
         </ClientDiagnosticsLogger>
       )}
     </AuthGate>

@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import GradeGlowAppHost from "../components/GradeGlowAppHost";
+import { APPEARANCE_BOOTSTRAP_SCRIPT } from "../lib/appearance";
 import PwaRegister from "../components/PwaRegister";
 import AdSenseScript from "../components/AdSenseScript";
 import "./globals.css";
@@ -18,7 +20,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "GradeGlow",
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
   },
   formatDetection: {
     telephone: false,
@@ -42,11 +44,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="de" className="h-full antialiased">
+    <html lang="de" className="h-full antialiased" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOTSTRAP_SCRIPT }} /></head>
       <body className="min-h-full flex flex-col">
         <PwaRegister />
         <AdSenseScript />
-        {children}
+        <GradeGlowAppHost>{children}</GradeGlowAppHost>
         <Analytics />
         <SpeedInsights />
       </body>

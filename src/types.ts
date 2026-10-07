@@ -3,10 +3,12 @@ export type AppUser = {
   email: string | null;
   displayName: string | null;
   photoURL?: string | null;
-  provider: "local" | "firebase";
+  provider: "local" | "firebase" | "demo";
 };
 
 export type StartMode = "manual" | "stupo" | "template" | "demo";
+
+export type LogoAppearance = "auto" | "light" | "dark" | "rose";
 
 export type ThemeMode = "system" | "light" | "dark";
 
@@ -89,6 +91,7 @@ export type GradeGlowProfile = {
   activeAvatarFrameId: string;
   activeProfileBannerId: string;
   activeAppIconId: AppIconId;
+  logoAppearance: LogoAppearance;
   activePageThemeId: PageThemeId;
   themeMode: ThemeMode;
   accentColor: AccentColor;

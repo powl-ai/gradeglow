@@ -1,5 +1,4 @@
-import GradeGlowApp from "../../components/GradeGlowApp";
 
 export default function ExamsRoute() {
-  return <GradeGlowApp page="exams" />;
+  return null; // The persistent root host renders this view.
 }

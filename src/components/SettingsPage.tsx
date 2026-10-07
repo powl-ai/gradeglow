@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useDocumentAppearance } from "../hooks/useDocumentAppearance";
+import { LOGO_APPEARANCES } from "../lib/appearance";
 import GradeGlowLogo from "./GradeGlowLogo";
 import NotificationSettingsCard from "./NotificationSettingsCard";
 import BetaNoticeCard from "./BetaNoticeCard";
@@ -24,7 +26,7 @@ import { STREAK_BADGES, getAvatarFrameWrapperClassName, getProfileBannerClassNam
 import { getUserModulesStorageKey } from "../lib/gradeglowModules";
 import { getUserExamsStorageKey } from "../lib/gradeglowExams";
 import { createDeleteRequest } from "../lib/feedback";
-import type { AccentColor, AppUser, GradeGlowFeatureId, GradeGlowProfile, PageThemeId, StartMode, ThemeMode } from "../types";
+import type { AccentColor, AppIconId, LogoAppearance, AppUser, GradeGlowFeatureId, GradeGlowProfile, PageThemeId, StartMode, ThemeMode } from "../types";
 
 type SettingsPageProps = {
   user: AppUser;
@@ -275,7 +277,9 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   const [currentSemester, setCurrentSemester] = useState("1");
   const [targetEcts, setTargetEcts] = useState(String(DEFAULT_TARGET_ECTS));
   const [preferredStartMode, setPreferredStartMode] = useState<StartMode>("manual");
-  const [themeMode, setThemeMode] = useState<ThemeMode>("system");
+  const [themeMode, setThemeMode] = useState<ThemeMode>(profile.themeMode);
+  const [logoAppearance, setLogoAppearance] = useState<LogoAppearance>(profile.logoAppearance);
+  const [activeAppIconId, setActiveAppIconId] = useState<AppIconId>(profile.activeAppIconId);
   const [accentColor, setAccentColor] = useState<AccentColor>("violet");
   const [activePageThemeId, setActivePageThemeId] = useState<PageThemeId>("default");
   const [avatarDataUrl, setAvatarDataUrl] = useState("");
@@ -305,6 +309,8 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
     setTargetEcts(formatNumber(profile.targetEcts));
     setPreferredStartMode(profile.preferredStartMode || "manual");
     setThemeMode(profile.themeMode || "system");
+    setLogoAppearance(profile.logoAppearance);
+    setActiveAppIconId(profile.activeAppIconId);
     setAccentColor(profile.accentColor || "violet");
     setActivePageThemeId(profile.activePageThemeId || "default");
     setAvatarDataUrl(profile.avatarDataUrl || "");
@@ -340,13 +346,15 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
       targetEcts: Number.isFinite(parsedTargetEcts) ? parsedTargetEcts : profile.targetEcts,
       preferredStartMode,
       themeMode,
+      logoAppearance,
+      activeAppIconId,
       accentColor,
       activePageThemeId: limits.premiumThemes ? activePageThemeId : "default",
       onboardingCompleted: true,
       avatarDataUrl,
       enabledFeatureIds: Array.from(new Set(enabledFeatureIds)),
     };
-  }, [accentColor, activePageThemeId, avatarDataUrl, currentSemester, degreeProgram, degreeType, displayName, enabledFeatureIds, limits.premiumThemes, preferredStartMode, profile, targetEcts, themeMode, university]);
+  }, [logoAppearance, activeAppIconId, accentColor, activePageThemeId, avatarDataUrl, currentSemester, degreeProgram, degreeType, displayName, enabledFeatureIds, limits.premiumThemes, preferredStartMode, profile, targetEcts, themeMode, university]);
 
   const hasChanges = useMemo(() => {
     return JSON.stringify(nextProfile) !== JSON.stringify({ ...profile, onboardingCompleted: true });
@@ -610,6 +618,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   const themeClassName = getThemeClassName(themeMode);
   const effectivePageThemeId = getEffectivePageThemeId(activePageThemeId, limits.premiumThemes);
   const themeStyle = getPageThemeStyle(effectivePageThemeId);
+  useDocumentAppearance(themeMode, effectivePageThemeId, isProfileLoaded);
   const userLabel = profile.displayName || user.displayName || user.email || "GradeGlow User";
   const userInitial = userLabel.trim().charAt(0).toUpperCase() || "G";
   const avatarSource = avatarDataUrl || profile.avatarDataUrl || user.photoURL || "";
@@ -698,7 +707,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
             <div className="relative flex flex-col gap-7 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-3xl">
                 <div className="mb-5 flex flex-wrap items-center gap-3">
-                  <GradeGlowLogo size="md" tone="light" appIconId={profile.activeAppIconId} />
+                  <GradeGlowLogo size="md" tone="light" appIconId={activeAppIconId} appearance={logoAppearance} />
                   <div className={`rounded-full px-3 py-1.5 text-xs font-bold ring-1 ${syncStyle}`}>
                     {profileSyncMessage}
                   </div>
@@ -930,6 +939,22 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                       );
                     })}
                   </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <span className="mb-2 block text-sm font-bold text-slate-700">GradeGlow-Logo</span>
+                  <div className="gg-logo-options" role="group" aria-label="Logo-Design auswählen">
+                    {LOGO_APPEARANCES.map((option) => (
+                      <button key={option.value} type="button" aria-pressed={activeAppIconId === "default" && logoAppearance === option.value} onClick={() => {
+                        setLogoAppearance(option.value);
+                        setActiveAppIconId("default");
+                      }}>
+                        <GradeGlowLogo size="sm" appearance={option.value} />
+                        <span>{option.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">Automatisch folgt deinem Design-Modus. Änderungen über „Profil speichern“ übernehmen.</p>
                 </div>
 
                 <div className="md:col-span-2">

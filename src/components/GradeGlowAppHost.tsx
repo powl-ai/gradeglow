@@ -32,23 +32,27 @@ export default function GradeGlowAppHost({ children }: { children: ReactNode }) 
   const pathname = usePathname();
   const scrollPositions = useRef(new Map<string, number>());
   const currentPath = useRef(pathname);
+  const shell = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const record = () => scrollPositions.current.set(currentPath.current, window.scrollY);
-    window.addEventListener("scroll", record, { passive: true });
-    return () => window.removeEventListener("scroll", record);
+    const record = (event: Event) => {
+      const main = shell.current?.querySelector("main");
+      if (main && event.target === main) scrollPositions.current.set(currentPath.current, main.scrollTop);
+    };
+    document.addEventListener("scroll", record, { passive: true, capture: true });
+    return () => document.removeEventListener("scroll", record, true);
   }, []);
   useLayoutEffect(() => {
     currentPath.current = pathname;
     // Our persistent view is outside Next's changing page node, so it owns
     // scroll restoration too. New tabs start at the top; returning tabs remember.
-    if (!window.location.hash) window.scrollTo({ top: scrollPositions.current.get(pathname) ?? 0, behavior: "instant" });
+    if (!window.location.hash) shell.current?.querySelector("main")?.scrollTo({ top: scrollPositions.current.get(pathname) ?? 0, behavior: "instant" });
   }, [pathname]);
   const page = dashboardRoutes[pathname];
   if (!accountRoutes.has(pathname)) return children;
 
   return (
     <AuthGate>
-      {() => <><MobileAppHeader pathname={pathname} />{page ? <GradeGlowApp page={page} /> : children}</>}
+      {() => <div ref={shell} className="gg-native-layout"><MobileAppHeader pathname={pathname} />{page ? <GradeGlowApp page={page} /> : children}</div>}
     </AuthGate>
   );
 }

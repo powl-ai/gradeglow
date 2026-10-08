@@ -3,7 +3,14 @@
   --gg-safe-top: env(safe-area-inset-top, 0px);
   --gg-safe-bottom: env(safe-area-inset-bottom, 0px);
   --gg-header-height: 3.5rem;
+  --gg-nav-height: 4rem;
 }
+/* The document never scrolls; each route's main owns its content viewport. */
+html, body { height: 100%; min-height: 0; overflow: hidden !important; overscroll-behavior: none; }
+body { height: 100dvh; padding: 0 !important; touch-action: manipulation; }
+.gg-native-layout { display: flex; flex-direction: column; flex: 1; height: 100dvh; min-height: 0; overflow: hidden; }
+html body main { flex: 1; height: 100%; min-height: 0 !important; overflow-x: hidden; overflow-y: auto; overscroll-behavior: none; touch-action: pan-y pinch-zoom; }
+html .gg-auth-page { min-height: 0; }
 .gg-app-header { display: none; }
 .gg-themed { --gg-ui-accent: var(--gg-accent-700, #6d28d9); }
 html[data-color-mode="dark"] .gg-themed { --gg-ui-accent: var(--gg-accent-200, #ddd6fe); }
@@ -105,7 +112,7 @@ html[data-color-mode="light"] .gg-home-feed .gg-feed-primary { background: #6240
 .gg-study-calendar { min-width: 0; border: 1px solid var(--gg-border); border-radius: 1.35rem; background: var(--gg-surface); overflow: hidden; }
 .gg-study-calendar button { cursor: pointer; }
 .gg-study-calendar button:not(.gg-calendar-event) { min-height: 2.75rem !important; }
-.gg-calendar-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .85rem 1rem .35rem; }
+.gg-calendar-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .35rem .75rem .15rem; }
 .gg-study-calendar .gg-calendar-month-title { display: flex; align-items: baseline; gap: .45rem; min-height: 2.75rem; color: var(--gg-app-text); font-size: 1.3rem !important; font-weight: 750; text-transform: capitalize; letter-spacing: -.025em; }
 .gg-calendar-month-title span { font-size: .75rem; font-weight: 500; color: var(--gg-muted); }
 .gg-calendar-toolbar-actions { display: flex; gap: .25rem; }
@@ -113,7 +120,7 @@ html[data-color-mode="light"] .gg-home-feed .gg-feed-primary { background: #6240
 .gg-calendar-toolbar-actions button:last-child { font-size: 1.8rem !important; font-weight: 400; background: var(--gg-surface-soft); }
 .gg-calendar-add-options { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; padding: .4rem 1rem .8rem; }
 .gg-calendar-add-options button { min-height: 2.75rem; padding: .5rem; border: 1px solid var(--gg-border); color: var(--gg-ui-accent); font-size: .78rem; font-weight: 650; border-radius: .8rem; }
-.gg-calendar-view-row { display: flex; align-items: center; gap: .5rem; padding: .5rem 1rem .8rem; }
+.gg-calendar-view-row { display: flex; align-items: center; gap: .5rem; padding: .2rem .75rem .35rem; }
 .gg-calendar-view-switch { flex: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--gg-surface-soft); border-radius: .75rem; padding: .2rem; min-width: 0; }
 .gg-calendar-view-switch button { border-radius: .55rem; color: var(--gg-muted); font-size: .8rem !important; font-weight: 600; min-height: 2.5rem; }
 .gg-calendar-view-switch button[aria-pressed="true"] { background: var(--gg-ui-accent); color: #261637; }
@@ -135,8 +142,18 @@ html[data-color-mode="light"] .gg-calendar-date-grid button.is-selected strong {
 .gg-calendar-day-heading { display: grid; grid-template-columns: 2.75rem 1fr 2.75rem; gap: .25rem; align-items: center; padding: .35rem .65rem; border-top: 1px solid var(--gg-border); border-bottom: 1px solid var(--gg-border); }
 .gg-calendar-day-heading h2 { font-size: .86rem; text-align: center; font-weight: 650; color: var(--gg-app-text); }
 .gg-calendar-day-heading button { min-height: 2.75rem; color: var(--gg-ui-accent); font-size: 1.6rem !important; }
-.gg-calendar-timeline-viewport { height: min(52dvh, 32rem); min-height: 13rem; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; position: relative; }
-.gg-calendar-timeline { position: relative; height: 1536px; margin-top: .65rem; margin-bottom: .65rem; }
+.gg-calendar-date-navigation.is-day { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; grid-template-rows: auto auto; padding: .15rem .25rem .3rem; border-bottom: 1px solid var(--gg-border); }
+.gg-calendar-date-navigation.is-day .gg-calendar-date-picker { grid-column: 2; grid-row: 2; padding: 0; }
+.gg-calendar-date-navigation.is-day .gg-calendar-day-heading { display: contents; }
+.gg-calendar-date-navigation.is-day h2 { grid-column: 1 / -1; grid-row: 1; padding: .15rem; }
+.gg-calendar-date-navigation.is-day .gg-calendar-day-heading button { grid-row: 2; align-self: center; }
+.gg-calendar-date-navigation.is-day .gg-calendar-day-heading button:first-child { grid-column: 1; }
+.gg-calendar-date-navigation.is-day .gg-calendar-day-heading button:last-child { grid-column: 3; }
+.gg-calendar-date-navigation.is-day .gg-calendar-weekday-labels span { font-size: .62rem; padding: .15rem 0; }
+.gg-calendar-date-navigation.is-day .gg-calendar-date-grid button { gap: .1rem; }
+.gg-calendar-date-navigation.is-day .gg-calendar-date-grid button strong { width: 1.8rem; height: 1.8rem; font-size: .9rem; }
+.gg-calendar-timeline-viewport { position: relative; overflow: visible; }
+.gg-calendar-timeline { position: relative; margin-top: .65rem; margin-bottom: .65rem; }
 .gg-calendar-hour { position: absolute; width: 100%; display: flex; align-items: baseline; gap: .5rem; padding: 0 .5rem; }
 .gg-calendar-hour > span { width: 2.6rem; flex: 0 0 2.6rem; font-size: .65rem; line-height: 1; color: var(--gg-muted); transform: translateY(-.35rem); text-align: right; }
 .gg-calendar-hour > i { height: 1px; background: var(--gg-border); flex: 1; }
@@ -163,7 +180,7 @@ html[data-color-mode="dark"] .gg-calendar-event.is-done { background: #213d38; c
 .gg-calendar-empty { padding: 1rem; color: var(--gg-muted); font-size: .8rem; border-top: 1px solid var(--gg-border); }
 .gg-calendar-key { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .6rem; border-top: 1px solid var(--gg-border); padding: .85rem 1rem; color: var(--gg-muted); font-size: .65rem; }
 .gg-calendar-key span { display: flex; align-items: center; gap: .35rem; }
-.gg-calendar-week-agenda { max-height: 32rem; overflow-y: auto; overscroll-behavior: contain; padding: .5rem 1rem; }
+.gg-calendar-week-agenda { padding: .5rem 1rem; }
 .gg-calendar-agenda-day { display: grid; grid-template-columns: 2.5rem minmax(0, 1fr); gap: .8rem; padding: .75rem 0; border-bottom: 1px solid var(--gg-border); }
 .gg-calendar-agenda-day > button { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: .25rem; color: var(--gg-muted); min-height: 2.75rem; }
 .gg-calendar-agenda-day > button strong { font-size: 1.2rem; color: var(--gg-app-text); }
@@ -191,25 +208,29 @@ html .gg-demo-bar { display: block; padding: .2rem .85rem; border-radius: .85rem
     height: calc(var(--gg-safe-top) + var(--gg-header-height)); padding-top: var(--gg-safe-top);
     background: var(--gg-document-bg, #f4fbf7); border-bottom: 1px solid rgb(127 127 155 / .16);
     color: var(--foreground); isolation: isolate;
+    opacity: 1 !important; filter: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    background: var(--gg-document-bg, #f4fbf7) !important; transform: none !important;
   }
+  .gg-app-header * { filter: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; text-shadow: none !important; }
   .gg-app-header-inner { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; align-items: center; gap: .65rem; height: var(--gg-header-height); padding-inline: max(.75rem, env(safe-area-inset-left, 0px)) max(.75rem, env(safe-area-inset-right, 0px)); max-width: 64rem; margin-inline: auto; }
   .gg-app-header h1 { text-align: center; font-size: 1.08rem; font-weight: 720; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; letter-spacing: -.025em; }
   .gg-app-header h1.gg-header-wordmark { font-size: 1.28rem; font-weight: 800; letter-spacing: -.055em; }
   .gg-header-action { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 50%; color: inherit; text-decoration: none; }
   .gg-header-action svg { width: 1.35rem; height: 1.35rem; }
   .gg-header-action:hover { background: rgb(127 127 155 / .12); }
-  body:has(.gg-app-header) main.gg-themed { padding-top: calc(var(--gg-header-height) + var(--gg-safe-top)) !important; }
-  html body:has(.gg-app-header) .gg-app-shell { padding-top: 1rem !important; padding-inline: max(.9rem, env(safe-area-inset-left, 0px)) max(.9rem, env(safe-area-inset-right, 0px)) !important; padding-bottom: calc(var(--gg-safe-bottom) + 6rem) !important; gap: 1rem !important; overflow-x: visible !important; }
-  html body:has(.gg-app-header) main.gg-themed > .mx-auto:not(.gg-app-shell) { padding-top: 1rem !important; padding-bottom: calc(var(--gg-safe-bottom) + 2rem) !important; }
+  html .gg-native-layout > main { height: auto; margin-top: calc(var(--gg-header-height) + var(--gg-safe-top)); padding-top: 0 !important; padding-bottom: 1rem !important; }
+  html body:has(.gg-mobile-tabbar-shell) .gg-native-layout > main { padding-bottom: calc(var(--gg-nav-height) + var(--gg-safe-bottom) + 16px) !important; }
+  html body:has(.gg-app-header) .gg-app-shell { padding-top: 1rem !important; padding-inline: max(.9rem, env(safe-area-inset-left, 0px)) max(.9rem, env(safe-area-inset-right, 0px)) !important; padding-bottom: 0 !important; gap: 1rem !important; overflow-x: visible !important; }
+  html body:has(.gg-app-header) main.gg-themed > .mx-auto:not(.gg-app-shell) { padding-top: 1rem !important; padding-bottom: 0 !important; }
   html .gg-mobile-scroll-end-spacer { display: none !important; }
-  html .gg-mobile-tabbar-shell { z-index: 60 !important; bottom: max(.55rem, var(--gg-safe-bottom)) !important; }
-  html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar { width: min(100%, 30rem) !important; min-height: 4rem !important; padding: .3rem !important; border-radius: 1.5rem !important; }
+  html .gg-mobile-tabbar-shell { z-index: 60 !important; bottom: var(--gg-safe-bottom) !important; }
+  html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar { width: min(100%, 30rem) !important; height: var(--gg-nav-height) !important; min-height: var(--gg-nav-height) !important; padding: .3rem !important; border-radius: 1.5rem !important; }
   html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a,
   html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a.is-primary { display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: .25rem; min-width: 0; height: 3.4rem !important; min-height: 3.4rem !important; padding: .3rem .15rem !important; border-radius: 1.15rem !important; }
   html .gg-mobile-tabbar-shell .gg-mobile-tabbar a::after { display: none !important; }
-  html .gg-mobile-tabbar-shell .gg-mobile-tab-icon { height: 1.3rem !important; width: 1.3rem !important; display: grid !important; place-items: center; }
+  html .gg-mobile-tabbar-shell .gg-mobile-tabbar a .gg-mobile-tab-icon { height: 1.3rem !important; width: 1.3rem !important; display: grid !important; place-items: center; flex: 0 0 1.3rem; position: static !important; margin: 0 !important; padding: 0 !important; transform: none !important; }
   html .gg-mobile-tabbar-shell .gg-mobile-tab-icon svg { width: 1.3rem; height: 1.3rem; }
-  html .gg-mobile-tabbar-shell .gg-mobile-tabbar .gg-mobile-tab-label { display: block !important; position: static; height: auto; width: auto; overflow: visible; clip: auto; font-size: .65rem !important; font-weight: 650; line-height: 1.15; }
+  html .gg-mobile-tabbar-shell .gg-mobile-tabbar .gg-mobile-tab-label { display: block !important; position: static !important; height: .8rem !important; width: auto; margin: 0 !important; padding: 0 !important; transform: none !important; overflow: visible; clip: auto; font-size: .65rem !important; font-weight: 650; line-height: .8rem !important; }
   html .gg-mobile-floating-feedback, html .gg-mobile-top-blocker, html .gg-mobile-bottom-blocker { display: none !important; }
   html .gg-profile-card { background: var(--gg-surface) !important; padding: 1rem; border-radius: 1.35rem; }
   html .gg-profile-hero { padding: 1.1rem; border-radius: 1.4rem; }
@@ -249,3 +270,30 @@ html .gg-demo-bar { display: block; padding: .2rem .85rem; border-radius: .85rem
 @media (prefers-reduced-motion: reduce) {
   .gg-app-header *, .gg-home-feed *, .gg-study-calendar *, .gg-app-dialog * { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
 }
+
+/* One trend block, with no card surfaces inside it. */
+.gg-learning-trend { margin-top: 1rem; padding: 1rem; border: 1px solid var(--gg-border); border-radius: 1.35rem; background: var(--gg-surface); color: var(--gg-app-text); }
+.gg-learning-trend-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem; }
+.gg-learning-trend-heading h3 { font-size: 1rem; font-weight: 700; }
+.gg-learning-trend-switch { display: flex; flex-wrap: wrap; gap: .15rem; }
+.gg-learning-trend-switch button { min-height: 2.75rem; padding: .4rem .55rem; border-radius: .6rem; font-size: .72rem; font-weight: 650; color: var(--gg-muted); }
+.gg-learning-trend-switch button[aria-pressed="true"] { color: var(--gg-ui-accent); background: color-mix(in srgb, var(--gg-accent-500, #8b5cf6) 14%, var(--gg-surface)); }
+.gg-learning-trend-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: center; gap: .5rem; margin-top: .9rem; }
+.gg-learning-trend-summary > div > span { display: block; color: var(--gg-muted); font-size: .72rem; }
+.gg-learning-trend-summary strong { display: block; margin-top: .2rem; font-size: 1.2rem; font-weight: 750; }
+.gg-learning-trend .gg-learning-trend-delta { display: inline-block; padding: .25rem .45rem; border-radius: 1rem; background: var(--gg-accent-100, #ede9fe); color: var(--gg-accent-700, #6d28d9); white-space: nowrap; font-size: .68rem; font-weight: 650; }
+.gg-learning-trend-caption { margin-top: .75rem; font-size: .78rem; line-height: 1.45; color: var(--gg-muted); }
+.gg-learning-trend-chart-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem; margin-top: 1rem; }
+.gg-learning-trend-chart-heading > p { color: var(--gg-muted); font-size: .7rem; }
+.gg-learning-trend-bars { display: grid; gap: var(--gg-chart-gap); height: 9rem; margin-top: .6rem; padding-top: .3rem; border-bottom: 1px solid var(--gg-border); }
+.gg-learning-trend-bars > div { display: flex; align-items: flex-end; justify-content: center; min-width: 0; }
+.gg-learning-trend-bars i { display: block; width: 70%; max-width: 2rem; background: #ddd6fe; border-radius: .2rem .2rem 0 0; }
+.gg-learning-trend-bars i.is-current { background: var(--gg-accent-500, #8b5cf6); }
+.gg-learning-trend-labels { display: grid; gap: var(--gg-chart-gap); margin-top: .4rem; }
+.gg-learning-trend-labels span { position: relative; display: flex; justify-content: center; white-space: nowrap; color: var(--gg-muted); font-size: .58rem; }
+.gg-learning-trend-empty { margin-top: 1.5rem; }
+.gg-learning-trend-empty > div { border-top: 1px solid var(--gg-border); }
+.gg-learning-trend-empty p { padding-top: .75rem; font-size: .78rem; line-height: 1.45; color: var(--gg-muted); }
+
+.gg-learning-trend-labels span:first-child { justify-content: flex-start; }
+.gg-learning-trend-labels span:last-child { justify-content: flex-end; }

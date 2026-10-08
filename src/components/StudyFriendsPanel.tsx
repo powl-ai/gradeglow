@@ -671,10 +671,6 @@ export default function StudyFriendsPanel({
         <div className="rounded-[2rem] bg-white p-4 ring-1 ring-slate-200 sm:p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-sm font-bold text-violet-700">Study Circle</p>
-          <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
-            Freunde & Lernvergleich
-          </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
             Füge Freunde per Code hinzu und vergleiche Lernzeit, Top-Fächer und
             Wochenfortschritt. Geteilt werden nur freiwillige Lernstatistiken —

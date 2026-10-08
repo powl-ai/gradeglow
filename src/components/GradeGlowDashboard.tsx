@@ -1208,23 +1208,13 @@ export default function GradeGlowDashboard({
       map[session.dateKey] = (map[session.dateKey] ?? 0) + session.durationMinutes;
       return map;
     }, {});
-    const weeklyTrend = Array.from({ length: 12 }, (_, index) => {
-      const offset = index - 11;
+    const weeklyTrend = Array.from({ length: 52 }, (_, index) => {
+      const offset = index - 51;
       const start = addDaysLocal(thisWeekStart, offset * 7);
       const end = addDaysLocal(start, 7);
       return {
         dateKey: getDateKey(start),
         shortLabel: `${start.getDate()}.${start.getMonth() + 1}.`,
-        monthLabel: start.toLocaleDateString("de-DE", { month: "short" }).replace('.', ''),
-        minutes: sumMinutesBetween(start, end),
-      };
-    });
-    const monthlyTrend = Array.from({ length: 12 }, (_, index) => {
-      const start = new Date(now.getFullYear(), now.getMonth() - (11 - index), 1);
-      const end = new Date(start.getFullYear(), start.getMonth() + 1, 1);
-      return {
-        dateKey: getDateKey(start),
-        shortLabel: start.toLocaleDateString("de-DE", { month: "short" }).replace('.', ''),
         monthLabel: start.toLocaleDateString("de-DE", { month: "short" }).replace('.', ''),
         minutes: sumMinutesBetween(start, end),
       };
@@ -1285,7 +1275,6 @@ export default function GradeGlowDashboard({
       mostRecentSession,
       topSubjectRow,
       weeklyTrend,
-      monthlyTrend,
       learningCalendarDays,
       maxDailyMinutes: Math.max(...Object.values(minutesByDateKey), 0),
     };
@@ -1319,20 +1308,11 @@ export default function GradeGlowDashboard({
   } as const;
 
   const selectedProfileTrend = profileTrendMeta[profileTrendRange];
-  const selectedProfileChartPoints = profileChartRange === "year"
-    ? profileStudyStats.monthlyTrend
-    : profileStudyStats.weeklyTrend.slice(profileChartRange === "4w" ? -4 : -12);
+  const selectedProfileChartPoints = profileStudyStats.weeklyTrend.slice(profileChartRange === "4w" ? -4 : profileChartRange === "year" ? -52 : -12);
   const profileChartMaxMinutes = Math.max(...selectedProfileChartPoints.map((point) => point.minutes), 1);
-  const profileChartPolylinePoints = selectedProfileChartPoints
-    .map((point, index, points) => {
-      const x = points.length === 1 ? 50 : 4 + (index / (points.length - 1)) * 92;
-      const y = 78 - (point.minutes / profileChartMaxMinutes) * 58;
-      return `${x},${y}`;
-    })
-    .join(" ");
-  const profileChartAreaPoints = `4,78 ${profileChartPolylinePoints} 96,78`;
-  const profileChartHeadline = profileChartRange === "year" ? "Letzte 12 Monate" : profileChartRange === "4w" ? "Letzte 4 Wochen" : "Letzte 12 Wochen";
-  const profileChartCurrentMinutes = selectedProfileChartPoints[selectedProfileChartPoints.length - 1]?.minutes ?? 0;
+  const profileChartHasData = selectedProfileChartPoints.some((point) => point.minutes > 0);
+  const profileChartHeadline = profileChartRange === "year" ? "Letzte 52 Wochen" : profileChartRange === "4w" ? "Letzte 4 Wochen" : "Letzte 12 Wochen";
+  const profileTrendDelta = selectedProfileTrend.currentMinutes - selectedProfileTrend.previousMinutes;
   const profileLearningCalendarMonthLabels = profileStudyStats.learningCalendarDays.reduce<Array<{ key: string; label: string; index: number }>>((labels, day, index) => {
     if (day.dayNumber <= 7 || index === 0) {
       labels.push({ key: `${day.dateKey}-month`, label: createLocalDateFromKey(day.dateKey)?.toLocaleDateString("de-DE", { month: "short" }) ?? "", index });
@@ -2386,7 +2366,7 @@ export default function GradeGlowDashboard({
                 <div className="flex min-w-0 items-center gap-3">
                   {renderAvatar("flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-white/15 text-2xl font-black text-white ring-1 ring-white/15")}
                   <div className="min-w-0">
-                    <p className="gg-mobile-kicker text-white/65">Profil</p>
+                    
                     <h2 className="truncate text-2xl font-black tracking-tight text-white">{userLabel}</h2>
                     <p className="mt-1 truncate text-sm font-semibold text-white/70">{degreeProgramLabel}</p>
                   </div>
@@ -2426,75 +2406,46 @@ export default function GradeGlowDashboard({
               </div>
             </div>
 
-            <div className="gg-profile-trend-card">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="gg-mobile-kicker">Lerntrend</p>
-                  <h3>{selectedProfileTrend.sentence}</h3>
-                </div>
-                <div className="gg-profile-range-switch">
+            <section className="gg-learning-trend" aria-labelledby="learning-trend-title" style={{ "--gg-chart-gap": selectedProfileChartPoints.length > 12 ? ".1rem" : ".3rem" } as CSSProperties}>
+              <div className="gg-learning-trend-heading">
+                <h3 id="learning-trend-title">Lerntrend</h3>
+                <div className="gg-learning-trend-switch" role="group" aria-label="Lernzeit vergleichen">
                   {(["week", "month", "year"] as const).map((range) => (
-                    <button
-                      key={range}
-                      type="button"
-                      className={profileTrendRange === range ? "is-active" : ""}
-                      onClick={() => setProfileTrendRange(range)}
-                    >
+                    <button key={range} type="button" aria-pressed={profileTrendRange === range} onClick={() => setProfileTrendRange(range)}>
                       {range === "week" ? "Woche" : range === "month" ? "Monat" : "Jahr"}
                     </button>
                   ))}
                 </div>
               </div>
-
-              <div className="gg-profile-compare-grid">
-                <div className="gg-profile-compare-card">
-                  <span>{selectedProfileTrend.currentLabel}</span>
-                  <strong>{formatStudyMinutesLabel(selectedProfileTrend.currentMinutes)}</strong>
-                </div>
-                <div className="gg-profile-compare-card is-muted">
-                  <span>{selectedProfileTrend.previousLabel}</span>
-                  <strong>{formatStudyMinutesLabel(selectedProfileTrend.previousMinutes)}</strong>
-                </div>
+              <div className="gg-learning-trend-summary">
+                <div><span>{selectedProfileTrend.currentLabel}</span><strong>{formatStudyMinutesLabel(selectedProfileTrend.currentMinutes)}</strong></div>
+                <div><span>{selectedProfileTrend.previousLabel}</span><strong>{formatStudyMinutesLabel(selectedProfileTrend.previousMinutes)}</strong></div>
+                <span className="gg-learning-trend-delta" aria-label={`Differenz zum vorherigen Zeitraum: ${profileTrendDelta < 0 ? "minus" : "plus"} ${formatStudyMinutesLabel(Math.abs(profileTrendDelta))}`}>
+                  {profileTrendDelta > 0 ? "+" : profileTrendDelta < 0 ? "−" : "±"}{formatStudyMinutesLabel(Math.abs(profileTrendDelta))}
+                </span>
               </div>
-
-              <div className="gg-profile-line-chart mt-4">
-                <div className="gg-profile-line-chart-header">
-                  <div>
-                    <p>{profileChartHeadline}</p>
-                    <strong>{formatStudyMinutesLabel(profileChartCurrentMinutes)} im aktuellen Zeitraum</strong>
-                  </div>
-                  <div className="gg-profile-chart-range-switch" aria-label="Zeitraum für Lernzeitdiagramm">
-                    {(["4w", "12w", "year"] as const).map((range) => (
-                      <button
-                        key={range}
-                        type="button"
-                        className={profileChartRange === range ? "is-active" : ""}
-                        onClick={() => setProfileChartRange(range)}
-                      >
-                        {range === "4w" ? "4 Wochen" : range === "12w" ? "12 Wochen" : "1 Jahr"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="gg-profile-chart-canvas">
-                  <div className="gg-profile-chart-grid" aria-hidden="true"><span /><span /><span /></div>
-                  <svg viewBox="0 0 100 90" preserveAspectRatio="none" className="gg-profile-line-chart-svg" aria-hidden="true">
-                    <path d={`M ${profileChartAreaPoints}`} className="gg-profile-line-chart-area" />
-                    <polyline points={profileChartPolylinePoints} className="gg-profile-line-chart-path" />
-                    {selectedProfileChartPoints.map((point, index, points) => {
-                      const x = points.length === 1 ? 50 : 4 + (index / (points.length - 1)) * 92;
-                      const y = 78 - (point.minutes / profileChartMaxMinutes) * 58;
-                      return <circle key={point.dateKey} cx={x} cy={y} r={index === points.length - 1 ? 2.25 : 1.55} className={index === points.length - 1 ? "gg-profile-line-chart-dot is-active" : "gg-profile-line-chart-dot"}><title>{`${point.shortLabel}: ${formatStudyMinutesLabel(point.minutes)}`}</title></circle>;
-                    })}
-                  </svg>
-                </div>
-                <div className="gg-profile-line-chart-labels">
-                  {selectedProfileChartPoints.map((point, index) => (
-                    <span key={point.dateKey} className={index === selectedProfileChartPoints.length - 1 ? "is-active" : ""}>{profileChartRange === "year" ? point.monthLabel : index % 2 === 0 ? point.monthLabel : point.shortLabel}</span>
+              {profileChartHasData && <p className="gg-learning-trend-caption">{selectedProfileTrend.sentence}</p>}
+              <div className="gg-learning-trend-chart-heading">
+                <p>{profileChartHeadline}</p>
+                <div className="gg-learning-trend-switch" role="group" aria-label="Zeitraum für Lernzeitdiagramm">
+                  {(["4w", "12w", "year"] as const).map((range) => (
+                    <button key={range} type="button" aria-pressed={profileChartRange === range} onClick={() => setProfileChartRange(range)}>
+                      {range === "4w" ? "4 Wochen" : range === "12w" ? "12 Wochen" : "1 Jahr"}
+                    </button>
                   ))}
                 </div>
               </div>
-            </div>
+              {profileChartHasData ? <>
+                <div className="gg-learning-trend-bars" role="img" aria-label={`${profileChartHeadline}: ${selectedProfileChartPoints.map(point => `Woche ab ${point.shortLabel}: ${formatStudyMinutesLabel(point.minutes)}`).join(", ")}`} style={{ gridTemplateColumns: `repeat(${selectedProfileChartPoints.length}, minmax(0, 1fr))` }}>
+                  {selectedProfileChartPoints.map((point, index) => <div key={point.dateKey}>
+                    {point.minutes > 0 && <i className={index === selectedProfileChartPoints.length - 1 ? "is-current" : ""} style={{ height: `${point.minutes / profileChartMaxMinutes * 100}%` }}><span className="sr-only">{formatStudyMinutesLabel(point.minutes)}</span></i>}
+                  </div>)}
+                </div>
+                <div className="gg-learning-trend-labels" style={{ gridTemplateColumns: `repeat(${selectedProfileChartPoints.length}, minmax(0, 1fr))` }} aria-hidden="true">
+                  {selectedProfileChartPoints.map((point, index, points) => <span key={point.dateKey}>{index === points.length - 1 || index % Math.ceil(points.length / 6) === 0 ? point.shortLabel : ""}</span>)}
+                </div>
+              </> : <div className="gg-learning-trend-empty"><div aria-hidden="true" /><p>Dein Lerntrend erscheint nach deiner ersten abgeschlossenen Session.</p></div>}
+            </section>
 
             <div className="gg-profile-card gg-profile-heatmap-card">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -2585,7 +2536,6 @@ export default function GradeGlowDashboard({
               onClick={() => setIsInsightsOpen((open) => !open)}
             >
               <div>
-                <p className="text-sm font-bold text-violet-700">Insights</p>
                 <h2 className="mt-1 text-2xl font-black tracking-tight">
                   Diagramme & Glow Check
                 </h2>
@@ -2644,8 +2594,6 @@ export default function GradeGlowDashboard({
             <div className="gg-timer-card">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="gg-mobile-kicker">Fokus</p>
-                  <h2>Timer</h2>
                   <p className="gg-timer-subtitle">Fach wählen, Dauer setzen, starten.</p>
                 </div>
                 {globalTimer && <span className="gg-timer-live-pill">läuft</span>}
@@ -2969,7 +2917,6 @@ export default function GradeGlowDashboard({
             <section className="overflow-hidden rounded-3xl bg-white/90 shadow-sm ring-1 ring-violet-100 backdrop-blur">
               <div className="flex flex-col gap-4 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-sm font-bold text-violet-700">Module</p>
                   <h2 className="mt-1 text-3xl font-black tracking-tight">
                     Semesterübersicht
                   </h2>
@@ -3840,6 +3787,7 @@ export default function GradeGlowDashboard({
                   aria-label={item.label}
                   aria-current={isActive ? "page" : undefined}
                   prefetch={true}
+                  scroll={false}
                   title={item.label}
                   className={`${isActive ? "is-active" : ""} ${item.tone === "primary" ? "is-primary" : ""}`.trim()}
                 >

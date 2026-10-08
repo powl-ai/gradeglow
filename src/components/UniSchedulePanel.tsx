@@ -251,10 +251,6 @@ export default function UniSchedulePanel({
       <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p className="text-sm font-bold text-violet-700">Uni-Plan</p>
-            <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
-              Stundenplan
-            </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
               Trage Vorlesungen, Seminare, Übungen und Tutorien ein. So hast du
               neben Prüfungen und Lernplan auch deinen normalen Uni-Alltag in

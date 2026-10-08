@@ -48,7 +48,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
   return (
     <html lang="de" className="h-full antialiased" suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOTSTRAP_SCRIPT }} /></head>
-      <body className="min-h-full flex flex-col">
+      <body className="h-full flex flex-col">
         <PwaRegister />
         <AdSenseScript />
         <GradeGlowAppHost>{children}</GradeGlowAppHost>

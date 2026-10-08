@@ -1,0 +1,22 @@
+.gg-homescreen-picker { padding-top: 1rem; border-top: 1px solid var(--gg-border); color: var(--gg-app-text); }
+.gg-homescreen-picker h3 { font-size: 1rem; font-weight: 750; }
+.gg-homescreen-picker p { margin-top: .5rem; color: var(--gg-muted); font-size: .8rem; line-height: 1.5; }
+.gg-homescreen-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin-top: 1rem; }
+.gg-homescreen-options button { display: flex; flex-direction: column; align-items: center; gap: .6rem; padding: .8rem .25rem; min-height: 2.75rem; border-radius: 1rem; border: 1px solid var(--gg-border); background: var(--gg-surface) !important; color: var(--gg-app-text) !important; font-size: .8rem !important; font-weight: 650; }
+.gg-homescreen-options button[aria-pressed="true"] { border: 2px solid var(--gg-ui-accent); background: var(--gg-surface-soft) !important; }
+.gg-homescreen-options img { width: 4rem; height: 4rem; border-radius: .95rem; }
+.gg-homescreen-install { display: inline-flex; align-items: center; justify-content: center; min-height: 2.75rem; padding: .75rem 1rem; margin-top: 1rem; background: #62408a !important; color: #fff !important; border-radius: .85rem; font-size: .8rem; font-weight: 700; text-decoration: none; }
+.gg-homescreen-picker .gg-homescreen-note { font-size: .74rem; margin-top: .8rem; }
+.gg-homescreen-copy { display: block; margin-top: .5rem; min-height: 2.75rem; color: var(--gg-ui-accent) !important; background: transparent !important; font-size: .78rem !important; font-weight: 650; }
+.gg-homescreen-link { width: 100%; padding: .7rem; font-size: .8rem; color: var(--gg-app-text); background: var(--gg-surface); border: 1px solid var(--gg-border); border-radius: .7rem; }
+@media (max-width: 380px) { .gg-logo-options { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+.gg-install-page { width: min(100%, 34rem); margin: auto; padding: max(1.5rem, env(safe-area-inset-top)) max(1.2rem, env(safe-area-inset-right)) max(2rem, env(safe-area-inset-bottom)) max(1.2rem, env(safe-area-inset-left)); color: var(--foreground); }
+.gg-install-back { display: inline-flex; align-items: center; min-height: 2.75rem; font-size: .8rem; color: inherit; margin-bottom: 1.5rem; }
+.gg-install-page > img { width: 6rem; height: 6rem; border-radius: 1.4rem; margin-bottom: 1.5rem; }
+.gg-install-page > p { font-size: .68rem; letter-spacing: .1em; font-weight: 700; opacity: .7; }
+.gg-install-page h1 { font-size: clamp(1.65rem, 6vw, 2rem); margin: .5rem 0 1.5rem; font-weight: 750; line-height: 1.15; }
+.gg-install-instructions h2 { margin: 1.25rem 0 .5rem; font-size: 1rem; font-weight: 700; }
+.gg-install-instructions ol { list-style: decimal; padding-left: 1.2rem; }
+.gg-install-instructions li { padding: .4rem 0; }
+.gg-install-instructions p, .gg-install-instructions li { font-size: .85rem; line-height: 1.6; }
+.gg-install-instructions p { margin-top: .7rem; opacity: .8; }

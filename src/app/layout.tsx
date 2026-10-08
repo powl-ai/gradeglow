@@ -8,6 +8,7 @@ import PwaRegister from "../components/PwaRegister";
 import AdSenseScript from "../components/AdSenseScript";
 import "./globals.css";
 import "./mobile-ui.css";
+import "./homescreen-icons.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://gradeglow.app"),

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useDocumentAppearance } from "../hooks/useDocumentAppearance";
 import { LOGO_APPEARANCES } from "../lib/appearance";
 import GradeGlowLogo from "./GradeGlowLogo";
+import HomeScreenIconPicker from "./HomeScreenIconPicker";
 import NotificationSettingsCard from "./NotificationSettingsCard";
 import BetaNoticeCard from "./BetaNoticeCard";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -942,7 +943,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                 </div>
 
                 <div className="md:col-span-2">
-                  <span className="mb-2 block text-sm font-bold text-slate-700">GradeGlow-Logo</span>
+                  <span className="mb-2 block text-sm font-bold text-slate-700">Logo innerhalb der App</span>
                   <div className="gg-logo-options" role="group" aria-label="Logo-Design auswählen">
                     {LOGO_APPEARANCES.map((option) => (
                       <button key={option.value} type="button" aria-pressed={activeAppIconId === "default" && logoAppearance === option.value} onClick={() => {
@@ -954,8 +955,10 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
                       </button>
                     ))}
                   </div>
-                  <p className="mt-2 text-xs leading-5 text-slate-500">Automatisch folgt deinem Design-Modus. Änderungen über „Profil speichern“ übernehmen.</p>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">Diese Auswahl verändert nur das Logo innerhalb von GradeGlow. Automatisch folgt deinem Design-Modus. Änderungen über „Profil speichern“ übernehmen.</p>
                 </div>
+
+                <div className="md:col-span-2"><HomeScreenIconPicker /></div>
 
                 <div className="md:col-span-2">
                   <span className="mb-2 block text-sm font-bold text-slate-700">Gesamte Seitenfarbe</span>

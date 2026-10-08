@@ -60,6 +60,13 @@ html[data-color-mode="dark"] .gg-home-feed .gg-home-focus-card { background: lin
 .gg-home-focus-card h3 { margin-top: .65rem; font-size: clamp(1.25rem, 4.8vw, 1.7rem); line-height: 1.18; letter-spacing: -.035em; font-weight: 760; }
 .gg-home-focus-card p { margin-top: .65rem; font-size: .83rem; line-height: 1.5; opacity: .85; }
 .gg-glow-mascot { width: 100%; height: auto; overflow: visible; }
+.gg-lumi-character { transform-origin: 90px 175px; }
+@media (prefers-reduced-motion: no-preference) {
+  .gg-lumi-character { animation: gg-lumi-float 4s ease-in-out infinite; }
+  .gg-lumi-sparkles { animation: gg-lumi-twinkle 4s ease-in-out infinite; }
+}
+@keyframes gg-lumi-float { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-3px) rotate(-1deg); } }
+@keyframes gg-lumi-twinkle { 0%, 100% { opacity: .6; } 50% { opacity: 1; } }
 .gg-home-feed .gg-feed-primary { display: inline-flex; align-items: center; justify-content: space-between; gap: .8rem; min-height: 2.75rem; margin-top: 1rem; border-radius: .85rem; background: #eedfff; color: #3e2359; font-size: .8rem; font-weight: 750; padding: .7rem .85rem; text-decoration: none; }
 html[data-color-mode="light"] .gg-home-feed .gg-feed-primary { background: #62408a; color: white; }
 .gg-feed-section-title { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }

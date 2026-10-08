@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gradeglow-v54";
+const CACHE_VERSION = "gradeglow-v55";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 

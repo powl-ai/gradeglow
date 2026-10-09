@@ -1,5 +1,6 @@
 export const HOME_SCREEN_ICONS = [
   { id: "anglerfish", label: "Anglerfisch" },
+  { id: "anglerfish-dark", label: "Anglerfisch dunkel" },
   { id: "light", label: "Hell" },
   { id: "dark", label: "Dunkel" },
   { id: "rose", label: "Rosé" },

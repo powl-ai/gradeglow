@@ -1,6 +1,8 @@
-const CACHE_VERSION = "gradeglow-v59";
+const CACHE_VERSION = "gradeglow-v60";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
+const MASCOT_ASSETS = ["focused", "happy", "sleepy", "panic", "celebrate"]
+  .map((mood) => `/mascots/anglerfish-${mood}.webp?v=60`);
 
 const APP_SHELL = [
   "/",
@@ -28,7 +30,10 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(STATIC_CACHE)
-      .then((cache) => cache.addAll(APP_SHELL))
+      .then((cache) => Promise.allSettled([
+        cache.addAll(APP_SHELL),
+        ...MASCOT_ASSETS.map((url) => cache.add(url)),
+      ]))
       .catch(() => undefined),
   );
 
@@ -83,6 +88,19 @@ self.addEventListener("fetch", (event) => {
 
   // Firebase Auth helper must never be cached/intercepted by the PWA.
   if (url.pathname.startsWith("/__/auth/")) return;
+
+  // Versioned small sprites are immutable: changing tabs needs no new network request.
+  if (url.pathname.startsWith("/mascots/")) {
+    event.respondWith((async () => {
+      const cache = await caches.open(STATIC_CACHE);
+      const cached = await cache.match(request);
+      if (cached) return cached;
+      const response = await fetch(request);
+      if (response.ok) await cache.put(request, response.clone());
+      return response;
+    })());
+    return;
+  }
 
   if (request.mode === "navigate") {
     event.respondWith(

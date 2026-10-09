@@ -3,6 +3,7 @@
   --gg-safe-top: env(safe-area-inset-top, 0px);
   --gg-safe-bottom: env(safe-area-inset-bottom, 0px);
   --gg-header-height: 3.5rem;
+  --gg-header-clearance: 12px;
   --gg-nav-height: 56px;
   --gg-nav-background: #fff;
 }
@@ -10,8 +11,8 @@ html[data-color-mode="dark"] { --gg-nav-background: #161b2e; }
 /* The document never scrolls; each route's main owns its content viewport. */
 html, body { height: 100%; min-height: 0; overflow: hidden !important; overscroll-behavior: none; }
 html, body { background: var(--gg-nav-background) !important; }
-body { padding: 0 !important; touch-action: manipulation; }
-.gg-native-layout { position: fixed; inset: 0; display: flex; flex-direction: column; min-height: 0; overflow: hidden; background: var(--gg-document-bg); }
+body { margin: 0; padding: 0 !important; touch-action: manipulation; }
+.gg-native-layout { position: fixed; inset: 0; display: flex; flex-direction: column; width: 100%; min-height: 0; margin: 0; padding: 0; border: 0; overflow: hidden; background: var(--gg-document-bg); }
 html body main { flex: 1; height: auto; min-height: 0 !important; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y pinch-zoom; }
 html .gg-auth-page { min-height: 0; }
 .gg-app-header { display: none; }
@@ -69,7 +70,7 @@ html[data-color-mode="dark"] .gg-home-feed .gg-home-focus-card { background: lin
 .gg-feed-eyebrow { display: block; font-size: .65rem; font-weight: 750; letter-spacing: .09em; line-height: 1.5; }
 .gg-home-focus-card h3 { margin-top: .65rem; font-size: clamp(1.25rem, 4.8vw, 1.7rem); line-height: 1.18; letter-spacing: -.035em; font-weight: 760; }
 .gg-home-focus-card p { margin-top: .65rem; font-size: .83rem; line-height: 1.5; opacity: .85; }
-.gg-glow-mascot { width: 100%; height: auto; overflow: visible; }
+.gg-glow-mascot { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; overflow: visible; }
 
 /* Focus: a quiet timer, voluntary protection and compact return feedback. */
 .gg-focus-stage { gap: .55rem; padding-top: .75rem; }
@@ -241,7 +242,7 @@ html .gg-demo-bar { display: block; padding: 0 .85rem; border-radius: .85rem; ba
   body:has(.gg-app-header) { padding: 0 !important; }
   .gg-app-header {
     display: block; position: relative; flex-shrink: 0; z-index: 50;
-    height: calc(var(--gg-safe-top) + var(--gg-header-height)); padding-top: var(--gg-safe-top);
+    height: calc(var(--gg-safe-top) + var(--gg-header-clearance) + var(--gg-header-height)); padding-top: calc(var(--gg-safe-top) + var(--gg-header-clearance));
     background: var(--gg-document-bg, #f4fbf7); border-bottom: 1px solid rgb(127 127 155 / .16);
     color: var(--foreground); isolation: isolate;
     opacity: 1 !important; filter: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; text-shadow: none !important;
@@ -263,7 +264,7 @@ html .gg-demo-bar { display: block; padding: 0 .85rem; border-radius: .85rem; ba
   html .gg-mobile-scroll-end-spacer { display: none !important; }
   html .gg-native-layout > .gg-mobile-tabbar-shell.gg-themed {
     position: static !important; inset: auto !important; transform: none !important;
-    flex-shrink: 0; width: 100%; margin: 0 !important;
+    display: block; box-sizing: border-box; flex: 0 0 auto; width: 100%; height: auto; min-height: 0; max-height: none; margin: 0 !important;
     padding: 0 max(12px, env(safe-area-inset-right)) var(--gg-safe-bottom) max(12px, env(safe-area-inset-left)) !important;
     background: var(--gg-nav-background) !important; border: 0 !important;
     border-radius: 0 !important; box-shadow: none !important;
@@ -274,13 +275,14 @@ html .gg-demo-bar { display: block; padding: 0 .85rem; border-radius: .85rem; ba
   html[data-color-mode="dark"] .gg-native-layout > .gg-mobile-tabbar-shell.gg-themed { --gg-dock-bg: #161b2e; }
   html .gg-native-layout > .gg-mobile-tabbar-shell.gg-themed::before,
   html .gg-native-layout > .gg-mobile-tabbar-shell.gg-themed::after { display: none !important; }
-  html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar { width: 100% !important; max-width: none !important; display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-auto-flow: row !important; align-items: center; height: var(--gg-nav-height) !important; min-height: var(--gg-nav-height) !important; padding: 4px 0 !important; border-radius: 0 !important; border: 0 !important; background: var(--gg-nav-background) !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar { position: static !important; inset: auto !important; transform: none !important; box-sizing: border-box; width: 100% !important; max-width: none !important; display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-auto-flow: row !important; align-items: center; gap: 4px; height: var(--gg-nav-height) !important; min-height: var(--gg-nav-height) !important; margin: 0 !important; padding: 4px 0 !important; border-radius: 0 !important; border: 0 !important; background: var(--gg-nav-background) !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
   html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a,
-  html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a.is-primary { display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: .25rem; min-width: 0; width: 100% !important; height: 48px !important; min-height: 48px !important; padding: .3rem .15rem !important; border-radius: 12px !important; }
+  html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a.is-primary { display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: .25rem; min-width: 0; width: 100% !important; height: 48px !important; min-height: 48px !important; padding: .3rem .15rem !important; border: 0 !important; border-radius: 12px !important; color: var(--gg-muted) !important; opacity: 1; text-decoration: none; }
+  html .gg-mobile-tabbar-shell a:focus-visible { outline: 2px solid var(--gg-ui-accent); outline-offset: 1px; }
   html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a:not(.is-active) { background: transparent !important; box-shadow: none !important; }
   html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a.is-active { box-shadow: none !important; background: color-mix(in srgb, var(--gg-accent-500, #8b5cf6) 16%, var(--gg-nav-background)) !important; color: var(--gg-ui-accent) !important; }
   html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar::before { content: none !important; }
-  .gg-header-toast { top: calc(var(--gg-safe-top) + var(--gg-header-height) + 8px) !important; z-index: 40 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  .gg-header-toast { top: calc(var(--gg-safe-top) + var(--gg-header-clearance) + var(--gg-header-height) + 8px) !important; z-index: 40 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
   html .gg-mobile-tabbar-shell .gg-mobile-tabbar a::after { display: none !important; }
   html .gg-mobile-tabbar-shell .gg-mobile-tabbar a .gg-mobile-tab-icon { height: 1.3rem !important; width: 1.3rem !important; display: grid !important; place-items: center; flex: 0 0 1.3rem; position: static !important; margin: 0 !important; padding: 0 !important; transform: none !important; }
   html .gg-mobile-tabbar-shell .gg-mobile-tab-icon svg { width: 1.3rem; height: 1.3rem; }

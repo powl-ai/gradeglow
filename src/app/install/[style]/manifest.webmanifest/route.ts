@@ -9,10 +9,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ sty
   if (!isHomeScreenIcon(style)) return new Response("Unknown icon", { status: 404 });
   return Response.json({
     ...manifest(),
+    ...(style === "anglerfish-dark" ? { theme_color: "#161b2e", background_color: "#161b2e" } : {}),
     // Same identity, scope and launch URL for every installation style.
     icons: style === "anglerfish" ? manifest().icons : [
       { src: homeScreenIconPath(style, 192), sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: homeScreenIconPath(style, 512), sizes: "512x512", type: "image/png", purpose: "any maskable" },
+      { src: homeScreenIconPath(style, 512), sizes: "512x512", type: "image/png", purpose: style === "anglerfish-dark" ? "any" : "any maskable" },
     ],
   }, { headers: { "Content-Type": "application/manifest+json" } });
 }

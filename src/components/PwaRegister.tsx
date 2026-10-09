@@ -44,7 +44,8 @@ export default function PwaRegister() {
     };
 
     navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);
-    window.addEventListener("load", registerServiceWorker);
+    if (document.readyState === "complete") void registerServiceWorker();
+    else window.addEventListener("load", registerServiceWorker, { once: true });
 
     return () => {
       navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);

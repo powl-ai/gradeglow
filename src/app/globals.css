@@ -1864,23 +1864,6 @@ button,
     --gg-mobile-border: rgba(139, 92, 246, 0.16);
   }
 
-  .gg-mobile-appbar {
-    position: sticky;
-    top: max(env(safe-area-inset-top, 0px), 0.35rem);
-    z-index: 35;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.55rem;
-    min-height: 2.8rem;
-    border: 1px solid var(--gg-mobile-border);
-    border-radius: 1.1rem;
-    background: var(--gg-mobile-surface);
-    padding: 0.4rem 0.48rem;
-    box-shadow: 0 12px 28px rgba(88, 28, 135, 0.10);
-    backdrop-filter: blur(18px);
-  }
-
   .gg-mobile-icon-button {
     display: inline-flex;
     height: 2rem;
@@ -1958,48 +1941,6 @@ button,
     color: rgb(15, 23, 42) !important;
   }
 
-  .gg-mobile-tabbar {
-    position: fixed;
-    left: 0.55rem;
-    right: 0.55rem;
-    bottom: max(env(safe-area-inset-bottom, 0px), 0.48rem);
-    z-index: 45;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.18rem;
-    border: 1px solid rgba(148, 163, 184, 0.22);
-    border-radius: 1.2rem;
-    background: rgba(15, 23, 42, 0.88);
-    padding: 0.28rem;
-    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
-    backdrop-filter: blur(22px);
-  }
-
-  .gg-mobile-tabbar a {
-    display: flex;
-    min-height: 2.45rem !important;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.12rem;
-    border-radius: 0.88rem !important;
-    color: rgba(255, 255, 255, 0.62);
-    font-size: 0.58rem !important;
-    font-weight: 900 !important;
-    line-height: 1 !important;
-    text-decoration: none;
-  }
-
-  .gg-mobile-tabbar a.is-active {
-    background: rgba(255, 255, 255, 0.94);
-    color: rgb(15, 23, 42);
-  }
-
-  .gg-mobile-tab-icon {
-    font-size: 0.95rem !important;
-    line-height: 1 !important;
-  }
-
   /* App-style list density for the long mobile pages. */
   .gg-themed section:not(.gg-mobile-home),
   .gg-themed article,
@@ -2042,65 +1983,10 @@ button,
     display: none !important;
   }
 
-  .gg-mobile-appbar {
-    position: fixed !important;
-    top: calc(env(safe-area-inset-top, 0px) + 0.55rem) !important;
-    left: max(env(safe-area-inset-left, 0px), 0.7rem) !important;
-    right: max(env(safe-area-inset-right, 0px), 0.7rem) !important;
-    min-height: 2.55rem !important;
-    border-radius: 1rem !important;
-    padding: 0.34rem 0.44rem !important;
-    z-index: 60 !important;
-  }
-
-  @supports (padding: max(0px)) {
-    .gg-mobile-appbar {
-      top: max(calc(env(safe-area-inset-top, 0px) + 0.55rem), 0.95rem) !important;
-    }
-  }
-
-  .gg-mobile-appbar h1 {
-    font-size: 0.86rem !important;
-    line-height: 1.05 !important;
-  }
-
-  .gg-mobile-appbar a[href="/settings"] {
-    max-width: 5.4rem !important;
-    padding-right: 0.45rem !important;
-  }
-
   .gg-mobile-icon-button {
     height: 1.86rem !important;
     width: 1.86rem !important;
     border-radius: 0.76rem !important;
-  }
-
-  .gg-mobile-tabbar {
-    left: max(env(safe-area-inset-left, 0px), 0px) !important;
-    right: max(env(safe-area-inset-right, 0px), 0px) !important;
-    bottom: 0 !important;
-    min-height: calc(env(safe-area-inset-bottom, 0px) + 3.85rem) !important;
-    align-items: start !important;
-    border-right: 0 !important;
-    border-bottom: 0 !important;
-    border-left: 0 !important;
-    border-radius: 1.15rem 1.15rem 0 0 !important;
-    padding: 0.28rem 0.4rem calc(env(safe-area-inset-bottom, 0px) + 0.32rem) !important;
-    box-shadow: 0 -12px 34px rgba(15, 23, 42, 0.20) !important;
-  }
-
-  .gg-mobile-tabbar a {
-    min-height: 2.42rem !important;
-    border-radius: 0.86rem !important;
-    font-size: 0.56rem !important;
-  }
-
-  .gg-mobile-tabbar a.is-active {
-    background: rgba(255,255,255,0.96) !important;
-  }
-
-  .gg-mobile-tab-icon {
-    font-size: 0.86rem !important;
   }
 
   .gg-mobile-collapsible {
@@ -2209,48 +2095,10 @@ button,
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.15rem) !important;
   }
 
-  .gg-mobile-appbar {
-    position: sticky !important;
-    top: calc(env(safe-area-inset-top, 0px) + 0.35rem) !important;
-    left: auto !important;
-    right: auto !important;
-    margin-bottom: 0.12rem !important;
-    min-height: 2.35rem !important;
-    padding: 0.28rem 0.38rem !important;
-    border-radius: 0.95rem !important;
-    z-index: 38 !important;
-  }
-
-  .gg-mobile-appbar h1 {
-    font-size: 0.78rem !important;
-  }
-
   .gg-mobile-icon-button {
     height: 1.7rem !important;
     width: 1.7rem !important;
     border-radius: 0.68rem !important;
-  }
-
-  .gg-mobile-appbar a[href="/settings"] {
-    max-width: 4.35rem !important;
-    gap: 0.25rem !important;
-    padding: 0.12rem 0.38rem 0.12rem 0.12rem !important;
-  }
-
-  .gg-mobile-appbar a[href="/settings"] span:last-child {
-    max-width: 2.2rem !important;
-  }
-
-  .gg-mobile-tabbar {
-    bottom: 0 !important;
-    min-height: calc(env(safe-area-inset-bottom, 0px) + 3.35rem) !important;
-    padding: 0.2rem 0.34rem calc(env(safe-area-inset-bottom, 0px) + 0.18rem) !important;
-    border-radius: 1rem 1rem 0 0 !important;
-  }
-
-  .gg-mobile-tabbar a {
-    min-height: 2.08rem !important;
-    border-radius: 0.78rem !important;
   }
 }
 
@@ -2262,11 +2110,6 @@ button,
 
   .gg-app-shell {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4.45rem) !important;
-  }
-
-  .gg-mobile-tabbar {
-    min-height: calc(env(safe-area-inset-bottom, 0px) + 3.2rem) !important;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.08rem) !important;
   }
 }
 
@@ -2449,34 +2292,6 @@ button,
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4.85rem) !important;
   }
 
-  .gg-mobile-appbar {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    z-index: 12 !important;
-    margin: 0 0 0.45rem !important;
-    transform: none !important;
-  }
-
-  .gg-mobile-tabbar {
-    position: fixed !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-    min-height: calc(env(safe-area-inset-bottom, 0px) + 3.25rem) !important;
-    border-radius: 1.15rem 1.15rem 0 0 !important;
-    padding: 0.22rem 0.42rem calc(env(safe-area-inset-bottom, 0px) + 0.14rem) !important;
-    background: rgba(15, 23, 42, 0.96) !important;
-    box-shadow: 0 -16px 34px rgba(15, 23, 42, 0.20) !important;
-  }
-
-  .gg-mobile-tabbar a {
-    min-height: 2.05rem !important;
-    padding: 0.22rem 0.18rem !important;
-  }
-
   .gg-premium-table-desktop {
     display: none !important;
   }
@@ -2502,20 +2317,6 @@ button,
   .gg-app-shell {
     padding-top: calc(env(safe-area-inset-top, 0px) + 0.35rem) !important;
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 3.75rem) !important;
-  }
-
-  .gg-mobile-appbar {
-    margin-top: 0 !important;
-  }
-
-  .gg-mobile-tabbar {
-    min-height: calc(env(safe-area-inset-bottom, 0px) + 2.95rem) !important;
-    padding-top: 0.14rem !important;
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.1rem) !important;
-  }
-
-  .gg-mobile-tabbar a {
-    min-height: 1.9rem !important;
   }
 }
 
@@ -2610,24 +2411,10 @@ button,
 
 @media (display-mode: standalone) and (max-width: 1023px) {
   /* Installed PWA: the OS already provides status space, so the internal header becomes unnecessary. */
-  .gg-mobile-appbar {
-    display: none !important;
-  }
 
   .gg-app-shell {
     padding-top: calc(env(safe-area-inset-top, 0px) + 0.55rem) !important;
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 3.25rem) !important;
-  }
-
-  .gg-mobile-tabbar {
-    min-height: calc(env(safe-area-inset-bottom, 0px) + 2.82rem) !important;
-    padding-top: 0.12rem !important;
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.06rem) !important;
-    border-radius: 0.95rem 0.95rem 0 0 !important;
-  }
-
-  .gg-mobile-tabbar a {
-    min-height: 1.82rem !important;
   }
 }
 
@@ -2647,16 +2434,6 @@ button,
     padding-right: max(env(safe-area-inset-right, 0px), 0.8rem) !important;
     padding-left: max(env(safe-area-inset-left, 0px), 0.8rem) !important;
     padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 4.7rem), 5.05rem) !important;
-  }
-
-  .gg-mobile-appbar {
-    display: flex !important;
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    margin: 0 0 0.55rem !important;
-    z-index: 20 !important;
   }
 
   .gg-mobile-plus-teaser {
@@ -2699,10 +2476,6 @@ button,
     font-size: 0.62rem;
     font-weight: 950;
   }
-
-  .gg-mobile-tabbar {
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.2rem) !important;
-  }
 }
 
 @media (display-mode: standalone) and (max-width: 1023px) {
@@ -2726,21 +2499,6 @@ button,
     padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.25rem), 2.75rem) !important;
     padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 4.25rem), 4.7rem) !important;
   }
-
-  .gg-mobile-appbar {
-    display: flex !important;
-    margin-top: 0 !important;
-  }
-
-  .gg-mobile-tabbar {
-    min-height: max(calc(env(safe-area-inset-bottom, 0px) + 3.05rem), 3.25rem) !important;
-    padding-top: 0.2rem !important;
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.18rem) !important;
-  }
-
-  .gg-mobile-tabbar a {
-    min-height: 1.98rem !important;
-  }
 }
 
 @media (max-width: 1023px) {
@@ -2763,28 +2521,6 @@ button,
     padding-top: max(calc(env(safe-area-inset-top, 0px) + 1rem), 2rem) !important;
     padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 5.6rem), 6rem) !important;
     gap: 0.8rem !important;
-  }
-
-  .gg-mobile-appbar {
-    align-items: center !important;
-    gap: 0.55rem !important;
-    min-height: 3.6rem !important;
-    border: 1px solid rgba(226, 232, 240, 0.95) !important;
-    border-radius: 1.4rem !important;
-    background: rgba(255, 255, 255, 0.92) !important;
-    padding: 0.55rem 0.7rem !important;
-    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08) !important;
-    backdrop-filter: blur(22px) !important;
-  }
-
-  .gg-mobile-appbar-title {
-    min-width: 0;
-    flex: 1 1 auto;
-    text-align: center;
-  }
-
-  .gg-mobile-appbar-title .gg-mobile-kicker {
-    margin-bottom: 0.2rem;
   }
 
   .gg-mobile-icon-button {
@@ -2930,76 +2666,12 @@ button,
   .gg-mobile-menu-sheet {
     border-radius: 1.9rem 1.9rem 0 0 !important;
   }
-
-  .gg-mobile-tabbar {
-    left: max(env(safe-area-inset-left, 0px), 0.75rem) !important;
-    right: max(env(safe-area-inset-right, 0px), 0.75rem) !important;
-    bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem) !important;
-    width: auto !important;
-    min-height: auto !important;
-    border: 1px solid rgba(30, 41, 59, 0.3) !important;
-    border-radius: 1.6rem !important;
-    padding: 0.42rem !important;
-    gap: 0.28rem !important;
-    background: rgba(2, 6, 23, 0.92) !important;
-    box-shadow: 0 20px 48px rgba(2, 6, 23, 0.26) !important;
-    backdrop-filter: blur(22px) !important;
-  }
-
-  .gg-mobile-tabbar a {
-    position: relative;
-    min-height: 3.15rem !important;
-    gap: 0.18rem !important;
-    border-radius: 1.1rem !important;
-    color: rgba(255,255,255,0.68) !important;
-    font-size: 0.58rem !important;
-    font-weight: 900 !important;
-  }
-
-  .gg-mobile-tabbar a.is-active {
-    background: rgba(255,255,255,0.14) !important;
-    color: white !important;
-  }
-
-  .gg-mobile-tabbar a.is-primary {
-    margin-top: -0.85rem;
-    min-height: 3.4rem !important;
-    border-radius: 999px !important;
-    border: 1px solid rgba(255,255,255,0.16);
-    background: rgba(255,255,255,0.08);
-  }
-
-  .gg-mobile-tabbar a.is-primary .gg-mobile-tab-icon {
-    display: inline-flex;
-    height: 2.15rem;
-    width: 2.15rem;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    background: white;
-    color: rgb(15, 23, 42);
-    font-size: 1rem !important;
-    box-shadow: 0 10px 18px rgba(15, 23, 42, 0.18);
-  }
-
-  .gg-mobile-tabbar a.is-primary.is-active {
-    background: rgba(255,255,255,0.14) !important;
-    color: white !important;
-  }
-
-  .gg-mobile-tab-icon {
-    font-size: 0.96rem !important;
-  }
 }
 
 @media (display-mode: standalone) and (max-width: 1023px) {
   .gg-app-shell {
     padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.2rem), 2.55rem) !important;
     padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 5.35rem), 5.8rem) !important;
-  }
-
-  .gg-mobile-tabbar {
-    bottom: max(env(safe-area-inset-bottom, 0px), 0.65rem) !important;
   }
 }
 
@@ -3016,17 +2688,6 @@ button,
     padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.05rem), 2.15rem) !important;
     padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 5.45rem), 5.9rem) !important;
     gap: 1rem !important;
-  }
-
-  .gg-mobile-appbar {
-    margin-bottom: 0.7rem !important;
-    border-color: var(--gg-border, rgba(226, 232, 240, 0.95)) !important;
-    background: color-mix(in srgb, var(--gg-surface, #ffffff) 90%, transparent) !important;
-    color: var(--gg-app-text, rgb(15,23,42)) !important;
-  }
-
-  .gg-mobile-appbar-title {
-    padding-inline: 0.2rem;
   }
 
   .gg-mobile-hero-card {
@@ -3054,43 +2715,6 @@ button,
   .gg-profile-trend-card {
     border-color: var(--gg-border, rgba(226,232,240,0.92)) !important;
     background: color-mix(in srgb, var(--gg-surface, #ffffff) 92%, transparent) !important;
-  }
-
-  .gg-mobile-tabbar {
-    left: max(env(safe-area-inset-left, 0px), 0.9rem) !important;
-    right: max(env(safe-area-inset-right, 0px), 0.9rem) !important;
-    bottom: max(env(safe-area-inset-bottom, 0px), 0.62rem) !important;
-    border: 1px solid rgba(255,255,255,0.16) !important;
-    border-radius: 1.55rem !important;
-    background: rgba(2, 6, 23, 0.68) !important;
-    padding: 0.38rem !important;
-    box-shadow: 0 18px 42px rgba(2, 6, 23, 0.24) !important;
-    backdrop-filter: blur(16px) saturate(150%) !important;
-  }
-
-  .gg-mobile-tabbar a {
-    background: transparent !important;
-    color: rgba(255,255,255,0.72) !important;
-    outline: 1px solid transparent;
-    outline-offset: -1px;
-  }
-
-  .gg-mobile-tabbar a.is-active {
-    background: rgba(255,255,255,0.12) !important;
-    color: #ffffff !important;
-    outline-color: rgba(255,255,255,0.32);
-  }
-
-  .gg-mobile-tabbar a.is-primary {
-    margin-top: -0.18rem !important;
-    min-height: 3.05rem !important;
-    background: rgba(255,255,255,0.08) !important;
-  }
-
-  .gg-mobile-tabbar a.is-primary .gg-mobile-tab-icon {
-    height: 1.95rem !important;
-    width: 1.95rem !important;
-    background: rgba(255,255,255,0.92) !important;
   }
 
   .gg-profile-page {
@@ -3261,10 +2885,6 @@ button,
     padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.15rem), 2.55rem) !important;
     padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 5.55rem), 6rem) !important;
   }
-
-  .gg-mobile-tabbar {
-    bottom: max(env(safe-area-inset-bottom, 0px), 0.72rem) !important;
-  }
 }
 
 /* UI FIX 2 -------------------------------------------------------------- */
@@ -3289,51 +2909,6 @@ body {
     padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.55rem), 3rem) !important;
     padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 5rem), 5.7rem) !important;
   }
-
-  .gg-mobile-appbar {
-    margin-top: 0.15rem;
-    background: color-mix(in srgb, var(--gg-surface, #ffffff) 84%, transparent) !important;
-    backdrop-filter: blur(22px) saturate(150%) !important;
-  }
-
-  .gg-mobile-tabbar {
-    left: max(env(safe-area-inset-left, 0px), 1rem) !important;
-    right: max(env(safe-area-inset-right, 0px), 1rem) !important;
-    bottom: max(env(safe-area-inset-bottom, 0px) + 0.12rem, 0.42rem) !important;
-    min-height: 4.15rem !important;
-    border: 1px solid rgba(255,255,255,0.14) !important;
-    background: rgba(2, 6, 23, 0.48) !important;
-    box-shadow: 0 18px 42px rgba(2, 6, 23, 0.2) !important;
-    backdrop-filter: blur(26px) saturate(150%) !important;
-  }
-
-  .gg-mobile-tabbar a {
-    min-height: 3rem !important;
-  }
-
-  .gg-mobile-tabbar a.is-active {
-    background: rgba(255,255,255,0.1) !important;
-    outline-color: rgba(255,255,255,0.26) !important;
-  }
-
-  .gg-mobile-tabbar a.is-primary {
-    margin-top: 0 !important;
-    min-height: 3rem !important;
-    background: transparent !important;
-    border: none !important;
-  }
-
-  .gg-mobile-tabbar a.is-primary .gg-mobile-tab-icon {
-    height: auto !important;
-    width: auto !important;
-    background: transparent !important;
-    color: inherit !important;
-    box-shadow: none !important;
-  }
-
-  .gg-mobile-tabbar a.is-primary.is-active {
-    background: rgba(255,255,255,0.1) !important;
-  }
 }
 
 @media (display-mode: standalone) and (max-width: 1023px) {
@@ -3341,72 +2916,14 @@ body {
     padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.75rem), 3.35rem) !important;
     padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 5.1rem), 5.95rem) !important;
   }
-
-  .gg-mobile-tabbar {
-    bottom: max(env(safe-area-inset-bottom, 0px) + 0.1rem, 0.36rem) !important;
-  }
 }
 
 /* UI FIX 3 -------------------------------------------------------------- */
 @media (max-width: 1023px) {
-  .gg-mobile-top-blocker,
-  .gg-mobile-bottom-blocker {
-    position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(90%, 22rem);
-    border-radius: 999px;
-    z-index: 35;
-    background: color-mix(in srgb, var(--gg-accent-500, #7c3aed) 18%, white 82%);
-    opacity: 0.85;
-    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
-    backdrop-filter: blur(18px) saturate(150%);
-  }
-
-  .gg-mobile-top-blocker {
-    top: max(env(safe-area-inset-top, 0px) + 0.2rem, 0.35rem);
-    height: 2.65rem;
-  }
-
-  .gg-mobile-bottom-blocker {
-    bottom: max(env(safe-area-inset-bottom, 0px) + 0.15rem, 0.25rem);
-    height: 4.3rem;
-    background: color-mix(in srgb, var(--gg-surface, #ffffff) 70%, transparent);
-  }
 
   .gg-app-shell {
     padding-top: max(calc(env(safe-area-inset-top, 0px) + 2.45rem), 4.45rem) !important;
     padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 5.5rem), 6.2rem) !important;
-  }
-
-  .gg-mobile-appbar {
-    top: max(env(safe-area-inset-top, 0px) + 0.45rem, 0.55rem) !important;
-    left: 50% !important;
-    transform: translateX(-50%);
-    width: min(90%, 22rem) !important;
-    min-height: 2.35rem !important;
-    padding: 0.45rem 0.65rem !important;
-    border-radius: 999px !important;
-    background: color-mix(in srgb, var(--gg-surface, #ffffff) 58%, transparent) !important;
-    box-shadow: none !important;
-  }
-
-  .gg-mobile-appbar-title {
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .gg-mobile-appbar-title .gg-mobile-kicker {
-    font-size: 0.82rem !important;
-    font-weight: 900 !important;
-    color: color-mix(in srgb, var(--gg-accent-700, #6d28d9) 72%, #0f172a) !important;
-  }
-
-  .gg-mobile-appbar h1,
-  .gg-mobile-appbar-title > p:not(.gg-mobile-kicker) {
-    display: none !important;
   }
 
   .gg-mobile-icon-button,
@@ -3414,35 +2931,6 @@ body {
     width: 2.15rem !important;
     height: 2.15rem !important;
     border-radius: 999px !important;
-  }
-
-  .gg-mobile-tabbar {
-    width: min(82%, 21rem) !important;
-    left: 50% !important;
-    right: auto !important;
-    transform: translateX(-50%);
-    bottom: max(env(safe-area-inset-bottom, 0px) + 0.32rem, 0.42rem) !important;
-    padding: 0.35rem !important;
-    min-height: 3.65rem !important;
-    background: rgba(2, 6, 23, 0.42) !important;
-    backdrop-filter: blur(28px) saturate(155%) !important;
-  }
-
-  .gg-mobile-tabbar a {
-    gap: 0.18rem !important;
-    min-width: 0;
-    padding: 0.42rem 0.2rem !important;
-  }
-
-  .gg-mobile-tabbar a span:last-child {
-    font-size: 0.63rem !important;
-  }
-
-  .gg-mobile-tabbar a.is-primary,
-  .gg-mobile-tabbar a.is-primary .gg-mobile-tab-icon {
-    background: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
   }
 
   .gg-mobile-home,
@@ -3598,30 +3086,11 @@ body {
   }
 }
 
-@media (display-mode: standalone) and (max-width: 1023px) {
-  .gg-mobile-top-blocker {
-    top: max(env(safe-area-inset-top, 0px) + 0.3rem, 0.4rem);
-  }
-
-  .gg-mobile-appbar {
-    top: max(env(safe-area-inset-top, 0px) + 0.55rem, 0.65rem) !important;
-  }
-
-  .gg-mobile-bottom-blocker,
-  .gg-mobile-tabbar {
-    bottom: max(env(safe-area-inset-bottom, 0px) + 0.18rem, 0.3rem) !important;
-  }
-}
-
 /* UI FIX 3 REPAIR -------------------------------------------------------
    The previous top blocker moved the header into the status area. This repair
    removes the top overlay/header, keeps feedback as a tiny floating action,
    and adds real bottom space behind/after the tab bar. */
 @media (max-width: 1023px) {
-  .gg-mobile-top-blocker,
-  .gg-mobile-appbar {
-    display: none !important;
-  }
 
   .gg-app-shell {
     padding-top: max(calc(env(safe-area-inset-top, 0px) + 0.9rem), 2.1rem) !important;
@@ -3649,75 +3118,6 @@ body {
     backdrop-filter: blur(20px) saturate(150%);
   }
 
-  .gg-mobile-bottom-blocker {
-    display: block !important;
-    position: fixed;
-    left: 50%;
-    bottom: 0;
-    z-index: 38;
-    height: max(calc(env(safe-area-inset-bottom, 0px) + 4.6rem), 5rem);
-    width: min(84%, 21rem);
-    transform: translateX(-50%);
-    border: 1px solid color-mix(in srgb, var(--gg-border, rgba(255,255,255,0.18)) 45%, transparent);
-    border-bottom: 0;
-    border-radius: 2rem 2rem 0 0;
-    background: color-mix(in srgb, var(--gg-surface, #ffffff) 36%, transparent);
-    box-shadow: 0 -12px 34px rgba(2, 6, 23, 0.16);
-    backdrop-filter: blur(22px) saturate(145%);
-  }
-
-  .gg-mobile-tabbar {
-    left: 50% !important;
-    right: auto !important;
-    bottom: max(calc(env(safe-area-inset-bottom, 0px) + 0.55rem), 0.65rem) !important;
-    z-index: 46 !important;
-    width: min(76%, 20rem) !important;
-    min-height: 3.35rem !important;
-    transform: translateX(-50%) !important;
-    border: 1px solid rgba(255,255,255,0.18) !important;
-    border-radius: 1.35rem !important;
-    background: rgba(2, 6, 23, 0.38) !important;
-    padding: 0.3rem !important;
-    box-shadow: 0 14px 36px rgba(2, 6, 23, 0.22) !important;
-    backdrop-filter: blur(28px) saturate(155%) !important;
-  }
-
-  .gg-mobile-tabbar a {
-    min-height: 2.7rem !important;
-    border-radius: 1rem !important;
-    background: transparent !important;
-    padding: 0.32rem 0.12rem !important;
-    outline: 1px solid transparent !important;
-    outline-offset: -1px !important;
-  }
-
-  .gg-mobile-tabbar a.is-active {
-    background: rgba(255,255,255,0.1) !important;
-    outline-color: rgba(255,255,255,0.24) !important;
-  }
-
-  .gg-mobile-tabbar a.is-primary {
-    margin-top: 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-  }
-
-  .gg-mobile-tabbar a.is-primary .gg-mobile-tab-icon {
-    height: auto !important;
-    width: auto !important;
-    background: transparent !important;
-    color: inherit !important;
-    box-shadow: none !important;
-  }
-
-  .gg-mobile-tab-icon {
-    font-size: 0.92rem !important;
-  }
-
-  .gg-mobile-tabbar a span:last-child {
-    font-size: 0.58rem !important;
-  }
-
   .gg-mobile-scroll-end-spacer {
     display: block !important;
     min-height: max(calc(env(safe-area-inset-bottom, 0px) + 5.5rem), 6rem);
@@ -3741,90 +3141,6 @@ body {
 .gg-readable-option-card.is-active,
 .gg-readable-option-card.is-active .gg-readable-option-description {
   color: #ffffff;
-}
-
-.gg-mobile-tabbar {
-  position: fixed;
-  left: 50%;
-  bottom: max(0.75rem, env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  width: min(20.5rem, calc(100vw - 2.6rem));
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.55rem;
-  padding: 0.7rem 0.8rem;
-  border-radius: 2rem;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(244, 247, 246, 0.82);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
-  z-index: 70;
-}
-
-.gg-mobile-tabbar::before {
-  content: "";
-  position: absolute;
-  inset: -0.25rem;
-  border-radius: 2.2rem;
-  background: rgba(255, 255, 255, 0.18);
-  filter: blur(18px);
-  z-index: -1;
-}
-
-.gg-theme-dark .gg-mobile-tabbar {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(7, 16, 13, 0.82);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
-}
-
-.gg-mobile-tabbar a {
-  min-height: 3.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 1.35rem;
-  color: rgba(71, 85, 105, 0.88);
-  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
-}
-
-.gg-theme-dark .gg-mobile-tabbar a {
-  color: rgba(226, 232, 240, 0.72);
-}
-
-.gg-mobile-tabbar a:hover {
-  transform: translateY(-1px);
-}
-
-.gg-mobile-tabbar a .gg-mobile-tab-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.gg-mobile-tabbar a .gg-mobile-tab-icon svg {
-  display: block;
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-.gg-mobile-tabbar a.is-active {
-  background: rgba(15, 23, 42, 0.08);
-  color: #0f172a;
-  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
-}
-
-.gg-theme-dark .gg-mobile-tabbar a.is-active {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-}
-
-.gg-mobile-tabbar a.is-primary,
-.gg-mobile-tabbar a.is-primary .gg-mobile-tab-icon,
-.gg-mobile-tabbar a.is-primary.is-active {
-  background: transparent;
-  box-shadow: none;
 }
 
 .gg-mobile-scroll-end-spacer {
@@ -4061,15 +3377,6 @@ body {
 }
 
 @media (max-width: 640px) {
-  .gg-mobile-tabbar {
-    width: min(18.75rem, calc(100vw - 2rem));
-    padding: 0.6rem 0.75rem;
-    gap: 0.45rem;
-  }
-
-  .gg-mobile-tabbar a {
-    min-height: 3rem;
-  }
 
   .gg-profile-compare-grid {
     grid-template-columns: 1fr;
@@ -4098,10 +3405,6 @@ body {
 
 /* UI fix 5: repair mobile scale, transparent icon-only hotbar, Apple-like planner density. */
 @media (max-width: 1023px) {
-  .gg-mobile-bottom-blocker,
-  .gg-mobile-tabbar::before {
-    display: none !important;
-  }
 
   .gg-app-shell {
     padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 7.25rem), 8.25rem) !important;
@@ -4109,71 +3412,6 @@ body {
 
   .gg-mobile-scroll-end-spacer {
     height: 11.5rem !important;
-  }
-
-  .gg-mobile-tabbar {
-    left: 50% !important;
-    right: auto !important;
-    bottom: max(env(safe-area-inset-bottom, 0px) + 0.7rem, 0.85rem) !important;
-    width: min(18rem, calc(100vw - 3.5rem)) !important;
-    min-height: auto !important;
-    display: grid !important;
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-    gap: 0.45rem !important;
-    padding: 0 !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    transform: translateX(-50%) !important;
-  }
-
-  .gg-mobile-tabbar a,
-  .gg-mobile-tabbar a.is-primary,
-  .gg-mobile-tabbar a.is-active,
-  .gg-mobile-tabbar a.is-primary.is-active {
-    min-height: 3.05rem !important;
-    width: 3.05rem !important;
-    height: 3.05rem !important;
-    margin: 0 auto !important;
-    padding: 0 !important;
-    display: grid !important;
-    place-items: center !important;
-    border: 1px solid rgba(255,255,255,0.22) !important;
-    border-radius: 1.18rem !important;
-    background: rgba(4, 18, 14, 0.58) !important;
-    color: rgba(236, 253, 245, 0.82) !important;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.18) !important;
-    backdrop-filter: blur(18px) saturate(140%) !important;
-    -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
-    transform: none !important;
-  }
-
-  .gg-mobile-tabbar a.is-active,
-  .gg-mobile-tabbar a.is-primary.is-active {
-    border-color: rgba(236, 253, 245, 0.45) !important;
-    background: rgba(236, 253, 245, 0.18) !important;
-    color: #ffffff !important;
-  }
-
-  .gg-mobile-tabbar a .gg-mobile-tab-icon,
-  .gg-mobile-tabbar a.is-primary .gg-mobile-tab-icon {
-    width: 1.35rem !important;
-    height: 1.35rem !important;
-    display: grid !important;
-    place-items: center !important;
-    background: transparent !important;
-    color: inherit !important;
-    box-shadow: none !important;
-    border: 0 !important;
-  }
-
-  .gg-mobile-tabbar a .gg-mobile-tab-icon svg {
-    width: 1.35rem !important;
-    height: 1.35rem !important;
-    display: block !important;
   }
 
   .gg-planner-panel {
@@ -4363,12 +3601,6 @@ body {
   }
 }
 
-@media (display-mode: standalone) and (max-width: 1023px) {
-  .gg-mobile-tabbar {
-    bottom: max(env(safe-area-inset-bottom, 0px) + 0.85rem, 1rem) !important;
-  }
-}
-
 
 @media (max-width: 1023px) {
   .gg-planner-panel .bg-slate-950 .rounded-2xl.p-3,
@@ -4488,15 +3720,6 @@ body {
     gap: 0.75rem;
   }
 
-  .gg-mobile-tabbar a,
-  .gg-mobile-tabbar a.is-primary,
-  .gg-mobile-tabbar a.is-active,
-  .gg-mobile-tabbar a.is-primary.is-active {
-    width: 3rem !important;
-    height: 3rem !important;
-    min-height: 3rem !important;
-  }
-
   .gg-profile-line-chart-svg {
     height: 9.5rem !important;
   }
@@ -4511,16 +3734,6 @@ body {
 html,
 body {
   background: var(--gg-app-bg, var(--background)) !important;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0 0 auto 0;
-  height: max(env(safe-area-inset-top, 0px), 0px);
-  background: var(--gg-app-bg, var(--background));
-  pointer-events: none;
-  z-index: 9998;
 }
 
 .gg-collapse-button {
@@ -5217,42 +4430,6 @@ body::before {
   }
 
   /* Light theme dock: inactive slots stay quiet, active slot is unmistakable. */
-  .gg-theme-light .gg-mobile-tabbar,
-  .gg-theme-system .gg-mobile-tabbar {
-    width: min(19.5rem, calc(100vw - 1.4rem)) !important;
-    gap: 0.32rem !important;
-    padding: 0.38rem !important;
-    border: 1px solid rgba(126, 203, 158, 0.34) !important;
-    border-radius: 1.55rem !important;
-    background: rgba(247, 253, 249, 0.82) !important;
-    box-shadow: 0 14px 36px rgba(20, 65, 44, 0.14) !important;
-    backdrop-filter: blur(20px) saturate(145%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(145%) !important;
-  }
-
-  .gg-theme-light .gg-mobile-tabbar a,
-  .gg-theme-system .gg-mobile-tabbar a,
-  .gg-theme-light .gg-mobile-tabbar a.is-primary,
-  .gg-theme-system .gg-mobile-tabbar a.is-primary {
-    width: 3rem !important;
-    height: 3rem !important;
-    min-height: 3rem !important;
-    border: 1px solid rgba(31, 74, 52, 0.16) !important;
-    background: rgba(24, 55, 42, 0.62) !important;
-    color: rgba(247, 253, 249, 0.82) !important;
-    box-shadow: none !important;
-  }
-
-  .gg-theme-light .gg-mobile-tabbar a.is-active,
-  .gg-theme-system .gg-mobile-tabbar a.is-active,
-  .gg-theme-light .gg-mobile-tabbar a.is-primary.is-active,
-  .gg-theme-system .gg-mobile-tabbar a.is-primary.is-active {
-    border: 2px solid var(--gg-accent-600) !important;
-    background: var(--gg-accent-600) !important;
-    color: #fff !important;
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--gg-accent-500) 18%, transparent), 0 10px 24px color-mix(in srgb, var(--gg-accent-600) 26%, transparent) !important;
-    transform: translateY(-0.16rem) scale(1.04) !important;
-  }
 }
 
 /* Mobile PWA calendar density + premium dock correction 2026-07-22 -------
@@ -5361,82 +4538,6 @@ body::before {
   .gg-calendar-day p.truncate { display: none !important; }
 
   /* One calm dock surface instead of five heavy boxes. */
-  .gg-mobile-tabbar,
-  .gg-theme-light .gg-mobile-tabbar,
-  .gg-theme-system .gg-mobile-tabbar {
-    left: max(env(safe-area-inset-left, 0px), 0.75rem) !important;
-    right: max(env(safe-area-inset-right, 0px), 0.75rem) !important;
-    bottom: max(env(safe-area-inset-bottom, 0px), 0.55rem) !important;
-    width: auto !important;
-    min-height: 3.75rem !important;
-    gap: 0.18rem !important;
-    padding: 0.34rem !important;
-    border: 1px solid color-mix(in srgb, var(--gg-border) 82%, transparent) !important;
-    border-radius: 1.35rem !important;
-    background: color-mix(in srgb, var(--gg-surface) 88%, transparent) !important;
-    box-shadow: 0 14px 34px rgba(15, 40, 28, 0.14) !important;
-    backdrop-filter: blur(22px) saturate(135%) !important;
-    -webkit-backdrop-filter: blur(22px) saturate(135%) !important;
-  }
-
-  .gg-mobile-tabbar a,
-  .gg-theme-light .gg-mobile-tabbar a,
-  .gg-theme-system .gg-mobile-tabbar a,
-  .gg-mobile-tabbar a.is-primary,
-  .gg-theme-light .gg-mobile-tabbar a.is-primary,
-  .gg-theme-system .gg-mobile-tabbar a.is-primary {
-    position: relative !important;
-    width: auto !important;
-    height: 3.05rem !important;
-    min-height: 3.05rem !important;
-    margin: 0 !important;
-    border: 0 !important;
-    border-radius: 1rem !important;
-    background: transparent !important;
-    color: color-mix(in srgb, var(--gg-app-text) 56%, transparent) !important;
-    box-shadow: none !important;
-    outline: 0 !important;
-    transform: none !important;
-  }
-
-  .gg-mobile-tabbar a.is-active,
-  .gg-theme-light .gg-mobile-tabbar a.is-active,
-  .gg-theme-system .gg-mobile-tabbar a.is-active,
-  .gg-mobile-tabbar a.is-primary.is-active,
-  .gg-theme-light .gg-mobile-tabbar a.is-primary.is-active,
-  .gg-theme-system .gg-mobile-tabbar a.is-primary.is-active {
-    border: 0 !important;
-    background: color-mix(in srgb, var(--gg-accent-500) 14%, var(--gg-surface)) !important;
-    color: var(--gg-accent-700, var(--gg-accent-600)) !important;
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gg-accent-500) 30%, transparent) !important;
-    transform: none !important;
-  }
-
-  .gg-mobile-tabbar a.is-active::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    bottom: 0.22rem;
-    width: 0.28rem;
-    height: 0.28rem;
-    border-radius: 999px;
-    background: var(--gg-accent-600);
-    transform: translateX(-50%);
-    box-shadow: 0 0 0.55rem color-mix(in srgb, var(--gg-accent-600) 55%, transparent);
-  }
-
-  .gg-mobile-tabbar .gg-mobile-tab-icon,
-  .gg-mobile-tabbar a.is-primary .gg-mobile-tab-icon {
-    width: 2rem !important;
-    height: 2rem !important;
-    border-radius: 0.75rem !important;
-    background: transparent !important;
-  }
-
-  .gg-mobile-tabbar svg {
-    width: 1.35rem !important;
-    height: 1.35rem !important;
-  }
 
   /* Smaller focus ring, especially on portrait PWA screens. */
   .gg-timer-ring {
@@ -5452,38 +4553,8 @@ body::before {
 
 
 /* GradeGlow mobile dock centering hotfix 2026-07-22 */
-@media (max-width: 767px) {
-  .gg-mobile-tabbar {
-    left: 50% !important;
-    right: auto !important;
-    width: min(calc(100vw - 1.5rem), 27rem) !important;
-    transform: translateX(-50%) !important;
-  }
-}
 
 /* Stable viewport-centered mobile dock + collapsed Circle settings 2026-07-22 */
-@media (max-width: 767px) {
-  .gg-mobile-tabbar-shell {
-    position: fixed;
-    inset: auto 0 max(0.75rem, env(safe-area-inset-bottom)) 0;
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    padding-inline: 0.75rem;
-    pointer-events: none;
-  }
-
-  .gg-mobile-tabbar-shell .gg-mobile-tabbar {
-    position: relative !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    transform: none !important;
-    width: min(100%, 24rem) !important;
-    margin: 0 auto !important;
-    pointer-events: auto;
-  }
-}
 
 /* A single entry screen; safe-area padding belongs to its content, not its background. */
 html:has(.gg-auth-page), body:has(.gg-auth-page) {
@@ -5543,7 +4614,6 @@ body:has(.gg-auth-page)::before { display: none; }
 
 /* The document keeps its appearance before hydration and during navigation. */
 html, body { background: var(--gg-document-bg, var(--background)) !important; }
-body::before { background: var(--gg-document-bg, var(--background)); }
 html[data-color-mode="dark"] .gg-theme-system {
   --gg-app-bg: #070817;
   --gg-app-text: #f8fafc;
@@ -5560,67 +4630,6 @@ html[data-color-mode="dark"] .gg-theme-system .gg-plan-agenda-grid > div:last-ch
 }
 
 /* The dock lives in a portal, so it carries its own theme and accent. */
-.gg-mobile-tabbar-shell.gg-themed {
-  background: transparent !important;
-  --gg-dock-bg: rgba(255, 255, 255, 0.96);
-  --gg-dock-text: #46546d;
-  --gg-dock-border: rgba(71, 85, 105, 0.24);
-  --gg-dock-active-bg: var(--gg-accent-100, #ede9fe);
-  --gg-dock-active-text: var(--gg-accent-700, #6d28d9);
-}
-html[data-color-mode="dark"] .gg-mobile-tabbar-shell.gg-themed {
-  --gg-dock-bg: rgba(22, 27, 46, 0.97);
-  --gg-dock-text: #d5def4;
-  --gg-dock-border: rgba(175, 189, 220, 0.44);
-  --gg-dock-active-bg: color-mix(in srgb, var(--gg-accent-500, #8b5cf6) 22%, #f8fafc);
-  --gg-dock-active-text: #171c30;
-}
-@media (max-width: 1023px) {
-  .gg-mobile-tabbar-shell {
-    position: fixed;
-    inset: auto 0 max(0.75rem, env(safe-area-inset-bottom)) 0;
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    padding-inline: max(0.75rem, env(safe-area-inset-left)) max(0.75rem, env(safe-area-inset-right));
-    pointer-events: none;
-  }
-  .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar {
-    position: relative !important;
-    inset: auto !important;
-    transform: none !important;
-    width: min(100%, 24rem) !important;
-    margin: 0 auto !important;
-    padding: 0.35rem !important;
-    gap: 0.2rem !important;
-    border: 1px solid var(--gg-dock-border) !important;
-    background: var(--gg-dock-bg) !important;
-    border-radius: 1.4rem !important;
-    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.08) inset !important;
-    pointer-events: auto;
-  }
-  .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a,
-  .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a.is-primary {
-    height: 3rem !important;
-    min-height: 3rem !important;
-    color: var(--gg-dock-text) !important;
-    background: transparent !important;
-    opacity: 1 !important;
-    border: 0 !important;
-    box-shadow: none !important;
-  }
-  .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a.is-active,
-  .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a.is-primary.is-active {
-    color: var(--gg-dock-active-text) !important;
-    background: var(--gg-dock-active-bg) !important;
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gg-accent-500) 45%, transparent) !important;
-  }
-  .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a:focus-visible {
-    outline: 2px solid var(--gg-dock-text) !important;
-    outline-offset: 2px;
-  }
-  .gg-mobile-tabbar-shell .gg-mobile-tab-icon { background: transparent !important; }
-}
 
 /* Code-native logo styles, available independently of premium cosmetics. */
 .gg-logo-icon.gg-logo-adaptive[data-logo-appearance] {

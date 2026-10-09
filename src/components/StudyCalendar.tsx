@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { TouchEvent } from "react";
 import { layoutTimelineEntries, localDateKey, mondayOf, shiftDay, timeInMinutes } from "../lib/calendarLayout";
 import type { CalendarEntry, CalendarViewMode } from "../lib/calendarLayout";
 
-const HOUR_HEIGHT = 48;
+const HOUR_HEIGHT = 44;
 const weekdays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const entryTime = (entry: CalendarEntry) => entry.time || "Ohne Uhrzeit";
 
 function DayTimeline({ date, entries, onOpen }: { date: Date; entries: CalendarEntry[]; onOpen: (entry: CalendarEntry) => void }) {
+  const [showEarly, setShowEarly] = useState(false);
+  const timeline = useRef<HTMLDivElement>(null);
+  const initialized = useRef(false);
+  const startHour = showEarly ? 0 : 7;
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const interval = window.setInterval(() => setNow(new Date()), 60_000);
@@ -19,18 +23,39 @@ function DayTimeline({ date, entries, onOpen }: { date: Date; entries: CalendarE
   const untimed = entries.filter(entry => timeInMinutes(entry.time) === null);
   const key = localDateKey(date);
   const isToday = key === localDateKey(now);
+  const firstStart = positions[0]?.start;
+  useLayoutEffect(() => {
+    if (initialized.current) return;
+    const node = timeline.current, main = node?.closest("main");
+    if (!node || !main) return;
+    const frame = requestAnimationFrame(() => {
+      const current = new Date();
+      const target = isToday ? current.getHours() * 60 + current.getMinutes() - 60 : firstStart ?? 420;
+      main.scrollTo({ top: Math.max(0, main.scrollTop + node.getBoundingClientRect().top - main.getBoundingClientRect().top + (Math.max(420, target) - 420) / 60 * HOUR_HEIGHT), behavior: "instant" });
+      initialized.current = true;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [firstStart, isToday]);
+  const revealEarly = () => {
+    // Preserve the visible hour when prepending the seven hidden hours.
+    const main = timeline.current?.closest("main");
+    const previousTop = main?.scrollTop ?? 0;
+    setShowEarly(true);
+    requestAnimationFrame(() => main?.scrollTo({ top: previousTop + 7 * HOUR_HEIGHT, behavior: "instant" }));
+  };
   return <>
     {untimed.length > 0 && <div className="gg-calendar-untimed"><span>Ohne Uhrzeit</span><div>{untimed.map(entry => <button type="button" key={entry.id} data-kind={entry.kind} onClick={() => onOpen(entry)}>{entry.title}</button>)}</div></div>}
+    {!showEarly && <button type="button" className="gg-calendar-show-early" onClick={revealEarly}>Früher anzeigen{positions.some(item => item.start < 420) ? " · frühe Termine vorhanden" : ""}</button>}
     <div className="gg-calendar-timeline-viewport" aria-label="Tageskalender">
-      <div className="gg-calendar-timeline" style={{ height: 24 * HOUR_HEIGHT }}>
-        {Array.from({ length: 24 }, (_, hour) => <div className="gg-calendar-hour" key={hour} style={{ top: hour * HOUR_HEIGHT }}><span>{String(hour).padStart(2, "0")}:00</span><i /></div>)}
-        <div className="gg-calendar-event-lanes">{positions.map(({ entry, start, end, lane, lanes }) => <button type="button" key={entry.id} className={`gg-calendar-event ${entry.isDone ? "is-done" : ""} ${end - start < 45 ? "is-short" : ""}`} data-kind={entry.kind}
+      <div ref={timeline} className="gg-calendar-timeline" style={{ height: (24 - startHour) * HOUR_HEIGHT }}>
+        {Array.from({ length: 24 - startHour }, (_, index) => index + startHour).map(hour => <div className="gg-calendar-hour" key={hour} style={{ top: (hour - startHour) * HOUR_HEIGHT }}><span>{String(hour).padStart(2, "0")}:00</span><i /></div>)}
+        <div className="gg-calendar-event-lanes">{positions.filter(item => item.end > startHour * 60).map(({ entry, start, end, lane, lanes }) => <button type="button" key={entry.id} className={`gg-calendar-event ${entry.isDone ? "is-done" : ""} ${end - start < 45 ? "is-short" : ""}`} data-kind={entry.kind}
           draggable={entry.kind === "study"} onDragStart={event => { event.dataTransfer.setData("application/gradeglow-entry", entry.id); event.dataTransfer.effectAllowed = "move"; }}
-          style={{ top: start / 60 * HOUR_HEIGHT, height: Math.max(1, (end - start) / 60 * HOUR_HEIGHT - 2), left: `${lane / lanes * 100}%`, width: `calc(${100 / lanes}% - 3px)` }}
+          style={{ top: (Math.max(start, startHour * 60) / 60 - startHour) * HOUR_HEIGHT, height: Math.max(1, (end - Math.max(start, startHour * 60)) / 60 * HOUR_HEIGHT - 2), left: `${lane / lanes * 100}%`, width: `calc(${100 / lanes}% - 3px)` }}
           aria-label={`${entry.title}, ${entry.time}, ${entry.kind === "study" ? `${entry.durationMinutes} Minuten` : "Prüfung, Dauer noch offen"}${entry.isDone ? ", erledigt" : ""}`} onClick={() => onOpen(entry)}>
           <strong>{entry.isDone ? "✓ " : ""}{entry.title}</strong><span>{entry.time} · {entry.kind === "study" ? `${entry.durationMinutes} min` : "Prüfung · Dauer offen"}</span>{entry.moduleName && <small>{entry.moduleName}</small>}
         </button>)}</div>
-        {isToday && <div className="gg-calendar-now" style={{ top: (now.getHours() + now.getMinutes() / 60) * HOUR_HEIGHT }} aria-label="Aktuelle Uhrzeit"><span>{now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}</span><i /></div>}
+        {isToday && now.getHours() >= startHour && <div className="gg-calendar-now" style={{ top: (now.getHours() + now.getMinutes() / 60 - startHour) * HOUR_HEIGHT }} aria-label="Aktuelle Uhrzeit"><span>{now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}</span><i /></div>}
       </div>
     </div>
     {entries.length === 0 && <p className="gg-calendar-empty">Noch nichts geplant. Platz für Lernen – und für Pausen.</p>}
@@ -83,7 +108,7 @@ export default function StudyCalendar({ date, onDateChange, entries, onOpen, onM
     {mode === "week" ? <div className="gg-calendar-week-agenda">{week.map(day => {
       const key = localDateKey(day), dayEntries = filtered.filter(entry => entry.dateKey === key).sort((a, b) => a.time.localeCompare(b.time));
       return <div className="gg-calendar-agenda-day" key={key}><button type="button" className={key === today ? "is-today" : ""} onClick={() => { onDateChange(day); setMode("day"); }}><span>{weekdays[(day.getDay() + 6) % 7]}</span><strong>{day.getDate()}</strong></button><div>{dayEntries.length ? dayEntries.map(entry => <button type="button" className="gg-calendar-agenda-event" key={entry.id} data-kind={entry.kind} onClick={() => onOpen(entry)}><span>{entryTime(entry)}</span><strong>{entry.isDone ? "✓ " : ""}{entry.title}</strong><small>{entry.kind === "exam" ? "Prüfung" : `${entry.durationMinutes} min Lernen`}</small></button>) : <p>Keine Termine</p>}</div></div>;
-    })}</div> : <DayTimeline date={date} entries={filtered.filter(entry => entry.dateKey === selected)} onOpen={onOpen} />}
+    })}</div> : <DayTimeline key={selected} date={date} entries={filtered.filter(entry => entry.dateKey === selected)} onOpen={onOpen} />}
     <div className="gg-calendar-key"><span><i data-kind="exam" />Prüfungen</span><span><i data-kind="study" />Lernblöcke</span><span>Tippen zum Bearbeiten</span></div>
   </section>;
 }

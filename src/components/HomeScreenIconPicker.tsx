@@ -6,7 +6,7 @@ import { HOME_SCREEN_ICONS, homeScreenIconPath } from "../lib/homeScreenIcons";
 import type { HomeScreenIcon } from "../lib/homeScreenIcons";
 
 export default function HomeScreenIconPicker() {
-  const [style, setStyle] = useState<HomeScreenIcon>("dark");
+  const [style, setStyle] = useState<HomeScreenIcon>("anglerfish");
   const [copied, setCopied] = useState(false);
   const [copyFallback, setCopyFallback] = useState("");
   const copyInstallLink = async () => {

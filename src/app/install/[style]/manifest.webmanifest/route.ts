@@ -10,7 +10,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ sty
   return Response.json({
     ...manifest(),
     // Same identity, scope and launch URL for every installation style.
-    icons: [
+    icons: style === "anglerfish" ? manifest().icons : [
       { src: homeScreenIconPath(style, 192), sizes: "192x192", type: "image/png", purpose: "any" },
       { src: homeScreenIconPath(style, 512), sizes: "512x512", type: "image/png", purpose: "any maskable" },
     ],

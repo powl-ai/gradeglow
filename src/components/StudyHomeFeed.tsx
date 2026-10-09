@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import GlowMascot from "./GlowMascot";
+import Mascot from "./Mascot";
 import { localDateKey, mondayOf, shiftDay } from "../lib/calendarLayout";
 import type { ExamPlanItem } from "../types";
 
@@ -26,7 +26,7 @@ export default function StudyHomeFeed({ name, exams, passedEcts, targetEcts, ave
     <article className="gg-home-focus-card">
       <div><span className="gg-feed-eyebrow">DEIN KLEINER GLOW-MOMENT</span><h3>{timerRunning ? "Du bist schon im Flow." : todayDone > 0 ? "Das war ein guter Anfang." : "Kleine Schritte. Großer Glow."}</h3><p>{timerRunning ? "Deine Session läuft weiter. Bleib bei einer Sache – du hast das." : todayDone > 0 ? "Lumi freut sich mit dir. Ein weiterer Fokusblock oder eine verdiente Pause?" : "Du musst heute nicht alles schaffen. Fang mit einem Fokusblock an."}</p>
         <Link className="gg-feed-primary" href="/timer">{timerRunning ? "Zum laufenden Timer" : "Fokus starten"}<span aria-hidden="true">↗</span></Link>
-      </div><GlowMascot happy={todayDone > 0} />
+      </div><Mascot mood="happy" />
     </article>
     <article className="gg-feed-card gg-home-week">
       <div className="gg-feed-section-title"><h3>Deine Woche</h3><span>{streak > 0 ? `${streak} ${streak === 1 ? "Tag" : "Tage"} in Folge` : "Jeder Anfang zählt"}</span></div>

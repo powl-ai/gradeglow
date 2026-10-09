@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gradeglow-v55";
+const CACHE_VERSION = "gradeglow-v58";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -18,10 +18,10 @@ const APP_SHELL = [
   "/schedule",
   "/manifest.webmanifest",
   "/offline.html",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-  "/icons/maskable-512.png",
-  "/icons/apple-touch-icon.png",
+  "/icons/icon-192.png?v=2",
+  "/icons/icon-512.png?v=2",
+  "/icons/maskable-512.png?v=2",
+  "/icons/apple-touch-icon.png?v=2",
 ];
 
 self.addEventListener("install", (event) => {
@@ -54,6 +54,22 @@ self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
+});
+
+self.addEventListener("notificationclick", (event) => {
+  if (event.notification.data?.kind !== "gradeglow-focus") return;
+  event.notification.close();
+  event.waitUntil((async () => {
+    const url = new URL("/timer", self.location.origin).href;
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const existing = windows.find((client) => new URL(client.url).origin === self.location.origin);
+    if (existing) {
+      await existing.navigate(url);
+      await existing.focus();
+    } else {
+      await self.clients.openWindow(url);
+    }
+  })());
 });
 
 self.addEventListener("fetch", (event) => {

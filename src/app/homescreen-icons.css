@@ -1,7 +1,7 @@
 .gg-homescreen-picker { padding-top: 1rem; border-top: 1px solid var(--gg-border); color: var(--gg-app-text); }
 .gg-homescreen-picker h3 { font-size: 1rem; font-weight: 750; }
 .gg-homescreen-picker p { margin-top: .5rem; color: var(--gg-muted); font-size: .8rem; line-height: 1.5; }
-.gg-homescreen-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin-top: 1rem; }
+.gg-homescreen-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-top: 1rem; }
 .gg-homescreen-options button { display: flex; flex-direction: column; align-items: center; gap: .6rem; padding: .8rem .25rem; min-height: 2.75rem; border-radius: 1rem; border: 1px solid var(--gg-border); background: var(--gg-surface) !important; color: var(--gg-app-text) !important; font-size: .8rem !important; font-weight: 650; }
 .gg-homescreen-options button[aria-pressed="true"] { border: 2px solid var(--gg-ui-accent); background: var(--gg-surface-soft) !important; }
 .gg-homescreen-options img { width: 4rem; height: 4rem; border-radius: .95rem; }

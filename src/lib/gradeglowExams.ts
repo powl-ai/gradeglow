@@ -67,7 +67,7 @@ const migrateStudySessions = (rawSessions: unknown, examId: string): StudySessio
         title: asString(record.title, "Lerneinheit").trim() || "Lerneinheit",
         dateKey,
         time: asString(record.time).trim(),
-        durationMinutes: Math.max(15, Math.round(asNumber(record.durationMinutes, 90))),
+        durationMinutes: Math.max(record.startedAtIso && record.completedAtIso ? 1 : 15, Math.round(asNumber(record.durationMinutes, 90))),
         focus: asString(record.focus).trim(),
         notes: asString(record.notes).trim(),
         isDone: record.isDone === true,

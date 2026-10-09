@@ -6,6 +6,7 @@ import { LOGO_APPEARANCES } from "../lib/appearance";
 import GradeGlowLogo from "./GradeGlowLogo";
 import HomeScreenIconPicker from "./HomeScreenIconPicker";
 import NotificationSettingsCard from "./NotificationSettingsCard";
+import FocusSettingsCard from "./FocusSettingsCard";
 import BetaNoticeCard from "./BetaNoticeCard";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -1096,6 +1097,7 @@ export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
             </div>
 
 
+            <FocusSettingsCard />
             <NotificationSettingsCard user={user} />
             <div className="rounded-3xl bg-white/90 p-5 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
               <p className="text-sm font-bold text-violet-700">Backup</p>

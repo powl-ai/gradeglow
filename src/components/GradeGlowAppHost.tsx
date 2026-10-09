@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import AuthGate from "./AuthGate";
 import GradeGlowApp from "./GradeGlowApp";
 import MobileAppHeader from "./MobileAppHeader";
+import FocusSessionProvider from "./FocusSessionProvider";
 import type { DashboardPage } from "./GradeGlowDashboard";
 
 const dashboardRoutes: Record<string, DashboardPage> = {
@@ -52,7 +53,7 @@ export default function GradeGlowAppHost({ children }: { children: ReactNode }) 
 
   return (
     <AuthGate>
-      {() => <div ref={shell} className="gg-native-layout"><MobileAppHeader pathname={pathname} />{page ? <GradeGlowApp page={page} /> : children}</div>}
+      {({ user }) => <FocusSessionProvider key={user.uid} uid={user.uid}><div ref={shell} className="gg-native-layout"><MobileAppHeader pathname={pathname} />{page ? <GradeGlowApp page={page} /> : children}</div></FocusSessionProvider>}
     </AuthGate>
   );
 }

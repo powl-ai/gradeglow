@@ -9,7 +9,7 @@
 html, body { height: 100%; min-height: 0; overflow: hidden !important; overscroll-behavior: none; }
 body { height: 100dvh; padding: 0 !important; touch-action: manipulation; }
 .gg-native-layout { display: flex; flex-direction: column; flex: 1; height: 100dvh; min-height: 0; overflow: hidden; }
-html body main { flex: 1; height: 100%; min-height: 0 !important; overflow-x: hidden; overflow-y: auto; overscroll-behavior: none; touch-action: pan-y pinch-zoom; }
+html body main { flex: 1; height: auto; min-height: 0 !important; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y pinch-zoom; }
 html .gg-auth-page { min-height: 0; }
 .gg-app-header { display: none; }
 .gg-themed { --gg-ui-accent: var(--gg-accent-700, #6d28d9); }
@@ -67,6 +67,38 @@ html[data-color-mode="dark"] .gg-home-feed .gg-home-focus-card { background: lin
 .gg-home-focus-card h3 { margin-top: .65rem; font-size: clamp(1.25rem, 4.8vw, 1.7rem); line-height: 1.18; letter-spacing: -.035em; font-weight: 760; }
 .gg-home-focus-card p { margin-top: .65rem; font-size: .83rem; line-height: 1.5; opacity: .85; }
 .gg-glow-mascot { width: 100%; height: auto; overflow: visible; }
+
+/* Focus: a quiet timer, voluntary protection and compact return feedback. */
+.gg-focus-stage { gap: .55rem; padding-top: .75rem; }
+.gg-focus-mascot { width: clamp(5rem, 24vw, 7rem); }
+.gg-focus-stage .gg-timer-ring { width: min(62vw, 15rem); animation: none; box-shadow: none; }
+.gg-focus-stage .gg-timer-ring-inner span { font-size: clamp(2.2rem, 13vw, 4.5rem); }
+.gg-focus-stage .gg-timer-stage-meta { width: 100%; min-width: 0; }
+.gg-focus-stage .gg-timer-stage-meta strong { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.gg-focus-actions button { padding: .65rem .75rem; min-height: 2.75rem; }
+.gg-focus-actions button:nth-child(3) { grid-column: 1 / -1; }
+.gg-focus-return { display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; margin: .75rem 0; padding: .85rem; border: 1px solid var(--gg-border); border-radius: 1rem; background: var(--gg-surface-soft); color: var(--gg-app-text); }
+.gg-focus-return .gg-glow-mascot { width: 3.5rem; flex: 0 0 3.5rem; }
+.gg-focus-return > div { flex: 1; min-width: 8rem; }
+.gg-focus-return strong { font-size: .85rem; }
+.gg-focus-return p { margin: .2rem 0 0; font-size: .78rem; color: var(--gg-muted); }
+.gg-focus-return button, .gg-focus-notification-option button { min-height: 2.75rem; padding: .55rem .8rem; border: 1px solid var(--gg-border); border-radius: .85rem; background: var(--gg-surface); color: var(--gg-ui-accent); font-size: .8rem; font-weight: 800; }
+.gg-focus-settings { padding: 1.25rem; border: 1px solid var(--gg-border); border-radius: 1.5rem; background: var(--gg-surface); color: var(--gg-app-text); }
+.gg-focus-settings h2, .gg-focus-consent h2 { font-size: 1.2rem; font-weight: 900; }
+.gg-focus-settings p, .gg-focus-consent p { margin: .6rem 0; font-size: .85rem; line-height: 1.6; }
+.gg-focus-muted { color: var(--gg-muted); }
+.gg-focus-toggle { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 3.5rem; margin: .8rem 0; padding: .6rem .8rem; border: 1px solid var(--gg-border); border-radius: 1rem; font-size: .9rem; font-weight: 800; }
+.gg-focus-toggle small { display: block; font-size: .7rem; font-weight: 600; color: var(--gg-muted); }
+.gg-focus-toggle input { width: 1.35rem; height: 1.35rem; accent-color: var(--gg-accent-600); }
+.gg-focus-settings button:disabled { opacity: .5; }
+.gg-focus-coming-soon, .gg-focus-native-option { margin: .9rem 0; padding: .8rem; border-radius: 1rem; background: var(--gg-surface-soft); font-size: .8rem; }
+.gg-focus-coming-soon p { margin-bottom: 0; }
+.gg-focus-consent { padding: 1.4rem; }
+.gg-focus-dialog-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; margin-top: 1rem; }
+.gg-focus-dialog-actions button { min-height: 2.75rem; border-radius: 1rem; padding: .65rem; font-size: .85rem; font-weight: 800; background: var(--gg-surface-soft); color: var(--gg-app-text); }
+.gg-focus-dialog-actions button:last-child { background: var(--gg-accent-700); color: white; }
+.gg-focus-completed, .gg-focus-warning { margin-top: .75rem; padding: .7rem; border-radius: .9rem; background: var(--gg-surface-soft); color: var(--gg-app-text); font-size: .85rem; }
+.gg-timer-hint a { display: inline-block; padding: .5rem 0; color: var(--gg-ui-accent); font-weight: 800; }
 .gg-lumi-character { transform-origin: 90px 175px; }
 @media (prefers-reduced-motion: no-preference) {
   .gg-lumi-character { animation: gg-lumi-float 4s ease-in-out infinite; }
@@ -195,8 +227,8 @@ html[data-color-mode="dark"] .gg-calendar-event.is-done { background: #213d38; c
 .gg-calendar-agenda-event small { font-size: .7rem; color: var(--gg-muted); }
 .gg-planner-management-heading h3 { font-size: 1rem; font-weight: 700; }
 .gg-planner-management-heading p { color: var(--gg-muted); font-size: .8rem; margin-top: .3rem; }
-html .gg-demo-bar { display: block; padding: .2rem .85rem; border-radius: .85rem; background: var(--gg-surface-soft); border-color: var(--gg-border); color: var(--gg-app-text); }
-.gg-demo-bar > summary { display: flex; align-items: center; justify-content: space-between; min-height: 2.75rem; gap: .5rem; font-size: .76rem; font-weight: 650; cursor: pointer; }
+html .gg-demo-bar { display: block; padding: 0 .85rem; border-radius: .85rem; background: var(--gg-surface-soft); border-color: var(--gg-border); color: var(--gg-app-text); }
+.gg-demo-bar > summary { display: flex; align-items: center; justify-content: space-between; height: 30px; min-height: 30px; gap: .5rem; font-size: .76rem; font-weight: 650; cursor: pointer; }
 .gg-demo-bar > summary span { color: var(--gg-muted); font-weight: 500; }
 .gg-demo-bar[open] > div { padding-bottom: .7rem; }
 
@@ -204,7 +236,7 @@ html .gg-demo-bar { display: block; padding: .2rem .85rem; border-radius: .85rem
   html { font-size: 16px !important; }
   body:has(.gg-app-header) { padding: 0 !important; }
   .gg-app-header {
-    display: block; position: fixed; inset: 0 0 auto; z-index: 50;
+    display: block; position: relative; flex-shrink: 0; z-index: 50;
     height: calc(var(--gg-safe-top) + var(--gg-header-height)); padding-top: var(--gg-safe-top);
     background: var(--gg-document-bg, #f4fbf7); border-bottom: 1px solid rgb(127 127 155 / .16);
     color: var(--foreground); isolation: isolate;
@@ -218,13 +250,24 @@ html .gg-demo-bar { display: block; padding: .2rem .85rem; border-radius: .85rem
   .gg-header-action { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 50%; color: inherit; text-decoration: none; }
   .gg-header-action svg { width: 1.35rem; height: 1.35rem; }
   .gg-header-action:hover { background: rgb(127 127 155 / .12); }
-  html .gg-native-layout > main { height: auto; margin-top: calc(var(--gg-header-height) + var(--gg-safe-top)); padding-top: 0 !important; padding-bottom: 1rem !important; }
-  html body:has(.gg-mobile-tabbar-shell) .gg-native-layout > main { padding-bottom: calc(var(--gg-nav-height) + var(--gg-safe-bottom) + 16px) !important; }
+  html .gg-native-layout > main { height: auto; margin-top: 0; padding-top: 0 !important; padding-bottom: 1rem !important; }
   html body:has(.gg-app-header) .gg-app-shell { padding-top: 1rem !important; padding-inline: max(.9rem, env(safe-area-inset-left, 0px)) max(.9rem, env(safe-area-inset-right, 0px)) !important; padding-bottom: 0 !important; gap: 1rem !important; overflow-x: visible !important; }
   html body:has(.gg-app-header) main.gg-themed > .mx-auto:not(.gg-app-shell) { padding-top: 1rem !important; padding-bottom: 0 !important; }
   html .gg-mobile-scroll-end-spacer { display: none !important; }
-  html .gg-mobile-tabbar-shell { z-index: 60 !important; bottom: var(--gg-safe-bottom) !important; }
-  html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar { width: min(100%, 30rem) !important; height: var(--gg-nav-height) !important; min-height: var(--gg-nav-height) !important; padding: .3rem !important; border-radius: 1.5rem !important; }
+  html .gg-native-layout > .gg-mobile-tabbar-shell.gg-themed {
+    position: static !important; inset: auto !important; transform: none !important;
+    flex-shrink: 0; width: 100%; margin: 0 !important;
+    padding: 0 max(.35rem, env(safe-area-inset-right)) var(--gg-safe-bottom) max(.35rem, env(safe-area-inset-left)) !important;
+    background: var(--gg-dock-bg) !important; border-top: 1px solid var(--gg-dock-border);
+    border-radius: 0 !important; box-shadow: none !important;
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    pointer-events: auto; z-index: auto !important;
+    --gg-dock-bg: #fff; --gg-ring-track: #e2e8f0;
+  }
+  html[data-color-mode="dark"] .gg-native-layout > .gg-mobile-tabbar-shell.gg-themed { --gg-dock-bg: #161b2e; }
+  html .gg-native-layout > .gg-mobile-tabbar-shell.gg-themed::before,
+  html .gg-native-layout > .gg-mobile-tabbar-shell.gg-themed::after { display: none !important; }
+  html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar { width: 100% !important; max-width: none !important; display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-auto-flow: row !important; height: var(--gg-nav-height) !important; min-height: var(--gg-nav-height) !important; padding: .3rem !important; border-radius: 0 !important; border: 0 !important; background: var(--gg-dock-bg) !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
   html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a,
   html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a.is-primary { display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: .25rem; min-width: 0; height: 3.4rem !important; min-height: 3.4rem !important; padding: .3rem .15rem !important; border-radius: 1.15rem !important; }
   html .gg-mobile-tabbar-shell .gg-mobile-tabbar a::after { display: none !important; }
@@ -297,3 +340,28 @@ html .gg-demo-bar { display: block; padding: .2rem .85rem; border-radius: .85rem
 
 .gg-learning-trend-labels span:first-child { justify-content: flex-start; }
 .gg-learning-trend-labels span:last-child { justify-content: flex-end; }
+
+/* Phase 1: SVG trend and compact timeline controls. */
+:root { --gg-ring-track: #e2e8f0; }
+html[data-color-mode="dark"] { --gg-ring-track: rgb(255 255 255 / .10); }
+.gg-profile-progress-card { display: flex; align-items: center; gap: 1rem; }
+.gg-profile-ring { display: grid; place-items: center; flex: 0 0 5.25rem; width: 5.25rem; height: 5.25rem; border-radius: 50%; padding: .5rem; }
+.gg-profile-ring > div { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--gg-surface); }
+.gg-profile-ring strong { font-size: 1.4rem; white-space: nowrap; }
+.gg-learning-trend-heading { margin-top: .8rem; }
+.gg-learning-trend-summary { margin-top: 0; }
+.gg-trend-svg-wrap { position: relative; margin-top: .75rem; }
+.gg-trend-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.gg-trend-guide { stroke: var(--gg-border); stroke-width: 1; }
+.gg-trend-axis { fill: var(--gg-muted); font-size: 9px; }
+.gg-trend-value { fill: var(--gg-ui-accent); font-size: 10px; font-weight: 700; }
+.gg-trend-bar { fill: #c4b5fd; }
+.gg-trend-bar.is-current { fill: var(--gg-accent-500, #8b5cf6); }
+.gg-trend-bar.is-zero { fill: color-mix(in srgb, #c4b5fd 30%, var(--gg-surface)); }
+.gg-trend-svg g[role="button"] { cursor: pointer; }
+.gg-trend-svg g[role="button"]:focus-visible rect:first-child { stroke: var(--gg-ui-accent); stroke-width: 2; }
+.gg-trend-tooltip { position: absolute; left: 50%; top: 0; transform: translateX(-50%); max-width: 90%; width: max-content; pointer-events: none; border: 1px solid var(--gg-border); border-radius: .65rem; padding: .5rem .7rem; background: var(--gg-document-bg, #fff); color: var(--gg-app-text); font-size: .75rem; }
+.gg-trend-tooltip strong { display: block; margin-top: .2rem; }
+.gg-study-calendar .gg-calendar-show-early { display: block; width: 100%; padding: .25rem .75rem; text-align: left; color: var(--gg-ui-accent); font-size: .75rem; border-bottom: 1px solid var(--gg-border); }
+.gg-calendar-view-row { padding-block: .1rem; }
+.gg-calendar-date-navigation.is-day { padding-bottom: .15rem; }

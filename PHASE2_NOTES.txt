@@ -1,0 +1,102 @@
+UI Fix & Mascot + Focus Mode — GradeGlow
+
+Vollständiges Projekt: Phase 1 bleibt enthalten, Phase 2 ist integriert.
+Die App ist weiterhin eine Next.js-PWA. Es wurden keine Dependencies ergänzt.
+Die Swift-Datei ist absichtlich nur ein TODO-Skelett; native App-Sperren sind
+noch nicht implementiert. Das Web meldet FocusLock.isSupported() = false.
+
+FOKUS-VERHALTEN
+- Ein gemeinsamer Store für Kalender- und Fokus-Timer, pro Account gespeichert.
+- States: idle, running, paused, finished, abgebrochen.
+- Persistiert: Fach, Beginn, aktueller Ablaufzeitpunkt, tatsächliches Ende,
+  akkumulierte Lernzeit, Pause, Abwesenheitsintervalle und Speicherstatus.
+- Zeit wird aus Zeitstempeln berechnet. Der Sekunden-Interval aktualisiert nur
+  die Anzeige. Pausen zählen nicht, Hintergrundzeit zählt weiter.
+- Nach Ablauf bleibt die Session fertig und wartet auf „Lernzeit speichern“.
+  Eine geplante Einheit wird aktualisiert, statt einen zweiten Block anzulegen.
+  Freie Einheiten erhalten eine stabile ID. Kalender-Timer behalten ihre Rewards.
+- Happy während des Laufs, sleepy bei Pause, neutral nach kurzer Abwesenheit,
+  panic ab zwei Minuten Abwesenheit, celebrate bei fertig.
+- Fokus-Schutz ist standardmäßig aus. Erst das Einschalten erlaubt lokale
+  Abwesenheitsaufzeichnung, freundliche Abbruchbestätigung und eine ruhige
+  Fokus-Seite ohne kleine Daily-Glow-/Freundes-/In-App-Push-Einblendungen.
+  Die Navigation bleibt verfügbar; niemand wird am Verlassen gehindert.
+- Abwesenheit wird bei visibilitychange/pagehide synchron gespeichert. Wenn
+  iOS beim erzwungenen Beenden keine Ereignisse liefert, ist der letzte sichtbare
+  Heartbeat (alle 15 Sekunden) ein näherungsweiser Abwesenheitsbeginn.
+  Die eigentliche Timer-Zeit bleibt unabhängig davon exakt timestampbasiert.
+- Benachrichtigungen brauchen ein zweites Opt-in mit erklärendem Dialog und
+  Browserfreigabe. Auf iOS wird die Option nur in der installierten PWA gezeigt.
+  Es sind sofortige Hinweise beim Hintergrundwechsel, keine zuverlässig
+  geplanten lokalen iOS-Alarme. Ohne laufende Browser-Ausführung kann die PWA
+  keine Zustellung bei App-Kill oder auf eine spätere Uhrzeit garantieren.
+- Abwesenheitsdaten bleiben auf diesem Gerät im Fokus-Store. Diese Änderung
+  sendet sie nicht an Firebase oder an Freunde. Vorhandenes opt-in Study Sharing
+  für Start/Abschluss bleibt bei seiner bisherigen Einstellung.
+
+DATEIÜBERSICHT — PHASE 2
+Neu:
+  src/lib/focusSession.ts — persistenter State und Zeitberechnung
+  src/lib/focusNotifications.ts — Opt-in und sichere Notification-Fallbacks
+  src/lib/focusLock.ts — Web-No-op und öffentliche FocusLock-Schnittstelle
+  src/components/FocusSessionProvider.tsx — gemeinsamer Hook und App-Lifecycle
+  src/components/FocusReturnNotice.tsx — Rückkehrhinweis
+  src/components/FocusSettingsCard.tsx — Schutz, Hinweise, native Vorschau
+  plugins/focus-lock/src/definitions.ts — Domain- und Capacitor-Bridge-Typen
+  plugins/focus-lock/src/index.ts — noch nicht aktivierter Bridge-Adapter
+  plugins/focus-lock/ios/Sources/FocusLockPlugin/FocusLockPlugin.swift — TODOs
+  tests/focus-session.test.mjs — Timer-, Consent- und Fallback-Tests
+Geändert:
+  src/components/GradeGlowAppHost.tsx — Provider bleibt über Routenwechsel aktiv
+  src/components/GradeGlowDashboard.tsx — Timer-UI, Pause, Speichern, Maskottchen
+  src/components/GradeGlowPlanner.tsx — gemeinsamer Start, Wechsel zu /timer
+  src/components/SettingsPage.tsx — Fokus-Einstellungen
+  src/lib/gradeglowExams.ts — kurze erfasste Zeiten bleiben nach Reload erhalten
+  src/app/mobile-ui.css — Fokus-Karte, Opt-in-Dialoge und Rückkehrhinweis
+  public/sw.js — Cache v58 und Öffnen des Timers beim Notification-Tap
+Unverändert: package.json, package-lock.json, capacitor.config.ts.
+
+PRÜFUNG
+  node --test tests/focus-session.test.mjs
+  npm run typecheck
+  npm run lint
+  npm run build
+Die automatisierten Tests prüfen Hintergrund/Reboot/Pause/Deadline, Daten pro
+Account, Legacy-Migration, abgebrochene/fertige Sessions, Consent und Web-Fallback.
+Die bestehende focusedExam-Hook-Warnung im Planner bleibt unverändert.
+Die folgenden echten iPhone-Prüfungen sind noch manuell durchzuführen.
+
+IPHONE-TEST-CHECKLISTE
+[ ] In Safari und als Home-Bildschirm-PWA testen; Light und Dark Mode prüfen.
+[ ] Frischer Account: Schutz aus; kein Berechtigungsdialog beim Laden/Starten.
+[ ] Im Kalender eine Einheit starten: Wechsel zu Fokus, passendes Fach und Ziel;
+    der Timer bleibt bei Tabwechseln erhalten. Es gibt nur eine aktive Session.
+[ ] Nach ca. 30 Sekunden pausieren, zwei Minuten warten, fortsetzen:
+    Restzeit und gespeicherte Lernminuten enthalten die Pause nicht. Sleepy/happy.
+[ ] Mit Schutz aus in eine andere App wechseln: Zeit läuft korrekt weiter,
+    kein Abwesenheitshinweis und keine Abbruch-Rückfrage.
+[ ] Schutz einschalten, kurz wechseln: ein Hinweis und neutrale Pose bei Rückkehr.
+    Mehr als zwei Minuten weg: panic, nach „Alles klar“ wieder happy.
+    visibilitychange plus pagehide erzeugen keinen doppelten Abwesenheitseintrag.
+[ ] Sperrbildschirm während laufender Session für einige Minuten:
+    nach Entsperren richtige Zeit. Während Pause bleibt die Zeit unverändert.
+[ ] Laufende PWA aus dem App-Umschalter beenden, vor Ablauf erneut öffnen:
+    dasselbe Fach und dieselbe Session, korrekte Restzeit, kein Neustart bei 0.
+[ ] Nach Ablauf neu öffnen: finished/celebrate, Lernzeit bis zum echten Deadline;
+    keine zusätzliche Zeit nach Ablauf. Pausierte PWA nach Kill bleibt pausiert.
+[ ] Mit Schutz: „Verwerfen“ öffnet eine freundliche Bestätigung. Abbrechen hält
+    die Session; bestätigen verwirft sie. Vorhandene Streak-Daten bleiben erhalten.
+[ ] Lernzeit speichern: genau eine Einheit im Fach; geplante Einheit wird
+    aktualisiert. Kurze erfasste Dauer bleibt auch nach Reload unverändert.
+[ ] Notification-Dialog ablehnen: Timer funktioniert weiter, keine Hinweise.
+    Nach separater Zustimmung (nur unterstützte PWA) Hintergrund-Hinweis prüfen;
+    Tap öffnet /timer. Zustellung kann von iOS/Browser unterdrückt werden.
+[ ] Hinweise/Schutz ausschalten: keine neuen Hinweise; bereits angezeigte
+    Fokus-Hinweise werden nach Möglichkeit geschlossen. Kein Prompt ohne Tap.
+[ ] „Apps sperren (bald verfügbar)“ ist informativ, keine echte Web-Sperre.
+[ ] Phase-1-Regressionscheck: Nur main scrollt, Nav inkl. Home-Bar deckend,
+    Header scharf; Kalender-Früher-Button/Jetzt-Linie, Lerntrend und ECTS-Ring
+    prüfen. Anglerfisch und Home-Bildschirm-Icon bleiben sichtbar.
+
+APPLE-VORBEREITUNG
+Die kurze Entitlement-Anleitung steht in plugins/focus-lock/APPLE_SETUP.txt.

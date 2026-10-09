@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
   description: "Tracke Module, ECTS, Noten, Zielnoten, Prüfungen und deinen Bachelor-Fortschritt.",
   applicationName: "GradeGlow",
-  manifest: "/manifest.webmanifest",
+  manifest: "/manifest.webmanifest?v=2",
   appleWebApp: {
     capable: true,
     title: "GradeGlow",
@@ -29,11 +29,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.ico?v=2", sizes: "any", type: "image/x-icon" },
+      { url: "/icons/icon-192.png?v=2", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png?v=2", sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-    shortcut: ["/favicon.ico"],
+    apple: [{ url: "/icons/apple-touch-icon.png?v=2", sizes: "180x180", type: "image/png" }],
+    shortcut: ["/favicon.ico?v=2"],
   },
 };
 

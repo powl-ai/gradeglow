@@ -39,7 +39,7 @@ export const applyDocumentAppearance = (appearance: Appearance) => {
   root.style.setProperty("--background", background);
   root.style.setProperty("--foreground", dark ? "#f8fafc" : "#10261c");
   root.style.colorScheme = dark ? "dark" : "light";
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", background);
+  document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => meta.setAttribute("content", dark ? "#161b2e" : "#ffffff"));
   try { localStorage.setItem(APPEARANCE_KEY, JSON.stringify(appearance)); } catch { /* Memory-only appearance still works. */ }
 };
 

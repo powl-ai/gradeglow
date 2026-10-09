@@ -143,6 +143,9 @@ export type StudySessionItem = {
   dateKey: string;
   time: string;
   durationMinutes: number;
+  focusedMs?: number;
+  awayMs?: number;
+  awayCount?: number;
   focus: string;
   notes: string;
   isDone: boolean;

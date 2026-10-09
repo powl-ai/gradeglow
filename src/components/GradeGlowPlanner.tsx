@@ -8,6 +8,7 @@ import { formatLimit } from "../lib/gradeglowAccess";
 import { getStudySessionRewardPoints, normalizeRewardedStudySessionIds } from "../lib/glowRewards";
 import { publishStudyActivity } from "../lib/studyActivity";
 import StudyCalendar from "./StudyCalendar";
+import { formatStudyMinutesExact, getSessionStudyMinutes } from "../lib/studyStats";
 import AppDialog from "./AppDialog";
 import type { CalendarEntry } from "../lib/calendarLayout";
 import type {
@@ -238,12 +239,7 @@ const formatTime = (timeString: string) => {
   return normalized ? `${normalized} Uhr` : "ohne Uhrzeit";
 };
 
-const formatMinutes = (minutes: number) => {
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
-};
+const formatMinutes = formatStudyMinutesExact;
 
 const clampMinutes = (value: number, fallback: number, min: number, max = 10_000) => {
   if (!Number.isFinite(value)) return fallback;
@@ -376,10 +372,10 @@ const getExamProgress = (exam: ExamPlanItem, includeHiddenSessions = false) => {
     : exam.studySessions.filter((session) => !session.isHidden);
   const totalSessions = sessions.length;
   const doneSessions = sessions.filter((session) => session.isDone).length;
-  const plannedMinutes = sessions.reduce((sum, session) => sum + session.durationMinutes, 0);
+  const plannedMinutes = sessions.reduce((sum, session) => sum + getSessionStudyMinutes(session), 0);
   const doneMinutes = sessions
     .filter((session) => session.isDone)
-    .reduce((sum, session) => sum + session.durationMinutes, 0);
+    .reduce((sum, session) => sum + getSessionStudyMinutes(session), 0);
   const percentage = plannedMinutes > 0 ? Math.round((doneMinutes / plannedMinutes) * 100) : 0;
 
   return {
@@ -569,8 +565,10 @@ export default function GradeGlowPlanner({
   const [selectedCalendarSessionId, setSelectedCalendarSessionId] = useState<string | null>(null);
   const [selectedCalendarDayKey, setSelectedCalendarDayKey] = useState<string | null>(null);
   const [studyRewardMessage, setStudyRewardMessage] = useState("");
-  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
-  const [isAgendaOpen, setIsAgendaOpen] = useState(false);
+  const [openPlanSection, setOpenPlanSection] = useState<"summary" | "agenda" | null>(null);
+  const isSummaryOpen = openPlanSection === "summary";
+  const isAgendaOpen = openPlanSection === "agenda";
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [examDetailNumberDraft, setExamDetailNumberDraft] = useState<ExamDetailNumberDraft>({
     studyStartDays: "",
     targetStudyHours: "",
@@ -748,17 +746,17 @@ export default function GradeGlowPlanner({
   const nextExam = upcomingExams.find((exam) => getDaysUntil(exam.examDate) >= 0) ?? upcomingExams[0] ?? null;
   const todayKey = getDateKey(new Date());
   const todaySessions = visibleStudySessions.filter((session) => session.dateKey === todayKey);
-  const todayStudyMinutes = todaySessions.reduce((sum, session) => sum + session.durationMinutes, 0);
+  const todayStudyMinutes = todaySessions.reduce((sum, session) => sum + getSessionStudyMinutes(session), 0);
   const thisWeekDays = buildCalendarDays(new Date(), "week");
   const thisWeekDateKeys = new Set(thisWeekDays.map((date) => getDateKey(date)));
   const thisWeekSessions = visibleStudySessions.filter((session) => thisWeekDateKeys.has(session.dateKey));
-  const thisWeekStudyMinutes = thisWeekSessions.reduce((sum, session) => sum + session.durationMinutes, 0);
+  const thisWeekStudyMinutes = thisWeekSessions.reduce((sum, session) => sum + getSessionStudyMinutes(session), 0);
   const thisWeekDoneMinutes = thisWeekSessions
     .filter((session) => session.isDone)
-    .reduce((sum, session) => sum + session.durationMinutes, 0);
+    .reduce((sum, session) => sum + getSessionStudyMinutes(session), 0);
   const thisWeekRemainingMinutes = Math.max(thisWeekStudyMinutes - thisWeekDoneMinutes, 0);
   const thisWeekProgress = thisWeekStudyMinutes > 0 ? Math.round((thisWeekDoneMinutes / thisWeekStudyMinutes) * 100) : 0;
-  const doneStudyMinutes = visibleStudySessions.filter((session) => session.isDone).reduce((sum, session) => sum + session.durationMinutes, 0);
+  const doneStudyMinutes = visibleStudySessions.filter((session) => session.isDone).reduce((sum, session) => sum + getSessionStudyMinutes(session), 0);
   const hiddenCount = sortedExams.filter((exam) => exam.isHidden).length + allStudySessions.filter((session) => session.isHidden).length;
   const activeFilterCount = [examFilterId !== "all", moduleFilterId !== "all"].filter(Boolean).length;
   const focusedProgress = focusedExam ? getExamProgress(focusedExam, showHiddenItems) : null;
@@ -782,8 +780,8 @@ export default function GradeGlowPlanner({
   const compactWeekStrip = thisWeekDays.map((date) => {
     const dateKey = getDateKey(date);
     const sessions = visibleStudySessions.filter((session) => session.dateKey === dateKey);
-    const plannedMinutes = sessions.reduce((sum, session) => sum + session.durationMinutes, 0);
-    const doneMinutes = sessions.filter((session) => session.isDone).reduce((sum, session) => sum + session.durationMinutes, 0);
+    const plannedMinutes = sessions.reduce((sum, session) => sum + getSessionStudyMinutes(session), 0);
+    const doneMinutes = sessions.filter((session) => session.isDone).reduce((sum, session) => sum + getSessionStudyMinutes(session), 0);
     return {
       dateKey,
       label: date.toLocaleDateString("de-DE", { weekday: "short" }).replace('.', ''),
@@ -804,10 +802,10 @@ export default function GradeGlowPlanner({
   const normalizedFormDate = normalizeDateInput(form.examDate);
   const selectedCalendarDayExams = selectedCalendarDayKey ? examsByDate.get(selectedCalendarDayKey) ?? [] : [];
   const selectedCalendarDaySessions = selectedCalendarDayKey ? studySessionsByDate.get(selectedCalendarDayKey) ?? [] : [];
-  const selectedCalendarDayStudyMinutes = selectedCalendarDaySessions.reduce((sum, session) => sum + session.durationMinutes, 0);
+  const selectedCalendarDayStudyMinutes = selectedCalendarDaySessions.reduce((sum, session) => sum + getSessionStudyMinutes(session), 0);
   const selectedCalendarDayDoneMinutes = selectedCalendarDaySessions
     .filter((session) => session.isDone)
-    .reduce((sum, session) => sum + session.durationMinutes, 0);
+    .reduce((sum, session) => sum + getSessionStudyMinutes(session), 0);
 
   const normalizedFormTime = normalizeTimeInput(form.examTime);
   const isExamLimitReached = Number.isFinite(limits.maxExams) && exams.length >= limits.maxExams;
@@ -1112,7 +1110,7 @@ export default function GradeGlowPlanner({
       <StudyCalendar date={calendarCursorDate} onDateChange={setCalendarCursorDate}
         entries={[
           ...calendarExams.map((exam): CalendarEntry => ({ id: `exam:${exam.id}`, kind: "exam", title: exam.title, dateKey: exam.examDate, time: exam.examTime, durationMinutes: 45, moduleName: exam.moduleName })),
-          ...calendarStudySessions.map((session): CalendarEntry => ({ id: `study:${session.id}`, kind: "study", title: session.title || "Lernblock", dateKey: session.dateKey, time: session.time, durationMinutes: session.durationMinutes, isDone: session.isDone, moduleName: examTitleById.get(session.examId) })),
+          ...calendarStudySessions.map((session): CalendarEntry => ({ id: `study:${session.id}`, kind: "study", title: session.title || "Lernblock", dateKey: session.dateKey, time: session.time, durationMinutes: getSessionStudyMinutes(session), isDone: session.isDone, moduleName: examTitleById.get(session.examId) })),
         ]}
         onOpen={(entry) => setSelectedCalendarDayKey(entry.dateKey)}
         onMove={(entry, dateKey) => { const session = calendarStudySessions.find(item => `study:${item.id}` === entry.id); if (session) moveStudySessionToDate(session.examId, session.id, dateKey); }}
@@ -1120,11 +1118,17 @@ export default function GradeGlowPlanner({
         onAddStudy={() => { setManualStudyForm(current => ({ ...current, date: formatDateInput(getDateKey(calendarCursorDate)) })); setIsManualStudyOpen(true); }} />
       <div className="gg-planner-control-card rounded-3xl bg-white/90 p-4 shadow-sm ring-1 ring-violet-100 backdrop-blur sm:p-6">
         <div className="gg-planner-management-heading"><h3>Dein Lernplan</h3><p>Fortschritt, Filter und Prüfungen verwalten.</p></div>
-        <div className="mt-5 flex items-center justify-between gap-3">
-          <div><p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Übersicht</p><p className="mt-1 text-sm font-semibold text-slate-500">Ziele und Fortschritt</p></div>
-          <button type="button" className="gg-collapse-button" onClick={() => setIsSummaryOpen((open) => !open)} aria-expanded={isSummaryOpen}>{isSummaryOpen ? "Einklappen" : "Ausklappen"}</button>
+        <div className="gg-plan-compact-actions">
+          <button type="button" onClick={() => setIsExamFormOpen((open) => !open)}>{isExamFormOpen ? "Formular schließen" : "Prüfung eintragen"}</button>
+          <button type="button" onClick={() => setIsManualStudyOpen((open) => !open)}>{isManualStudyOpen ? "Einheit schließen" : "Lerneinheit manuell"}</button>
         </div>
-        {isSummaryOpen && <div className="gg-plan-summary-grid mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="gg-plan-compact-tools">
+          <button type="button" className="gg-plan-hidden-link" onClick={() => setShowHiddenItems((show) => !show)}>{showHiddenItems ? "Versteckte ausblenden" : `Versteckte anzeigen (${hiddenCount})`}</button>
+          <button type="button" className="gg-plan-filter-chip" aria-expanded={filtersOpen} aria-controls="plan-filters" onClick={() => setFiltersOpen(open => !open)}>Filter{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}</button>
+        </div>
+        <div className="gg-plan-accordion">
+        <button type="button" className="gg-plan-accordion-trigger" onClick={() => setOpenPlanSection(isSummaryOpen ? null : "summary")} aria-expanded={isSummaryOpen} aria-controls="plan-summary"><span>Fortschritt & Ziele</span><span aria-hidden="true">{isSummaryOpen ? "−" : "+"}</span></button>
+        {isSummaryOpen && <div id="plan-summary" className="gg-plan-summary-grid mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-3xl bg-slate-950 p-4 text-white">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Nächste Prüfung</p>
             <p className="mt-2 truncate text-xl font-black">{nextExam ? nextExam.title : "Noch offen"}</p>
@@ -1155,17 +1159,8 @@ export default function GradeGlowPlanner({
           </div>
         </div>}
 
-        <div className="gg-plan-agenda-toggle mt-5">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Wochenfokus & Agenda</p>
-            <p className="mt-1 text-sm font-semibold text-slate-500">Kalender kompakt und nächste Lernblöcke</p>
-          </div>
-          <button type="button" className="gg-collapse-button" onClick={() => setIsAgendaOpen((open) => !open)} aria-expanded={isAgendaOpen}>
-            <span>{isAgendaOpen ? "Einklappen" : "Ausklappen"}</span>
-            <span aria-hidden="true">{isAgendaOpen ? "⌃" : "⌄"}</span>
-          </button>
-        </div>
-        {isAgendaOpen && <div className="gg-plan-agenda-grid mt-3 grid gap-4 xl:grid-cols-[1.2fr_1fr]">
+        <button type="button" className="gg-plan-accordion-trigger" onClick={() => setOpenPlanSection(isAgendaOpen ? null : "agenda")} aria-expanded={isAgendaOpen} aria-controls="plan-agenda"><span>Wochenagenda & Lernblöcke</span><span aria-hidden="true">{isAgendaOpen ? "−" : "+"}</span></button>
+        {isAgendaOpen && <div id="plan-agenda" className="gg-plan-agenda-grid mt-3 grid gap-4 xl:grid-cols-[1.2fr_1fr]">
           <div className="rounded-3xl bg-slate-950 p-4 text-white">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -1214,23 +1209,15 @@ export default function GradeGlowPlanner({
                     <p className="text-sm font-black text-slate-950">{session.title || "Lernblock"}</p>
                     <p className="mt-1 text-xs font-semibold text-slate-500">{formatDate(session.dateKey)} · {session.time} · {examTitleById.get(session.examId) ?? "Prüfung"}</p>
                   </div>
-                  <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ${session.isDone ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" : "bg-white text-violet-700 ring-1 ring-violet-100"}`}>{formatMinutes(session.durationMinutes)}</span>
+                  <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ${session.isDone ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100" : "bg-white text-violet-700 ring-1 ring-violet-100"}`}>{formatMinutes(getSessionStudyMinutes(session))}</span>
                 </button>
               ))}
             </div>
           </div>
         </div>}
 
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <button type="button" className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200" onClick={() => setIsExamFormOpen((open) => !open)}>
-            {isExamFormOpen ? "Prüfungsformular schließen" : "+ Prüfung eintragen"}
-          </button>
-          <button type="button" className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200" onClick={() => setIsManualStudyOpen((open) => !open)}>
-            {isManualStudyOpen ? "Lerneinheit schließen" : "+ Lerneinheit manuell"}
-          </button>
-          <button type="button" className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200" onClick={() => setShowHiddenItems((show) => !show)}>
-            {showHiddenItems ? "Versteckte ausblenden" : `Versteckte anzeigen (${hiddenCount})`}
-          </button>
+        </div>
+        <div className="hidden">
           <div className="gg-plan-legacy-timer hidden">
             <select
               className="min-w-0 rounded-2xl border border-white/10 bg-white/10 px-3 py-3 text-sm font-black text-white outline-none"
@@ -1317,7 +1304,7 @@ export default function GradeGlowPlanner({
 
 
 
-        <div className="mt-4 rounded-3xl bg-slate-50 p-3 ring-1 ring-slate-200 sm:p-4">
+        {filtersOpen && <div id="plan-filters" className="mt-4 rounded-3xl bg-slate-50 p-3 ring-1 ring-slate-200 sm:p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="grid flex-1 gap-3 sm:grid-cols-2">
               <label className="block">
@@ -1369,7 +1356,7 @@ export default function GradeGlowPlanner({
               </button>
             </div>
           </div>
-        </div>
+        </div>}
       </div>
 
       {isExamFormOpen && (
@@ -1520,7 +1507,7 @@ export default function GradeGlowPlanner({
                               <span className="min-w-0">
                                 <span className="block font-black text-slate-950">{session.title || "Lernblock"}</span>
                                 <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">
-                                  {sessionExam?.title ?? "Prüfung"} · {formatTime(session.time)} · {formatMinutes(session.durationMinutes)}
+                                  {sessionExam?.title ?? "Prüfung"} · {formatTime(session.time)} · {formatMinutes(getSessionStudyMinutes(session))}
                                 </span>
                                 {session.focus && <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{session.focus}</span>}
                               </span>
@@ -1708,7 +1695,7 @@ export default function GradeGlowPlanner({
                   </div>
                   <p className="mt-2 text-xs font-black text-slate-400">{focusedProgress?.percentage ?? 0}% Fortschritt · {focusedProgress?.doneSessions ?? 0}/{focusedProgress?.totalSessions ?? 0} Sessions erledigt</p>
                 </div>
-                <div className="mt-4 space-y-3">{focusedPlan.length === 0 ? <p className="rounded-3xl bg-white/10 p-4 text-sm leading-6 text-slate-300 ring-1 ring-white/10">Für diese Prüfung ist aktuell kein Lernblock geplant. Erzeuge einen Plan neu oder füge manuell eine Einheit hinzu.</p> : focusedPlan.map((session) => <div key={session.id} className={`rounded-3xl p-4 ring-1 ${selectedCalendarSessionId === session.id ? "bg-fuchsia-500/20 ring-fuchsia-300/40" : session.isDone ? "bg-emerald-500/15 ring-emerald-300/20" : "bg-white/10 ring-white/10"}`}><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><label className="flex min-w-0 flex-1 items-start gap-3"><input type="checkbox" className="mt-1 h-5 w-5 accent-emerald-400" checked={session.isDone} onChange={() => markStudySessionDone(focusedExam.id, session, !session.isDone)} /><span className="min-w-0"><span className="flex flex-wrap items-center gap-2"><span className="block font-black">{session.title}</span>{selectedCalendarSessionId === session.id && <span className="rounded-full bg-fuchsia-300 px-2 py-0.5 text-[0.65rem] font-black text-slate-950">aus Kalender</span>}</span><span className="mt-1 block text-sm leading-6 text-slate-300">{formatDate(session.dateKey)} · {formatTime(session.time)} · {formatMinutes(session.durationMinutes)} · {session.focus || "Eigener Lernblock"}</span></span></label><div className="flex flex-wrap gap-2"><button type="button" className="rounded-xl bg-emerald-400 px-3 py-1.5 text-xs font-black text-slate-950 disabled:opacity-40" disabled={!focus.ready || Boolean(activeTimer)} onClick={() => startStudyTimer(focusedExam.id, session.id, session.title)}>Timer</button><button type="button" className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-black text-fuchsia-100 ring-1 ring-white/10" onClick={() => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, isHidden: !current.isHidden }))}>{session.isHidden ? "Einblenden" : "Ausblenden"}</button><button type="button" className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-black text-rose-100 ring-1 ring-white/10" onClick={() => deleteStudySession(focusedExam.id, session.id)}>Löschen</button></div></div><div className="mt-3 grid gap-2 sm:grid-cols-5"><select className="planner-detail-input sm:col-span-2" value={focusedExam.id} onChange={(event) => reassignStudySession(focusedExam.id, session.id, event.target.value)}>{sortedExams.map((exam) => <option key={exam.id} value={exam.id}>{exam.moduleName || exam.title}</option>)}</select><input type="date" className="planner-detail-input" value={session.dateKey} onChange={(event) => { if (!event.target.value) return; updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, dateKey: event.target.value })); }} /><input type="time" className="planner-detail-input" value={normalizeTimeInput(session.time) || ""} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, time: event.target.value }))} /><input type="number" min={1} className="planner-detail-input" value={session.durationMinutes} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, durationMinutes: Math.max(1, Math.round(Number(event.target.value) || current.durationMinutes)) }))} /><input className="planner-detail-input sm:col-span-2" value={session.title} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, title: event.target.value }))} placeholder="Titel" /></div><textarea className="planner-detail-input mt-2 min-h-20 w-full" value={session.notes} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, notes: event.target.value }))} placeholder="Notizen zu dieser Lerneinheit…" /></div>)}</div>
+                <div className="mt-4 space-y-3">{focusedPlan.length === 0 ? <p className="rounded-3xl bg-white/10 p-4 text-sm leading-6 text-slate-300 ring-1 ring-white/10">Für diese Prüfung ist aktuell kein Lernblock geplant. Erzeuge einen Plan neu oder füge manuell eine Einheit hinzu.</p> : focusedPlan.map((session) => <div key={session.id} className={`rounded-3xl p-4 ring-1 ${selectedCalendarSessionId === session.id ? "bg-fuchsia-500/20 ring-fuchsia-300/40" : session.isDone ? "bg-emerald-500/15 ring-emerald-300/20" : "bg-white/10 ring-white/10"}`}><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><label className="flex min-w-0 flex-1 items-start gap-3"><input type="checkbox" className="mt-1 h-5 w-5 accent-emerald-400" checked={session.isDone} onChange={() => markStudySessionDone(focusedExam.id, session, !session.isDone)} /><span className="min-w-0"><span className="flex flex-wrap items-center gap-2"><span className="block font-black">{session.title}</span>{selectedCalendarSessionId === session.id && <span className="rounded-full bg-fuchsia-300 px-2 py-0.5 text-[0.65rem] font-black text-slate-950">aus Kalender</span>}</span><span className="mt-1 block text-sm leading-6 text-slate-300">{formatDate(session.dateKey)} · {formatTime(session.time)} · {formatMinutes(getSessionStudyMinutes(session))} · {session.focus || "Eigener Lernblock"}</span></span></label><div className="flex flex-wrap gap-2"><button type="button" className="rounded-xl bg-emerald-400 px-3 py-1.5 text-xs font-black text-slate-950 disabled:opacity-40" disabled={!focus.ready || Boolean(activeTimer)} onClick={() => startStudyTimer(focusedExam.id, session.id, session.title)}>Timer</button><button type="button" className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-black text-fuchsia-100 ring-1 ring-white/10" onClick={() => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, isHidden: !current.isHidden }))}>{session.isHidden ? "Einblenden" : "Ausblenden"}</button><button type="button" className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-black text-rose-100 ring-1 ring-white/10" onClick={() => deleteStudySession(focusedExam.id, session.id)}>Löschen</button></div></div><div className="mt-3 grid gap-2 sm:grid-cols-5"><select className="planner-detail-input sm:col-span-2" value={focusedExam.id} onChange={(event) => reassignStudySession(focusedExam.id, session.id, event.target.value)}>{sortedExams.map((exam) => <option key={exam.id} value={exam.id}>{exam.moduleName || exam.title}</option>)}</select><input type="date" className="planner-detail-input" value={session.dateKey} onChange={(event) => { if (!event.target.value) return; updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, dateKey: event.target.value })); }} /><input type="time" className="planner-detail-input" value={normalizeTimeInput(session.time) || ""} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, time: event.target.value }))} /><input type="number" min={1} className="planner-detail-input" value={session.durationMinutes} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, durationMinutes: Math.max(1, Math.round(Number(event.target.value) || current.durationMinutes)) }))} /><input className="planner-detail-input sm:col-span-2" value={session.title} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, title: event.target.value }))} placeholder="Titel" /></div><textarea className="planner-detail-input mt-2 min-h-20 w-full" value={session.notes} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, notes: event.target.value }))} placeholder="Notizen zu dieser Lerneinheit…" /></div>)}</div>
               </>}
             </div>
           </div>

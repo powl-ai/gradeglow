@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { ExamPlanItem } from "../types";
 import { localDateKey, mondayOf, shiftDay } from "../lib/calendarLayout";
-import { formatStudyMinutes } from "../lib/studyStats";
+import { formatStudyMinutes, formatStudyMinutesExact, getSessionStudyMinutes } from "../lib/studyStats";
 
 type Range = "week" | "month" | "year";
 type Point = { key: string; label: string; description: string; minutes: number; current: boolean };
@@ -20,7 +20,7 @@ export default function LearningTrend({ exams, thisWeekMinutes, lastWeekMinutes 
     const sum = (start: Date, end: Date) => {
       const from = localDateKey(start), until = localDateKey(end);
       return sessions.filter(session => session.dateKey >= from && session.dateKey < until)
-        .reduce((total, session) => total + Math.max(0, session.durationMinutes), 0);
+        .reduce((total, session) => total + getSessionStudyMinutes(session), 0);
     };
     if (range === "week") {
       const monday = mondayOf(now);
@@ -59,7 +59,8 @@ export default function LearningTrend({ exams, thisWeekMinutes, lastWeekMinutes 
   const left = 48, width = 304, baseline = 152, chartHeight = 116;
   const slot = width / points.length, barWidth = Math.min(28, slot * .62);
   // At most six evenly distributed labels, including both endpoints.
-  const labels = new Set(Array.from({ length: Math.min(6, points.length) }, (_, i) => Math.round(i * (points.length - 1) / (Math.min(6, points.length) - 1))));
+  const labelCount = range === "week" ? 7 : Math.min(6, points.length);
+  const labels = new Set(Array.from({ length: labelCount }, (_, i) => Math.round(i * (points.length - 1) / Math.max(1, labelCount - 1))));
 
   return <section className="gg-learning-trend" aria-labelledby="learning-trend-title">
     <div className="gg-learning-trend-summary">
@@ -88,7 +89,7 @@ export default function LearningTrend({ exams, thisWeekMinutes, lastWeekMinutes 
           const height = point.minutes > 0 ? Math.max(3, point.minutes / max * chartHeight) : 3;
           const toggle = () => setSelected(selected === point.key ? null : point.key);
           return <g key={point.key} role="button" tabIndex={0} aria-pressed={selected === point.key}
-            aria-label={`${point.description}: ${formatStudyMinutes(point.minutes)}`} onClick={toggle}
+            aria-label={`${point.description}: ${formatStudyMinutesExact(point.minutes)}`} onClick={toggle}
             onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(); } }}>
             <rect x={x} y={baseline - height} width={barWidth} height={height} rx={Math.min(5, height / 2)}
               className={point.minutes === 0 ? "gg-trend-bar is-zero" : point.current ? "gg-trend-bar is-current" : "gg-trend-bar"} />
@@ -98,7 +99,7 @@ export default function LearningTrend({ exams, thisWeekMinutes, lastWeekMinutes 
           </g>;
         })}
       </svg>
-      {chosen && <div className="gg-trend-tooltip" role="status">{chosen.description}<strong>{formatStudyMinutes(chosen.minutes)}</strong></div>}
+      {chosen && <div className="gg-trend-tooltip" role="status">{chosen.description}<strong>{formatStudyMinutesExact(chosen.minutes)}</strong></div>}
     </div> : <div className="gg-learning-trend-empty"><div aria-hidden="true" /><p>Noch keine Lernzeit in diesem Zeitraum.</p></div>}
   </section>;
 }

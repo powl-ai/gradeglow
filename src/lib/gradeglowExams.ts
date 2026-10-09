@@ -60,6 +60,7 @@ const migrateStudySessions = (rawSessions: unknown, examId: string): StudySessio
       const record = rawSession as Record<string, unknown>;
       const dateKey = asString(record.dateKey).trim();
       if (!dateKey) return null;
+      const focusedMs = typeof record.focusedMs === "number" && Number.isFinite(record.focusedMs) && record.focusedMs >= 0 ? record.focusedMs : undefined;
 
       return {
         id: asString(record.id, createId()),
@@ -67,7 +68,8 @@ const migrateStudySessions = (rawSessions: unknown, examId: string): StudySessio
         title: asString(record.title, "Lerneinheit").trim() || "Lerneinheit",
         dateKey,
         time: asString(record.time).trim(),
-        durationMinutes: Math.max(record.startedAtIso && record.completedAtIso ? 1 : 15, Math.round(asNumber(record.durationMinutes, 90))),
+        durationMinutes: focusedMs !== undefined ? focusedMs / 60_000 : Math.max(record.startedAtIso && record.completedAtIso ? 1 : 15, Math.round(asNumber(record.durationMinutes, 90))),
+        ...(focusedMs !== undefined ? { focusedMs, awayMs: Math.max(0, asNumber(record.awayMs, 0)), awayCount: Math.max(0, Math.floor(asNumber(record.awayCount, 0))) } : {}),
         focus: asString(record.focus).trim(),
         notes: asString(record.notes).trim(),
         isDone: record.isDone === true,

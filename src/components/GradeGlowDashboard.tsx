@@ -10,6 +10,8 @@ import GradeGlowLogo from "./GradeGlowLogo";
 import GradeGlowPlanner from "./GradeGlowPlanner";
 import StudyHomeFeed from "./StudyHomeFeed";
 import LearningTrend from "./LearningTrend";
+import EctsProgressRing from "./EctsProgressRing";
+import { formatStudyMinutesExact, getSessionStudyMinutes } from "../lib/studyStats";
 import Mascot from "./Mascot";
 import { useFocusSession } from "./FocusSessionProvider";
 import FocusReturnNotice from "./FocusReturnNotice";
@@ -416,7 +418,7 @@ export default function GradeGlowDashboard({
 
   const focus = useFocusSession();
   const globalTimer = focus.hasSession ? focus.session : null;
-  const quietFocus = page === "timer" && focus.settings.protectionEnabled && ["running", "paused"].includes(focus.status);
+  const quietFocus = page === "timer" && focus.settings.protectionEnabled && ["running", "away", "paused"].includes(focus.status);
   const [showFocusAbortDialog, setShowFocusAbortDialog] = useState(false);
   const [focusSaveMessage, setFocusSaveMessage] = useState("");
   const [standaloneTimerExamId, setStandaloneTimerExamId] = useState(() => {
@@ -1141,10 +1143,10 @@ export default function GradeGlowDashboard({
       doneSessions.reduce((sum, session) => {
         const sessionDate = createLocalDateFromKey(session.dateKey);
         if (!sessionDate || sessionDate < start || sessionDate >= end) return sum;
-        return sum + session.durationMinutes;
+        return sum + getSessionStudyMinutes(session);
       }, 0);
 
-    const totalDoneMinutes = doneSessions.reduce((sum, session) => sum + session.durationMinutes, 0);
+    const totalDoneMinutes = doneSessions.reduce((sum, session) => sum + getSessionStudyMinutes(session), 0);
     const thisWeekMinutes = sumMinutesBetween(thisWeekStart, nextWeekStart);
     const lastWeekMinutes = sumMinutesBetween(lastWeekStart, thisWeekStart);
     const thisMonthMinutes = sumMinutesBetween(thisMonthStart, nextMonthStart);
@@ -1156,13 +1158,13 @@ export default function GradeGlowDashboard({
     const topSubject = doneSessions.reduce<Record<string, { title: string; minutes: number }>>((subjects, session) => {
       const key = session.subjectTitle || session.focus || session.title;
       const current = subjects[key] ?? { title: key, minutes: 0 };
-      current.minutes += session.durationMinutes;
+      current.minutes += getSessionStudyMinutes(session);
       subjects[key] = current;
       return subjects;
     }, {});
     const topSubjectRow = Object.values(topSubject).sort((a, b) => b.minutes - a.minutes)[0] ?? null;
     const minutesByDateKey = doneSessions.reduce<Record<string, number>>((map, session) => {
-      map[session.dateKey] = (map[session.dateKey] ?? 0) + session.durationMinutes;
+      map[session.dateKey] = (map[session.dateKey] ?? 0) + getSessionStudyMinutes(session);
       return map;
     }, {});
     const weeklyTrend = Array.from({ length: 52 }, (_, index) => {
@@ -1472,7 +1474,9 @@ export default function GradeGlowDashboard({
     if (!finished || finished.status !== "finished") return;
     const startedAt = new Date(finished.startedAt);
     const completedAt = new Date(finished.endedAt ?? Date.now());
-    const minutes = Math.max(1, Math.min(finished.goalMinutes, Math.round(getFocusElapsedMs(finished, completedAt.getTime()) / 60_000)));
+    const focusedMs = getFocusElapsedMs(finished, completedAt.getTime());
+    if (focusedMs <= 0) { setFocusSaveMessage("Keine Lernzeit erfasst. Du kannst diese leere Session verwerfen."); return; }
+    const minutes = focusedMs / 60_000;
     const plannedSession = exams.find((exam) => exam.id === finished.examId)?.studySessions.find((session) => session.id === finished.sessionId);
     // A stable ID prevents duplicate free sessions on repeated save/recovery.
     const sessionId = plannedSession?.id ?? `focus-${finished.id}`;
@@ -1481,8 +1485,9 @@ export default function GradeGlowDashboard({
       id: sessionId, examId: finished.examId,
       title: plannedSession?.title || `Timer-Lernzeit · ${finished.title}`,
       dateKey: getDateKey(startedAt), time: plannedSession?.time || formatTimeInputFromDate(startedAt),
-      durationMinutes: minutes, focus: plannedSession?.focus || "Per Timer erfasste Lernzeit",
-      notes: [plannedSession?.notes, `${globalTimerModeLabel}: ${minutes} min am ${startedAt.toLocaleDateString("de-DE")} (Pausen ausgenommen)`].filter(Boolean).join("\n"),
+      durationMinutes: minutes, focusedMs, awayMs: finished.awayMs, awayCount: finished.awayCount,
+      focus: plannedSession?.focus || "Per Timer erfasste Lernzeit",
+      notes: [plannedSession?.notes, `${globalTimerModeLabel}: ${formatStudyMinutesExact(minutes)} am ${startedAt.toLocaleDateString("de-DE")} (nur Vordergrundzeit, 10 s Kulanz)`].filter(Boolean).join("\n"),
       isDone: true, isHidden: plannedSession?.isHidden ?? false, isManual: plannedSession?.isManual ?? true,
       startedAtIso: startedAt.toISOString(), completedAtIso: completedAt.toISOString(),
     };
@@ -1506,7 +1511,7 @@ export default function GradeGlowDashboard({
       user, profile, status: "completed", title: finished.title, examId: finished.examId, sessionId,
       durationMinutes: minutes, startedAtIso: startedAt.toISOString(), completedAtIso: completedAt.toISOString(),
     });
-    setFocusSaveMessage(`${minutes} min für ${finished.subjectTitle} gespeichert. Gut gemacht!`);
+    setFocusSaveMessage(`${formatStudyMinutesExact(minutes)} für ${finished.subjectTitle} gespeichert. Gut gemacht!`);
   };
 
   const selectedModule =
@@ -1647,7 +1652,7 @@ export default function GradeGlowDashboard({
       </div>
 
       {foregroundMessage && !quietFocus && (
-        <div className="fixed left-1/2 top-3 z-50 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-[1.5rem] bg-violet-950/95 p-3 text-white shadow-2xl shadow-violet-950/25 ring-1 ring-white/10 backdrop-blur sm:top-5">
+        <div className="gg-header-toast fixed left-1/2 top-3 z-50 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-[1.5rem] bg-violet-950/95 p-3 text-white shadow-2xl shadow-violet-950/25 ring-1 ring-white/10 backdrop-blur sm:top-5">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-200 text-sm font-black text-violet-950">
               GG
@@ -1668,7 +1673,7 @@ export default function GradeGlowDashboard({
       )}
 
       {friendActivityToast && !quietFocus && (
-        <div className="fixed left-1/2 top-3 z-40 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-[1.5rem] bg-slate-950/95 p-3 text-white shadow-2xl shadow-slate-950/25 ring-1 ring-white/10 backdrop-blur sm:top-5">
+        <div className="gg-header-toast fixed left-1/2 top-3 z-40 w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 rounded-[1.5rem] bg-slate-950/95 p-3 text-white shadow-2xl shadow-slate-950/25 ring-1 ring-white/10 backdrop-blur sm:top-5">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-400 text-sm font-black text-slate-950">
               GG
@@ -2032,7 +2037,7 @@ export default function GradeGlowDashboard({
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-fuchsia-200">Lernsession läuft weiter</p>
                 <h2 className="mt-1 text-lg font-black">{globalTimer.title || globalTimerExam?.title || "Lernsession"}</h2>
                 <p className="mt-1 text-sm font-semibold text-slate-300">
-                  {globalTimerModeLabel} · {formatCompactDuration(globalTimerElapsedSeconds)} {focus.status === "paused" ? "pausiert" : focus.status === "finished" ? "fertig – zum Speichern bereit" : "aktiv"}{globalTimerExam ? ` · ${globalTimerExam.title}` : ""}
+                  {globalTimerModeLabel} · {formatCompactDuration(globalTimerElapsedSeconds)} {focus.status === "away" ? "abwesend" : focus.status === "paused" ? "pausiert" : focus.status === "finished" ? "fertig – zum Speichern bereit" : "aktiv"}{globalTimerExam ? ` · ${globalTimerExam.title}` : ""}
                 </p>
               </div>
               <Link href="/timer" className="rounded-2xl bg-white px-4 py-3 text-center text-sm font-black text-slate-950 shadow-sm transition hover:-translate-y-0.5 hover:bg-violet-50">
@@ -2328,16 +2333,11 @@ export default function GradeGlowDashboard({
             </div>
 
             <div className="gg-profile-card gg-profile-progress-card">
-              <div className="gg-profile-ring" style={{ background: `conic-gradient(var(--gg-accent-500, rgb(124,58,237)) ${profileStudyStats.progressPercent * 3.6}deg, var(--gg-ring-track, #e2e8f0) 0deg)` }}>
-                <div>
-                  <strong>{Math.round(profileStudyStats.progressPercent)} %</strong>
-                </div>
-              </div>
+              <EctsProgressRing percent={profileStudyStats.progressPercent} />
               <div className="min-w-0 flex-1">
-                <p className="gg-mobile-kicker">Uni-Fortschritt</p>
-                <h3>{analytics.passedEcts}/{totalTargetEcts} ECTS</h3>
-                <p>Schnitt {analytics.average > 0 ? formatGrade(analytics.average) : "—"}</p>
-                <p>{analytics.passedEcts} von {totalTargetEcts} ECTS geschafft</p>
+                <p className="gg-mobile-kicker">UNI-FORTSCHRITT</p>
+                <h3>{analytics.passedEcts} / {totalTargetEcts} ECTS</h3>
+                <p>Noch {Math.max(0, totalTargetEcts - analytics.passedEcts)} ECTS</p>
               </div>
             </div>
 
@@ -2489,7 +2489,7 @@ export default function GradeGlowDashboard({
           <section id="timer" className="gg-timer-only-page scroll-mt-6">
             <div className="gg-timer-card">
               <div className="flex items-center justify-between gap-3">
-                <p className="gg-timer-subtitle">{focus.status === "running" ? "Ein Fach. Ein Fokusblock. Dein Tempo." : focus.status === "paused" ? "Kurz durchatmen. Deine Lernzeit ist pausiert." : focus.status === "finished" ? "Gut gemacht. Dein Fokusblock ist geschafft." : "Fach wählen, Dauer setzen, starten."}</p>
+                <p className="gg-timer-subtitle">{focus.status === "running" ? "Ein Fach. Ein Fokusblock. Dein Tempo." : focus.status === "away" ? "Pausiert, solange die App nicht im Vordergrund ist." : focus.status === "paused" ? "Kurz durchatmen. Deine Lernzeit ist pausiert." : focus.status === "finished" ? "Gut gemacht. Dein Fokusblock ist geschafft." : "Fach wählen, Dauer setzen, starten."}</p>
                 <span className="gg-timer-live-pill" aria-live="polite">{focus.status === "running" ? "läuft" : focus.status === "paused" ? "pausiert" : focus.status === "finished" ? "fertig" : focus.status === "abgebrochen" ? "abgebrochen" : "bereit"}</span>
               </div>
               {!focus.storageAvailable && <p className="gg-focus-warning" role="status">Der Gerätespeicher ist nicht verfügbar. Diese Session kann nach dem Schließen verloren gehen.</p>}
@@ -2529,7 +2529,7 @@ export default function GradeGlowDashboard({
               </div>
               {focusSaveMessage && <p className="gg-focus-completed" role="status">{focusSaveMessage}</p>}
             </div>
-            <div className="gg-timer-hint">Dein Timer läuft anhand der Uhrzeit weiter, auch im Hintergrund. Pausen zählen nicht als Lernzeit. <Link href="/settings">Fokus-Schutz einstellen ↗</Link></div>
+            <div className="gg-timer-hint">Nur Zeit mit sichtbarer App zählt. Beim Verlassen pausiert dein Timer, bei der Rückkehr läuft er weiter; kurze Unterbrechungen bis 10 Sekunden werden toleriert. <Link href="/settings">Fokus-Einstellungen ↗</Link></div>
             {showFocusAbortDialog && <AppDialog label="Fokus-Session verwerfen" profile={profile} onClose={() => setShowFocusAbortDialog(false)}>
               <section className="gg-focus-consent"><h2>Wirklich beenden?</h2><p>Dein bisheriger Streak wird durch das Verwerfen nicht zurückgesetzt. Diese Session wird nicht als Lernzeit gespeichert.</p><div className="gg-focus-dialog-actions"><button type="button" onClick={() => setShowFocusAbortDialog(false)}>Weiterlernen</button><button type="button" onClick={discardStandaloneTimer}>Session verwerfen</button></div></section>
             </AppDialog>}

@@ -1,5 +1,11 @@
 import type { ExamPlanItem, StudySessionItem, StudySubjectStat } from "../types";
 
+// New timer records use exact foreground milliseconds; manual/legacy entries
+// retain their existing duration. Wall-clock start/end must never be used here.
+export const getSessionStudyMinutes = (session: Pick<StudySessionItem, "focusedMs" | "durationMinutes">) =>
+  typeof session.focusedMs === "number" && Number.isFinite(session.focusedMs)
+    ? Math.max(0, session.focusedMs) / 60_000 : Math.max(0, session.durationMinutes);
+
 const startOfLocalDay = (date: Date) =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
@@ -47,6 +53,14 @@ export const formatStudyMinutes = (minutes: number) => {
   return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
 };
 
+export const formatStudyMinutesExact = (minutes: number) => {
+  const seconds = Math.max(0, Math.round(minutes * 60));
+  if (seconds < 60) return `${seconds} s`;
+  const wholeMinutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return `${formatStudyMinutes(wholeMinutes)}${rest ? ` ${rest} s` : ""}`;
+};
+
 export const getStudySubjectStats = (
   exams: ExamPlanItem[],
   options?: {
@@ -75,13 +89,13 @@ export const getStudySubjectStats = (
         : true;
 
       if (isRelevantPlannedSession) {
-        current.plannedMinutes += session.durationMinutes;
+        current.plannedMinutes += getSessionStudyMinutes(session);
       }
 
       if (!isDoneVisibleSession(session)) return;
       if (options?.doneDateFilter && !options.doneDateFilter(session.dateKey)) return;
 
-      current.doneMinutes += session.durationMinutes;
+      current.doneMinutes += getSessionStudyMinutes(session);
       current.sessionCount += 1;
       if (!current.lastStudiedAt || session.dateKey > current.lastStudiedAt) {
         current.lastStudiedAt = session.dateKey;
@@ -112,7 +126,7 @@ export const getTotalDoneStudyMinutes = (exams: ExamPlanItem[]) =>
       sum +
       exam.studySessions
         .filter(isDoneVisibleSession)
-        .reduce((sessionSum, session) => sessionSum + session.durationMinutes, 0),
+        .reduce((sessionSum, session) => sessionSum + getSessionStudyMinutes(session), 0),
     0,
   );
 
@@ -122,7 +136,7 @@ export const getThisWeekDoneStudyMinutes = (exams: ExamPlanItem[]) =>
       sum +
       exam.studySessions
         .filter((session) => isDoneVisibleSession(session) && isInCurrentWeek(session.dateKey))
-        .reduce((sessionSum, session) => sessionSum + session.durationMinutes, 0),
+        .reduce((sessionSum, session) => sessionSum + getSessionStudyMinutes(session), 0),
     0,
   );
 

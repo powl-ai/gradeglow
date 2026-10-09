@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import Mascot from "./Mascot";
+import { formatStudyMinutesExact, getSessionStudyMinutes } from "../lib/studyStats";
 import { localDateKey, mondayOf, shiftDay } from "../lib/calendarLayout";
 import type { ExamPlanItem } from "../types";
 
-const minutesLabel = (minutes: number) => minutes >= 60 ? `${Math.floor(minutes / 60)} h${minutes % 60 ? ` ${minutes % 60} min` : ""}` : `${minutes} min`;
+const minutesLabel = formatStudyMinutesExact;
 
 export default function StudyHomeFeed({ name, exams, passedEcts, targetEcts, average, streak, weekMinutes, timerRunning }: {
   name: string; exams: ExamPlanItem[]; passedEcts: number; targetEcts: number;
@@ -39,7 +40,7 @@ export default function StudyHomeFeed({ name, exams, passedEcts, targetEcts, ave
     </article>
     <article className="gg-feed-card gg-home-agenda">
       <div className="gg-feed-section-title"><h3>Dein nächster Schritt</h3><Link href="/exams">Kalender ↗</Link></div>
-      {nextTasks.length ? <div className="gg-home-task-list">{nextTasks.map(task => <Link href="/exams" key={task.id}><span className="gg-task-marker" aria-hidden="true" /><div><strong>{task.title || "Fokusblock"}</strong><p>{task.subject}</p><small>{dateLabel(task.dateKey)}{task.time ? ` · ${task.time}` : ""} · {minutesLabel(task.durationMinutes)}</small></div><span aria-hidden="true">›</span></Link>)}</div> : <div className="gg-home-empty"><p>Platz für deinen nächsten guten Schritt.</p><Link href="/exams">Eine Prüfung oder Lernsession planen ↗</Link></div>}
+      {nextTasks.length ? <div className="gg-home-task-list">{nextTasks.map(task => <Link href="/exams" key={task.id}><span className="gg-task-marker" aria-hidden="true" /><div><strong>{task.title || "Fokusblock"}</strong><p>{task.subject}</p><small>{dateLabel(task.dateKey)}{task.time ? ` · ${task.time}` : ""} · {minutesLabel(getSessionStudyMinutes(task))}</small></div><span aria-hidden="true">›</span></Link>)}</div> : <div className="gg-home-empty"><p>Platz für deinen nächsten guten Schritt.</p><Link href="/exams">Eine Prüfung oder Lernsession planen ↗</Link></div>}
       {todaySessions.length > 0 && <p className="gg-feed-muted gg-home-today-count">Heute {todayDone} von {todaySessions.length} Lernblöcken geschafft.</p>}
     </article>
     {nextExam && <Link href="/exams" className="gg-feed-card gg-home-exam"><span className="gg-home-exam-icon" aria-hidden="true">▤</span><div><span className="gg-feed-eyebrow">NÄCHSTE PRÜFUNG</span><strong>{nextExam.title}</strong><p>{dateLabel(nextExam.examDate)}{nextExam.examTime ? ` · ${nextExam.examTime}` : ""}</p></div><span aria-hidden="true">›</span></Link>}

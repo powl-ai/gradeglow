@@ -34,8 +34,9 @@ export default function FocusSettingsCard() {
   return <section className="gg-focus-settings" aria-label="Fokus-Einstellungen">
     <FocusReturnNotice withMascot />
     <h2>Fokus-Schutz</h2>
-    <p>GradeGlow merkt sich Abwesenheitszeiten während deiner Session lokal und blendet auf der Fokus-Seite kleine In-App-Erinnerungen aus. Bei der Rückkehr gibt es einen kurzen Hinweis und vor dem Verwerfen eine Rückfrage; du kannst die App jederzeit verlassen oder den Schutz ausschalten.</p>
+    <p>Der Fokus-Schutz blendet kleine In-App-Erinnerungen aus und fragt vor dem Verwerfen nach. Du kannst die App jederzeit verlassen; unabhängig vom Schutz zählt der Timer nur Vordergrundzeit, mit 10 Sekunden Kulanz bei kurzen Unterbrechungen.</p>
     <label className="gg-focus-toggle"><span>Fokus-Schutz aktivieren<small>Freiwillig · auf diesem Gerät</small></span><input type="checkbox" checked={focus.settings.protectionEnabled} disabled={!focus.ready} onChange={(event) => focus.store.updateSettings({ protectionEnabled: event.target.checked }, Date.now())} /></label>
+    <label className="gg-focus-toggle"><span>Bildschirm wach halten<small>Während laufender Sessions · soweit der Browser es erlaubt</small></span><input type="checkbox" checked={focus.settings.keepScreenAwake} disabled={!focus.ready} onChange={(event) => focus.store.updateSettings({ keepScreenAwake: event.target.checked }, Date.now())} /></label>
     {supported ? <div className="gg-focus-notification-option">
       <p>Optionaler Hinweis beim Wechseln in den Hintergrund. Der Browser muss den Hinweis noch ausführen können; eine pünktliche Erinnerung bei geschlossener App ist damit nicht garantiert.</p>
       <button type="button" disabled={!focus.ready || !focus.settings.protectionEnabled} onClick={() => {

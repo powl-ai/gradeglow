@@ -38,7 +38,7 @@ function fixture(uid = "user-a", storage) {
   return { store, port, values };
 }
 
-test("elapsed time uses timestamps even when no interval tick executes", () => {
+test("foreground time uses timestamps, not interval increments", () => {
   const { store } = fixture();
   const session = store.start(input, startTime);
   assert.equal(getFocusElapsedMs(session, startTime + 7 * minute), 7 * minute);
@@ -46,13 +46,12 @@ test("elapsed time uses timestamps even when no interval tick executes", () => {
   const finished = store.getSnapshot().session;
   assert.equal(finished.status, "finished");
   assert.equal(finished.endedAt, startTime + 10 * minute);
-  assert.equal(finished.elapsedMs, 10 * minute);
+  assert.equal(finished.focusedMs, 10 * minute);
 });
 
-test("pause, reboot and resume exclude all paused time and adjust deadline", () => {
+test("pause, reboot and resume exclude manually paused time", () => {
   const { store, port } = fixture();
-  store.start(input, startTime);
-  store.pause(startTime + 2 * minute);
+  store.start(input, startTime); store.pause(startTime + 2 * minute);
   const restored = createFocusSessionStore("user-a");
   restored.hydrate(port, startTime + 50 * minute, true);
   assert.equal(restored.getSnapshot().session.status, "paused");
@@ -61,141 +60,238 @@ test("pause, reboot and resume exclude all paused time and adjust deadline", () 
   assert.equal(restored.getSnapshot().session.endsAt, startTime + 58 * minute);
   restored.tick(startTime + 70 * minute);
   assert.equal(restored.getSnapshot().session.endedAt, startTime + 58 * minute);
-  assert.equal(restored.getSnapshot().session.elapsedMs, 10 * minute);
+  assert.equal(restored.getSnapshot().session.focusedMs, 10 * minute);
 });
 
-test("running session and subject recover after app kill before expiry", () => {
+test("kill without pagehide restores paused at last foreground checkpoint", () => {
   const { store, port } = fixture();
-  store.start(input, startTime);
+  store.start(input, startTime); store.heartbeat(startTime + minute);
   const restored = createFocusSessionStore("user-a");
-  restored.hydrate(port, startTime + 4 * minute, true);
-  assert.equal(restored.getSnapshot().session.status, "running");
-  assert.equal(restored.getSnapshot().session.subjectTitle, "Statistik");
-  assert.equal(getFocusElapsedMs(restored.getSnapshot().session, startTime + 4 * minute), 4 * minute);
+  restored.hydrate(port, startTime + 40 * minute, true);
+  const s = restored.getSnapshot().session;
+  assert.equal(s.status, "paused");
+  assert.equal(s.subjectTitle, "Statistik");
+  assert.equal(s.focusedMs, minute);
+  assert.equal(s.awayMs, 39 * minute);
+  assert.equal(s.awayCount, 1);
+  assert.equal(getFocusElapsedMs(s, startTime + 80 * minute), minute);
+  restored.returnToApp(startTime + 80 * minute);
+  assert.equal(restored.getSnapshot().session.status, "paused");
 });
 
-test("protection defaults off, with no background tracking or notification opt-in", () => {
+test("protection is off by default but foreground-only timing is always active", () => {
   const { store } = fixture();
   store.start(input, startTime);
-  assert.deepEqual(store.getSnapshot().settings, { protectionEnabled: false, notificationsEnabled: false });
-  assert.equal(store.leaveApp(startTime + minute), false);
-  store.returnToApp(startTime + 2 * minute);
-  assert.equal(store.getSnapshot().returnFeedback, null);
-  assert.equal(store.getSnapshot().session.absences.length, 0);
-  store.updateSettings({ notificationsEnabled: true }, startTime + 2 * minute);
+  assert.deepEqual(store.getSnapshot().settings, { protectionEnabled: false, notificationsEnabled: false, keepScreenAwake: true });
+  assert.equal(store.leaveApp(startTime + minute), true);
+  assert.equal(store.getSnapshot().session.status, "away");
+  store.returnToApp(startTime + 3 * minute);
+  const s = store.getSnapshot().session;
+  assert.equal(s.focusedMs, minute);
+  assert.equal(s.awayMs, 2 * minute);
+  assert.equal(s.awayCount, 1);
+  store.updateSettings({ notificationsEnabled: true }, startTime + 3 * minute);
   assert.equal(store.getSnapshot().settings.notificationsEnabled, false);
 });
 
-test("visibilitychange plus pagehide count one absence, persisted over restart", () => {
-  const { store, port } = fixture();
-  store.updateSettings({ protectionEnabled: true, notificationsEnabled: true }, startTime);
+test("duplicate visibility/pagehide/blur and pageshow/focus events count once", () => {
+  const { store } = fixture();
   store.start(input, startTime);
   assert.equal(store.leaveApp(startTime + minute), true);
   assert.equal(store.leaveApp(startTime + minute + 300), false);
+  assert.equal(store.leaveApp(startTime + minute + 500), false);
+  store.returnToApp(startTime + 3 * minute);
+  store.returnToApp(startTime + 3 * minute + 200);
+  const s = store.getSnapshot().session;
+  assert.equal(s.awayCount, 1);
+  assert.equal(s.absences.length, 1);
+  assert.equal(s.awayMs, 2 * minute);
+  assert.equal(store.getSnapshot().returnFeedback.durationMs, 2 * minute);
+});
+
+test("background longer than old deadline never completes or gains study time", () => {
+  const { store } = fixture();
+  store.start(input, startTime); store.leaveApp(startTime + minute);
+  assert.equal(store.tick(startTime + 20 * minute), false);
+  assert.equal(getFocusElapsedMs(store.getSnapshot().session, startTime + 20 * minute), minute);
+  store.returnToApp(startTime + 40 * minute);
+  const s = store.getSnapshot().session;
+  assert.equal(s.status, "running"); assert.equal(s.focusedMs, minute);
+  assert.equal(s.awayMs, 39 * minute); assert.equal(s.endsAt, startTime + 49 * minute);
+  store.tick(startTime + 49 * minute);
+  assert.equal(store.getSnapshot().session.focusedMs, 10 * minute);
+});
+
+test("kill while away restores paused and persists absence once", () => {
+  const { store, port } = fixture();
+  store.start(input, startTime); store.leaveApp(startTime + minute);
   const restored = createFocusSessionStore("user-a");
   restored.hydrate(port, startTime + 3 * minute, true);
-  assert.equal(restored.getSnapshot().session.absences.length, 1);
-  assert.equal(restored.getSnapshot().returnFeedback.durationMs, 2 * minute);
-  restored.returnToApp(startTime + 3 * minute + 200);
-  assert.equal(restored.getSnapshot().session.absences.length, 1);
+  assert.equal(restored.getSnapshot().session.status, "paused");
+  assert.equal(restored.getSnapshot().session.focusedMs, minute);
+  assert.equal(restored.getSnapshot().session.awayMs, 2 * minute);
+  const again = createFocusSessionStore("user-a");
+  again.hydrate(port, startTime + 10 * minute, true);
+  assert.equal(again.getSnapshot().session.awayCount, 1);
+  assert.equal(again.getSnapshot().session.awayMs, 2 * minute);
 });
 
-test("absence and completion after long background stop at the exact deadline", () => {
-  const { store, port } = fixture();
-  store.updateSettings({ protectionEnabled: true }, startTime);
-  store.start(input, startTime);
-  store.leaveApp(startTime + minute);
-  store.tick(startTime + 20 * minute);
-  const restored = createFocusSessionStore("user-a");
-  restored.hydrate(port, startTime + 40 * minute, true);
-  assert.equal(restored.getSnapshot().session.status, "finished");
-  assert.equal(restored.getSnapshot().session.endedAt, startTime + 10 * minute);
-  assert.equal(restored.getSnapshot().returnFeedback.durationMs, 9 * minute);
+test("screen-lock equivalent departure freezes learning until return", () => {
+  const { store } = fixture();
+  store.start(input, startTime); store.leaveApp(startTime + 2 * minute);
+  store.heartbeat(startTime + 30 * minute);
+  assert.equal(store.getSnapshot().session.focusedMs, 2 * minute);
+  store.returnToApp(startTime + 30 * minute);
+  store.finish(startTime + 32 * minute);
+  assert.equal(store.getSnapshot().session.focusedMs, 4 * minute);
+  assert.equal(store.getSnapshot().session.awayMs, 28 * minute);
 });
 
-test("force kill without pagehide falls back to the last visible heartbeat", () => {
-  const { store, port } = fixture();
-  store.updateSettings({ protectionEnabled: true }, startTime);
-  store.start(input, startTime);
-  store.heartbeat(startTime + minute);
-  const restored = createFocusSessionStore("user-a");
-  restored.hydrate(port, startTime + 4 * minute, true);
-  assert.equal(restored.getSnapshot().returnFeedback.startedAt, startTime + minute);
-  assert.equal(restored.getSnapshot().returnFeedback.durationMs, 3 * minute);
-});
+for (const duration of [1, 9999, 10000, 10001, 60000, 134000]) {
+  test(`grace boundary: ${duration} ms interruption`, () => {
+    const { store } = fixture();
+    store.start(input, startTime); store.leaveApp(startTime + minute);
+    store.returnToApp(startTime + minute + duration);
+    const s = store.getSnapshot().session, tolerated = duration <= 10000;
+    assert.equal(s.focusedMs, minute + (tolerated ? duration : 0));
+    assert.equal(s.awayMs, tolerated ? 0 : duration);
+    assert.equal(s.awayCount, tolerated ? 0 : 1);
+    assert.equal(store.getSnapshot().returnFeedback === null, tolerated);
+  });
+}
 
-test("paused sessions do not collect absence; turning protection off cancels tracking", () => {
+test("turning protection off during absence does not erase or credit it", () => {
   const { store } = fixture();
   store.updateSettings({ protectionEnabled: true, notificationsEnabled: true }, startTime);
-  store.start(input, startTime);
-  store.pause(startTime + minute);
-  assert.equal(store.leaveApp(startTime + 2 * minute), false);
-  store.resume(startTime + 3 * minute);
-  store.leaveApp(startTime + 4 * minute);
-  store.updateSettings({ protectionEnabled: false }, startTime + 5 * minute);
-  store.returnToApp(startTime + 6 * minute);
-  assert.equal(store.getSnapshot().session.awaySince, null);
-  assert.equal(store.getSnapshot().returnFeedback, null);
+  store.start(input, startTime); store.leaveApp(startTime + minute);
+  store.updateSettings({ protectionEnabled: false }, startTime + 2 * minute);
+  assert.equal(store.getSnapshot().session.awaySince, startTime + minute);
+  store.returnToApp(startTime + 3 * minute);
+  assert.equal(store.getSnapshot().session.focusedMs, minute);
+  assert.equal(store.getSnapshot().session.awayMs, 2 * minute);
   assert.equal(store.getSnapshot().settings.notificationsEnabled, false);
 });
 
-test("cannot overwrite an active/paused or unsaved completed session; abort is persistent", () => {
-  const { store, port } = fixture();
-  store.start(input, startTime);
-  assert.equal(store.start(input, startTime + minute), null);
-  store.pause(startTime + minute);
-  assert.equal(store.start(input, startTime + minute), null);
-  store.finish(startTime + 2 * minute);
-  assert.equal(store.start(input, startTime + 2 * minute), null);
-  store.abort(startTime + 2 * minute);
-  const restored = createFocusSessionStore("user-a", () => "next-id");
-  restored.hydrate(port, startTime + 3 * minute, true);
-  assert.equal(restored.getSnapshot().session.status, "abgebrochen");
-  assert.ok(restored.start(input, startTime + 3 * minute));
+test("manually paused sessions never auto-resume after returning", () => {
+  const { store } = fixture();
+  store.start(input, startTime); store.pause(startTime + minute);
+  assert.equal(store.leaveApp(startTime + 2 * minute), false);
+  store.returnToApp(startTime + 3 * minute);
+  assert.equal(store.getSnapshot().session.status, "paused");
+  assert.equal(store.getSnapshot().session.awayMs, 0);
+  store.resume(startTime + 3 * minute);
+  assert.equal(store.getSnapshot().session.endsAt, startTime + 12 * minute);
 });
 
-test("completion/save stays frozen, preserves planner rewards and permits next session", () => {
+test("cannot start or resume while hidden", () => {
+  const { store } = fixture();
+  store.leaveApp(startTime); assert.equal(store.start(input, startTime), null);
+  store.returnToApp(startTime); store.start(input, startTime); store.pause(startTime + minute);
+  store.leaveApp(startTime + minute); store.resume(startTime + 2 * minute);
+  assert.equal(store.getSnapshot().session.status, "paused");
+});
+
+test("cannot overwrite active/away/paused or unsaved completed session", () => {
+  const { store, port } = fixture();
+  store.start(input, startTime); assert.equal(store.start(input, startTime + minute), null);
+  store.leaveApp(startTime + minute); assert.equal(store.start(input, startTime + 2 * minute), null);
+  store.returnToApp(startTime + 2 * minute); store.pause(startTime + 3 * minute);
+  assert.equal(store.start(input, startTime + 3 * minute), null);
+  store.finish(startTime + 4 * minute); assert.equal(store.start(input, startTime + 4 * minute), null);
+  store.abort(startTime + 4 * minute);
+  const restored = createFocusSessionStore("user-a", () => "next-id");
+  restored.hydrate(port, startTime + 5 * minute, true);
+  assert.equal(restored.getSnapshot().session.status, "abgebrochen");
+  assert.ok(restored.start(input, startTime + 5 * minute));
+});
+
+test("saved focused/away metrics stay frozen and planner reward flag survives", () => {
   const { store, port } = fixture();
   const session = store.start({ ...input, sessionId: "planned-block", rewardOnSave: true }, startTime);
-  store.finish(startTime + 3 * minute);
-  store.markSaved(session.id, "planned-block");
+  store.leaveApp(startTime + minute); store.returnToApp(startTime + 3 * minute);
+  store.finish(startTime + 4 * minute); store.markSaved(session.id, "planned-block");
   const restored = createFocusSessionStore("user-a", () => "next-id");
   restored.hydrate(port, startTime + 15 * minute, true);
-  assert.equal(restored.getSnapshot().session.savedSessionId, "planned-block");
-  assert.equal(restored.getSnapshot().session.rewardOnSave, true);
-  assert.equal(getFocusElapsedMs(restored.getSnapshot().session, startTime + 15 * minute), 3 * minute);
+  const s = restored.getSnapshot().session;
+  assert.equal(s.savedSessionId, "planned-block"); assert.equal(s.rewardOnSave, true);
+  assert.equal(getFocusElapsedMs(s, startTime + 15 * minute), 2 * minute);
+  assert.equal(s.awayMs, 2 * minute); assert.equal(s.awayCount, 1);
   assert.ok(restored.start(input, startTime + 15 * minute));
 });
 
-test("timer data is isolated by account", () => {
+test("finishing and aborting while away exclude the absence", () => {
+  for (const action of ["finish", "abort"]) {
+    const { store } = fixture();
+    store.start(input, startTime); store.leaveApp(startTime + minute);
+    store[action](startTime + 4 * minute);
+    assert.equal(store.getSnapshot().session.focusedMs, minute);
+    assert.equal(store.getSnapshot().session.awayMs, 3 * minute);
+  }
+});
+
+test("grace cannot exceed the goal and completes only on return", () => {
+  const { store } = fixture();
+  store.start({ ...input, goalMinutes: 1 }, startTime);
+  store.leaveApp(startTime + 55000); store.tick(startTime + 61000);
+  assert.equal(store.getSnapshot().session.status, "away");
+  store.returnToApp(startTime + 62000);
+  assert.equal(store.getSnapshot().session.status, "finished");
+  assert.equal(store.getSnapshot().session.focusedMs, minute);
+});
+
+test("timer data and settings are isolated by account", () => {
   const { store, port } = fixture("user-a");
-  store.start(input, startTime);
+  store.start(input, startTime); store.updateSettings({ keepScreenAwake: false }, startTime);
   const other = fixture("user-b", port).store;
   assert.equal(other.getSnapshot().session, null);
+  assert.equal(other.getSnapshot().settings.keepScreenAwake, true);
   assert.notEqual(getFocusStorageKey("user-a"), getFocusStorageKey("user-b"));
 });
 
-test("legacy timer migrates only for an existing exam and honors its old deadline", () => {
+test("legacy timer requires an existing exam and never invents foreground time", () => {
   const { store, values } = fixture();
   values.set(LEGACY_FOCUS_KEY, JSON.stringify({ examId: "statistics", sessionId: "planned", title: "Statistik", startedAt: startTime, mode: "focus", goalMinutes: 10 }));
   store.migrateLegacy(["other-exam"], startTime + minute);
   assert.equal(store.getSnapshot().session, null);
   store.migrateLegacy(["statistics"], startTime + 15 * minute);
-  assert.equal(store.getSnapshot().session.status, "finished");
-  assert.equal(store.getSnapshot().session.endedAt, startTime + 10 * minute);
+  assert.equal(store.getSnapshot().session.status, "paused");
+  assert.equal(store.getSnapshot().session.focusedMs, 0);
   assert.equal(values.has(LEGACY_FOCUS_KEY), false);
 });
 
-test("broken storage is handled safely and storage failure is visible", () => {
+test("version 1 migrates to checkpointed paused state, without reload credit", () => {
+  const { store, port, values } = fixture();
+  store.start(input, startTime);
+  const old = { ...store.getSnapshot().session, elapsedMs: 0, lastSeenAt: startTime + minute };
+  delete old.focusedMs; delete old.awayMs; delete old.awayCount;
+  values.set(store.key, JSON.stringify({ version: 1, session: old, settings: { protectionEnabled: false, notificationsEnabled: false } }));
+  const restored = createFocusSessionStore("user-a");
+  restored.hydrate(port, startTime + 20 * minute, true);
+  assert.equal(restored.getSnapshot().session.status, "paused");
+  assert.equal(restored.getSnapshot().session.focusedMs, minute);
+  assert.equal(JSON.parse(values.get(store.key)).version, 2);
+});
+
+test("storage failure and malformed data cannot crash the timer", () => {
   assert.equal(parseFocusSnapshot("broken-json"), null);
   const { store } = fixture("unavailable", { getItem: () => { throw Error("blocked"); }, setItem: () => { throw Error("full"); }, removeItem: () => {} });
   assert.equal(store.getSnapshot().storageAvailable, false);
-  assert.ok(store.start(input, startTime));
-  store.tick(startTime + 11 * minute);
+  assert.ok(store.start(input, startTime)); store.tick(startTime + 11 * minute);
   assert.equal(store.getSnapshot().session.status, "finished");
+  const session = store.getSnapshot().session;
+  for (const focusedMs of [-1, "1000", null, 999999999]) {
+    assert.equal(parseFocusSnapshot(JSON.stringify({ version: 2, session: { ...session, focusedMs }, settings: store.getSnapshot().settings })).session, null);
+  }
 });
 
-test("short recorded sessions retain exact minutes after exam reload", () => {
+test("exact focused milliseconds and absence metrics survive exam reload", () => {
+  const exams = migrateExams([{ id: "statistics", title: "Statistik", examDate: "2026-10-25", studySessions: [{ id: "focus-id", examId: "statistics", title: "Kurz gelernt", dateKey: "2026-10-09", durationMinutes: 99, focusedMs: 134000, awayMs: 180000, awayCount: 2, isDone: true, startedAtIso: "2026-10-09T18:00:00Z", completedAtIso: "2026-10-09T18:10:00Z" }] }]);
+  const s = exams[0].studySessions[0];
+  assert.equal(s.durationMinutes, 134000 / minute); assert.equal(s.focusedMs, 134000);
+  assert.equal(s.awayMs, 180000); assert.equal(s.awayCount, 2);
+});
+
+test("short legacy/manual study records remain supported", () => {
   const exams = migrateExams([{ id: "statistics", title: "Statistik", examDate: "2026-10-25", studySessions: [{ id: "focus-id", examId: "statistics", title: "Kurz gelernt", dateKey: "2026-10-09", durationMinutes: 2, isDone: true, startedAtIso: "2026-10-09T18:00:00Z", completedAtIso: "2026-10-09T18:02:00Z" }] }]);
   assert.equal(exams[0].studySessions[0].durationMinutes, 2);
 });

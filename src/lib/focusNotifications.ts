@@ -21,8 +21,8 @@ export async function showFocusNotification(sessionId: string, kind: "away" | "f
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration?.active || !stillAllowed() || Notification.permission !== "granted") return;
     // No delayed alarm is promised: this runs while the browser still executes JS.
-    await registration.showNotification(kind === "away" ? "Deine Fokus-Session läuft" : "Fokusblock geschafft", {
-      body: kind === "away" ? "Komm zurück, wenn du bereit bist. Dein Timer läuft weiter." : "Deine Lernzeit wartet in GradeGlow aufs Speichern.",
+    await registration.showNotification(kind === "away" ? "Deine Fokus-Session pausiert" : "Fokusblock geschafft", {
+      body: kind === "away" ? "Komm zurück, wenn du bereit bist. Abwesenheit zählt nicht als Lernzeit." : "Deine Lernzeit wartet in GradeGlow aufs Speichern.",
       tag: `gradeglow-focus-${sessionId}`,
       icon: "/icons/icon-192.png?v=2",
       data: { kind: "gradeglow-focus", url: "/timer" },

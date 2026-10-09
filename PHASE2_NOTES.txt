@@ -1,102 +1,143 @@
-UI Fix & Mascot + Focus Mode — GradeGlow
+UI FIX AND MASCOT — FOREGROUND FOCUS FIX
+GradeGlow: weiterhin Next.js-Homescreen-PWA, kein aktiver Capacitor-Wrapper.
+Keine neuen Dependencies. Native TODO-Skelette bleiben unverändert.
+Alle Quelldateien im ZIP sind vollständig und unter ihren originalen Pfaden.
 
-Vollständiges Projekt: Phase 1 bleibt enthalten, Phase 2 ist integriert.
-Die App ist weiterhin eine Next.js-PWA. Es wurden keine Dependencies ergänzt.
-Die Swift-Datei ist absichtlich nur ein TODO-Skelett; native App-Sperren sind
-noch nicht implementiert. Das Web meldet FocusLock.isSupported() = false.
+ZUORDNUNG DER AKTUELLEN FIXES
+1 Nav / echter Bildschirmrand:
+  src/app/mobile-ui.css
+  src/app/layout.tsx
+  src/app/manifest.ts
+  src/lib/appearance.ts
+2 Header / Overlay-Diagnose:
+  src/app/mobile-ui.css
+  src/components/MobileAppHeader.tsx
+  src/components/GradeGlowDashboard.tsx
+3 Tageskalender / Lernplan:
+  src/components/StudyCalendar.tsx
+  src/lib/calendarLayout.ts
+  src/components/GradeGlowPlanner.tsx
+  src/app/mobile-ui.css
+4 Vordergrund-Timer / Kontrast:
+  src/lib/focusSession.ts
+  src/components/FocusSessionProvider.tsx
+  src/components/FocusReturnNotice.tsx
+  src/components/FocusSettingsCard.tsx
+  src/lib/focusNotifications.ts
+  src/components/GradeGlowDashboard.tsx
+  src/lib/gradeglowExams.ts
+  src/lib/studyStats.ts
+  src/types.ts
+  src/app/mobile-ui.css
+5 ECTS:
+  src/components/EctsProgressRing.tsx
+  src/components/GradeGlowDashboard.tsx
+  src/app/mobile-ui.css
+6 Donnerstag / heutiger Haken / Chartwerte:
+  src/components/LearningTrend.tsx
+  src/components/StudyHomeFeed.tsx
+  src/app/mobile-ui.css
+Cache-Aktualisierung: public/sw.js (v59).
+Tests: tests/focus-session.test.mjs, tests/ui-fixes.test.mjs.
+package.json, package-lock.json und capacitor.config.ts sind unverändert.
 
-FOKUS-VERHALTEN
-- Ein gemeinsamer Store für Kalender- und Fokus-Timer, pro Account gespeichert.
-- States: idle, running, paused, finished, abgebrochen.
-- Persistiert: Fach, Beginn, aktueller Ablaufzeitpunkt, tatsächliches Ende,
-  akkumulierte Lernzeit, Pause, Abwesenheitsintervalle und Speicherstatus.
-- Zeit wird aus Zeitstempeln berechnet. Der Sekunden-Interval aktualisiert nur
-  die Anzeige. Pausen zählen nicht, Hintergrundzeit zählt weiter.
-- Nach Ablauf bleibt die Session fertig und wartet auf „Lernzeit speichern“.
-  Eine geplante Einheit wird aktualisiert, statt einen zweiten Block anzulegen.
-  Freie Einheiten erhalten eine stabile ID. Kalender-Timer behalten ihre Rewards.
-- Happy während des Laufs, sleepy bei Pause, neutral nach kurzer Abwesenheit,
-  panic ab zwei Minuten Abwesenheit, celebrate bei fertig.
-- Fokus-Schutz ist standardmäßig aus. Erst das Einschalten erlaubt lokale
-  Abwesenheitsaufzeichnung, freundliche Abbruchbestätigung und eine ruhige
-  Fokus-Seite ohne kleine Daily-Glow-/Freundes-/In-App-Push-Einblendungen.
-  Die Navigation bleibt verfügbar; niemand wird am Verlassen gehindert.
-- Abwesenheit wird bei visibilitychange/pagehide synchron gespeichert. Wenn
-  iOS beim erzwungenen Beenden keine Ereignisse liefert, ist der letzte sichtbare
-  Heartbeat (alle 15 Sekunden) ein näherungsweiser Abwesenheitsbeginn.
-  Die eigentliche Timer-Zeit bleibt unabhängig davon exakt timestampbasiert.
-- Benachrichtigungen brauchen ein zweites Opt-in mit erklärendem Dialog und
-  Browserfreigabe. Auf iOS wird die Option nur in der installierten PWA gezeigt.
-  Es sind sofortige Hinweise beim Hintergrundwechsel, keine zuverlässig
-  geplanten lokalen iOS-Alarme. Ohne laufende Browser-Ausführung kann die PWA
-  keine Zustellung bei App-Kill oder auf eine spätere Uhrzeit garantieren.
-- Abwesenheitsdaten bleiben auf diesem Gerät im Fokus-Store. Diese Änderung
-  sendet sie nicht an Firebase oder an Freunde. Vorhandenes opt-in Study Sharing
-  für Start/Abschluss bleibt bei seiner bisherigen Einstellung.
+HEADER-DIAGNOSE
+Der gelieferte Stand enthält am Header bereits filter:none und backdrop-filter:none.
+Ein Reset dort allein verändert darüberliegende Backdrops nicht.
+Konkrete gefundene Konflikte:
+- Toasts: fixed + top-3 + z-50 + backdrop-blur. Jetzt unterhalb des Headers,
+  mit geringerem z-index und ohne wirksamen Backdrop-Blur auf mobilen Screens.
+- Alter body::before-Layer mit z-index:9998 im Safe-Area-Bereich: in der
+  mobilen App deaktiviert. Die Header-Fläche selbst übernimmt den oberen Inset.
+- dialog.gg-app-dialog::backdrop: blur(7px) zeichnet beim geöffneten Dialog auch
+  Header-Inhalt weich. Dieser Blur wurde entfernt; der Hintergrund dimmt nur.
+Der Header-Reset (filter/backdrop/text-shadow/opacity) ist für App-Header und
+Kinder aktiv; Masken, Blend-Modi, will-change und Header-Pseudo-Overlays sind aus.
+Ohne aktuelle iPhone-Ansicht lässt sich NICHT beweisen, welche Regel die im
+geschlossenen Zustand gemeldete Unschärfe auf dem Gerät verursacht hat.
+Die automatisierten Tests sind keine iPhone-Pixel-/Safe-Area-Prüfung.
 
-DATEIÜBERSICHT — PHASE 2
-Neu:
-  src/lib/focusSession.ts — persistenter State und Zeitberechnung
-  src/lib/focusNotifications.ts — Opt-in und sichere Notification-Fallbacks
-  src/lib/focusLock.ts — Web-No-op und öffentliche FocusLock-Schnittstelle
-  src/components/FocusSessionProvider.tsx — gemeinsamer Hook und App-Lifecycle
-  src/components/FocusReturnNotice.tsx — Rückkehrhinweis
-  src/components/FocusSettingsCard.tsx — Schutz, Hinweise, native Vorschau
-  plugins/focus-lock/src/definitions.ts — Domain- und Capacitor-Bridge-Typen
-  plugins/focus-lock/src/index.ts — noch nicht aktivierter Bridge-Adapter
-  plugins/focus-lock/ios/Sources/FocusLockPlugin/FocusLockPlugin.swift — TODOs
-  tests/focus-session.test.mjs — Timer-, Consent- und Fallback-Tests
-Geändert:
-  src/components/GradeGlowAppHost.tsx — Provider bleibt über Routenwechsel aktiv
-  src/components/GradeGlowDashboard.tsx — Timer-UI, Pause, Speichern, Maskottchen
-  src/components/GradeGlowPlanner.tsx — gemeinsamer Start, Wechsel zu /timer
-  src/components/SettingsPage.tsx — Fokus-Einstellungen
-  src/lib/gradeglowExams.ts — kurze erfasste Zeiten bleiben nach Reload erhalten
-  src/app/mobile-ui.css — Fokus-Karte, Opt-in-Dialoge und Rückkehrhinweis
-  public/sw.js — Cache v58 und Öffnen des Timers beim Notification-Tap
-Unverändert: package.json, package-lock.json, capacitor.config.ts.
+ZEITREGELN
+- States: idle, running, away, paused, finished, abgebrochen.
+- Nur sichtbare Vordergrundsegmente zählen. Kulanzkonstante AWAY_GRACE_MS=10000.
+- Beim Verlassen sofort away; Fokuszeit bleibt stehen. Bis einschließlich
+  10 Sekunden wird die Unterbrechung nach Rückkehr vollständig toleriert.
+  Bei mehr als 10 Sekunden wird die GESAMTE Abwesenheit ausgeschlossen.
+- focusedMs ist die Quelle aller neuen Timer-Lernzeiten. Dauer in Minuten
+  wird daraus abgeleitet, nie aus Endzeit minus Beginn.
+- awayMs/awayCount zählen ausgeschlossene Abwesenheiten. Die lokalen
+  absences enthalten auch tolerierte kurze Intervalle.
+- Ereignisse: visibilitychange, pagehide/pageshow, focus/blur.
+  Mehrfachereignisse sind idempotent. Bei Rückkehr automatisch running, außer
+  nach manueller Pause oder echter Wiederherstellung eines beendeten Prozesses.
+- Rückkehrtext: „Pausiert, weil du die App verlassen hast (2:14)“; verschwindet
+  nach 8 Sekunden oder per „Alles klar“.
+- Sichtbare Heartbeats speichern alle 5 Sekunden einen fokussierten Checkpoint.
+  Nach Reload/App-Kill bleibt die Session paused, beim letzten sicheren Stand.
+  Fehlende Ereignisse beim Kill können echte Vordergrundzeit seit dem Checkpoint
+  verlieren (normalerweise bis etwa 5 Sekunden; bei eingefrorenem JS mehr),
+  führen aber nicht zu einer Gutschrift unbekannter Hintergrundzeit.
+  Der unbekannte Abstand zum Checkpoint ist eine konservative Abwesenheitsschätzung.
+- Die Countdown-Deadline wird erst beim Fortsetzen neu aus der restlichen
+  Fokuszeit berechnet. Eine lange Abwesenheit beendet den Fokusblock nicht.
+- Ein gespeicherter Lernblock enthält focusedMs, awayMs, awayCount. Aggregierte
+  Daten werden über den vorhandenen Account-Sync mit dem Lernblock gespeichert;
+  detaillierte Abwesenheitsintervalle bleiben im lokalen Timer-Store.
+  Study Sharing erhält nur die abgeleitete Lerndauer, keine Abwesenheitsdaten.
+- Historische/manuell abgeschlossene Einheiten ohne focusedMs behalten ihre
+  ursprüngliche Dauer; verlorene Vordergrundhistorie lässt sich nicht nachträglich
+  aus Start-/Endzeiten rekonstruieren.
+- Bildschirm wach halten: standardmäßig an, abschaltbar in Einstellungen.
+  request('screen') nur während sichtbarer laufender Session; Freigabe bei
+  Pause/away/Ende, erneute Anfrage bei Rückkehr. Fehler bleiben still.
+  Verfügbarkeit hängt vom Browser und iOS ab, keine Garantie gegen Sperrung.
+- Benachrichtigungen weiterhin nur nach gesondertem Opt-in und Browserfreigabe.
+  Keine garantierten Alarme bei App-Kill, keine anderen Apps werden gesperrt.
+- Happy beim Lauf, sleepy bei Pause/away, panic bei away über 60 Sekunden,
+  celebrate bei fertig. Der Rückkehrhinweis zeigt in Einstellungen die Reaktion.
+- Leere Timer-Sessions erhalten keine künstliche Lernminute.
 
 PRÜFUNG
-  node --test tests/focus-session.test.mjs
+  node --test tests/*.test.mjs
   npm run typecheck
   npm run lint
   npm run build
-Die automatisierten Tests prüfen Hintergrund/Reboot/Pause/Deadline, Daten pro
-Account, Legacy-Migration, abgebrochene/fertige Sessions, Consent und Web-Fallback.
-Die bestehende focusedExam-Hook-Warnung im Planner bleibt unverändert.
-Die folgenden echten iPhone-Prüfungen sind noch manuell durchzuführen.
+42 Tests: State-Store, Grace-Grenzen, Kill/Reload, gespeicherte Metriken, tatsächliche
+Provider-Eventhandler mit simuliertem Safari und Wake-Lock, SSR-Chart/ECTS/Home.
+Typecheck/Build erfolgreich. Lint: 0 Fehler, bestehende focusedExam-Hook-Warnung.
+Echte iPhone-Render- und OS-Tests bleiben manuell.
 
-IPHONE-TEST-CHECKLISTE
-[ ] In Safari und als Home-Bildschirm-PWA testen; Light und Dark Mode prüfen.
-[ ] Frischer Account: Schutz aus; kein Berechtigungsdialog beim Laden/Starten.
-[ ] Im Kalender eine Einheit starten: Wechsel zu Fokus, passendes Fach und Ziel;
-    der Timer bleibt bei Tabwechseln erhalten. Es gibt nur eine aktive Session.
-[ ] Nach ca. 30 Sekunden pausieren, zwei Minuten warten, fortsetzen:
-    Restzeit und gespeicherte Lernminuten enthalten die Pause nicht. Sleepy/happy.
-[ ] Mit Schutz aus in eine andere App wechseln: Zeit läuft korrekt weiter,
-    kein Abwesenheitshinweis und keine Abbruch-Rückfrage.
-[ ] Schutz einschalten, kurz wechseln: ein Hinweis und neutrale Pose bei Rückkehr.
-    Mehr als zwei Minuten weg: panic, nach „Alles klar“ wieder happy.
-    visibilitychange plus pagehide erzeugen keinen doppelten Abwesenheitseintrag.
-[ ] Sperrbildschirm während laufender Session für einige Minuten:
-    nach Entsperren richtige Zeit. Während Pause bleibt die Zeit unverändert.
-[ ] Laufende PWA aus dem App-Umschalter beenden, vor Ablauf erneut öffnen:
-    dasselbe Fach und dieselbe Session, korrekte Restzeit, kein Neustart bei 0.
-[ ] Nach Ablauf neu öffnen: finished/celebrate, Lernzeit bis zum echten Deadline;
-    keine zusätzliche Zeit nach Ablauf. Pausierte PWA nach Kill bleibt pausiert.
-[ ] Mit Schutz: „Verwerfen“ öffnet eine freundliche Bestätigung. Abbrechen hält
-    die Session; bestätigen verwirft sie. Vorhandene Streak-Daten bleiben erhalten.
-[ ] Lernzeit speichern: genau eine Einheit im Fach; geplante Einheit wird
-    aktualisiert. Kurze erfasste Dauer bleibt auch nach Reload unverändert.
-[ ] Notification-Dialog ablehnen: Timer funktioniert weiter, keine Hinweise.
-    Nach separater Zustimmung (nur unterstützte PWA) Hintergrund-Hinweis prüfen;
-    Tap öffnet /timer. Zustellung kann von iOS/Browser unterdrückt werden.
-[ ] Hinweise/Schutz ausschalten: keine neuen Hinweise; bereits angezeigte
-    Fokus-Hinweise werden nach Möglichkeit geschlossen. Kein Prompt ohne Tap.
-[ ] „Apps sperren (bald verfügbar)“ ist informativ, keine echte Web-Sperre.
-[ ] Phase-1-Regressionscheck: Nur main scrollt, Nav inkl. Home-Bar deckend,
-    Header scharf; Kalender-Früher-Button/Jetzt-Linie, Lerntrend und ECTS-Ring
-    prüfen. Anglerfisch und Home-Bildschirm-Icon bleiben sichtbar.
+IPHONE-CHECKLISTE
+[ ] Nach Deployment einmal vollständig schließen/öffnen; neuen Cache v59 laden.
+    Safari und installierte PWA, Light/Dark/System sowie kleines iPhone prüfen.
+[ ] Nav bündig bis zum Bildschirmrand; nur Home-Bar-Inset darunter. Kein leerer
+    Block, keine zweite Linie. Alle fünf Tabs gleich; nur aktive Pille, 12px Rand.
+[ ] Header scharf bei Scrollen, Navigation, Toast und geöffnetem Menü; SVG-Icons
+    mittig in 44x44-Buttons. Bei verbleibender Unschärfe Screenshot + iOS-Version.
+[ ] Kalender: nur 280px/40dvh Stundenfenster scrollt, Lernplan liegt darunter.
+    00–06 und 20–24 durch Scrollen erreichbar. Start heute jetzt−1h innerhalb
+    06–18, anderes Datum erster Termin oder 06. Stundenhöhe 44px.
+[ ] Jetzt-Linie nahe einem Stundenlabel prüfen: unter 14px Distanz Label verborgen.
+    Auch abends 21:29/21:45 testen. Studienblöcke durchgehend akzentfarben.
+[ ] Lernplan: zwei Aktionsbuttons nebeneinander, versteckte Einträge als Textlink,
+    ein Filter-Chip öffnet beide Filter; eine Akkordeon-Liste.
+[ ] Timer: 1min Vordergrund, 2:14 andere App, 1min Vordergrund, speichern:
+    focusedMs ungefähr120000, awayMs134000, awayCount1; Home/Profil/Kalender2min.
+[ ] Wechsel unter/über10s testen: Kulanz bis10s; darüber kein Abwesenheitsanteil
+    gutgeschrieben. Doppelereignisse ergeben einen einzigen Abwesenheitseintrag.
+[ ] Bildschirm wach halten aus: Sperrbildschirm2min, entsperren, automatisch
+    fortsetzen; gesperrte Zeit zählt nicht. Einstellung an und Stromsparmodus prüfen.
+[ ] PWA während running/away killen, später neu öffnen: paused am letzten
+    Checkpoint, Fach erhalten, kein nachträgliches Lernen. Fortsetzen manuell.
+[ ] Manuelle Pause, Hintergrund und Rückkehr: bleibt pausiert.
+[ ] Zielende im Vordergrund: celebrate, genau einmal speichern. Geplante Einheit
+    wird aktualisiert; kurzer Zeitwert bleibt nach Reload unverändert.
+[ ] Fokus-Seite Dark/System: Karte, Selects, Labels und Meldungen kontrastreich.
+[ ] ECTS: runder88x88-SVG-Ring, nur Prozent innen; ECTS + Restzahl rechts.
+[ ] Lerntrend: Mo–So inklusiveDo; nur heutiger Wert dauerhaft, andere perTap
+    mit genauer Zeit. Monat/Jahr weiterhin maximal6 X-Labels.
+[ ] Heute auf Home nach erledigtem Block: Ring UND Haken bleiben.
+[ ] Hinweise ablehnen/erlauben/ausschalten; kein Prompt ohne eigenen Tap.
+    Bei Zustimmung zeigt Hintergrundhinweis „pausiert“, nicht „läuft weiter“.
 
-APPLE-VORBEREITUNG
-Die kurze Entitlement-Anleitung steht in plugins/focus-lock/APPLE_SETUP.txt.
+Native Vorbereitung unverändert: plugins/focus-lock/APPLE_SETUP.txt.

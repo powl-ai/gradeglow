@@ -342,7 +342,7 @@ const PublicProfileModal = ({
   onRemoveFriend: () => void;
   removeLabel: string;
 }) => (
-  <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-3 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true">
+  <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-3 sm:items-center sm:p-6" role="dialog" aria-modal="true">
     <article className="max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-white p-5 text-slate-950 shadow-2xl ring-1 ring-slate-200 sm:p-6">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">

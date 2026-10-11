@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gradeglow-v60";
+const CACHE_VERSION = "gradeglow-v61";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const MASCOT_ASSETS = ["focused", "happy", "sleepy", "panic", "celebrate"]

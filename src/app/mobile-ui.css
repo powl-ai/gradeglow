@@ -9,9 +9,10 @@
 }
 html[data-color-mode="dark"] { --gg-nav-background: #161b2e; }
 /* The document never scrolls; each route's main owns its content viewport. */
-html, body { height: 100%; min-height: 0; overflow: hidden !important; overscroll-behavior: none; }
-html, body { background: var(--gg-nav-background) !important; }
-body { margin: 0; padding: 0 !important; touch-action: manipulation; }
+html, body { height: 100%; min-height: 0; overscroll-behavior: none; }
+html { overflow-y: clip; }
+html, body { background: var(--gg-document-bg, var(--background)) !important; }
+body { margin: 0; padding: 0 !important; overflow-x: clip; overflow-y: clip; touch-action: manipulation; }
 .gg-native-layout { position: fixed; inset: 0; display: flex; flex-direction: column; width: 100%; min-height: 0; margin: 0; padding: 0; border: 0; overflow: hidden; background: var(--gg-document-bg); }
 html body main { flex: 1; height: auto; min-height: 0 !important; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y pinch-zoom; }
 html .gg-auth-page { min-height: 0; }
@@ -239,7 +240,6 @@ html .gg-demo-bar { display: block; padding: 0 .85rem; border-radius: .85rem; ba
 
 @media (max-width: 1023px) {
   html { font-size: 16px !important; }
-  body:has(.gg-app-header) { padding: 0 !important; }
   .gg-app-header {
     display: block; position: relative; flex-shrink: 0; z-index: 50;
     height: calc(var(--gg-safe-top) + var(--gg-header-clearance) + var(--gg-header-height)); padding-top: calc(var(--gg-safe-top) + var(--gg-header-clearance));
@@ -258,24 +258,23 @@ html .gg-demo-bar { display: block; padding: 0 .85rem; border-radius: .85rem; ba
   .gg-header-action { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 50%; color: inherit; text-decoration: none; }
   .gg-header-action svg { display: block; width: 24px; height: 24px; }
   .gg-header-action:hover { background: rgb(127 127 155 / .12); }
-  html .gg-native-layout > main { height: auto; margin-top: 0; padding-top: 0 !important; padding-bottom: 1rem !important; }
-  html body:has(.gg-app-header) .gg-app-shell { padding-top: 1rem !important; padding-inline: max(.9rem, env(safe-area-inset-left, 0px)) max(.9rem, env(safe-area-inset-right, 0px)) !important; padding-bottom: 0 !important; gap: 1rem !important; overflow-x: visible !important; }
+  html .gg-native-layout > main { height: auto; margin-top: 0; padding: 0 !important; }
+  html body:has(.gg-app-header) .gg-app-shell { padding-top: 1rem; padding-inline: max(.9rem, env(safe-area-inset-left, 0px)) max(.9rem, env(safe-area-inset-right, 0px)) !important; padding-bottom: calc(var(--gg-nav-height) + env(safe-area-inset-bottom, 0px) + 16px); gap: 1rem !important; overflow-x: visible !important; }
   html body:has(.gg-app-header) main.gg-themed > .mx-auto:not(.gg-app-shell) { padding-top: 1rem !important; padding-bottom: 0 !important; }
-  html .gg-mobile-scroll-end-spacer { display: none !important; }
   html .gg-native-layout > .gg-mobile-tabbar-shell.gg-themed {
-    position: static !important; inset: auto !important; transform: none !important;
-    display: block; box-sizing: border-box; flex: 0 0 auto; width: 100%; height: auto; min-height: 0; max-height: none; margin: 0 !important;
-    padding: 0 max(12px, env(safe-area-inset-right)) var(--gg-safe-bottom) max(12px, env(safe-area-inset-left)) !important;
-    background: var(--gg-nav-background) !important; border: 0 !important;
-    border-radius: 0 !important; box-shadow: none !important;
-    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
-    pointer-events: auto; z-index: auto !important;
+    position: fixed; left: 0; right: 0; bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+    display: block; box-sizing: border-box; width: 100%; height: var(--gg-nav-height); margin: 0;
+    padding: 0 max(12px, env(safe-area-inset-right, 0px)) 0 max(12px, env(safe-area-inset-left, 0px));
+    background: transparent !important; border: 0;
+    border-radius: 0; box-shadow: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    pointer-events: auto; z-index: 30;
     --gg-dock-bg: #fff; --gg-ring-track: #e2e8f0;
   }
   html[data-color-mode="dark"] .gg-native-layout > .gg-mobile-tabbar-shell.gg-themed { --gg-dock-bg: #161b2e; }
   html .gg-native-layout > .gg-mobile-tabbar-shell.gg-themed::before,
   html .gg-native-layout > .gg-mobile-tabbar-shell.gg-themed::after { display: none !important; }
-  html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar { position: static !important; inset: auto !important; transform: none !important; box-sizing: border-box; width: 100% !important; max-width: none !important; display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-auto-flow: row !important; align-items: center; gap: 4px; height: var(--gg-nav-height) !important; min-height: var(--gg-nav-height) !important; margin: 0 !important; padding: 4px 0 !important; border-radius: 0 !important; border: 0 !important; background: var(--gg-nav-background) !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar { position: static; box-sizing: border-box; width: 100%; max-width: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-auto-flow: row; align-items: center; gap: 4px; height: var(--gg-nav-height); min-height: var(--gg-nav-height); margin: 0; padding: 4px 0; border-radius: 0; border: 0; background: var(--gg-nav-background); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
   html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a,
   html .gg-mobile-tabbar-shell.gg-themed .gg-mobile-tabbar a.is-primary { display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: .25rem; min-width: 0; width: 100% !important; height: 48px !important; min-height: 48px !important; padding: .3rem .15rem !important; border: 0 !important; border-radius: 12px !important; color: var(--gg-muted) !important; opacity: 1; text-decoration: none; }
   html .gg-mobile-tabbar-shell a:focus-visible { outline: 2px solid var(--gg-ui-accent); outline-offset: 1px; }
@@ -287,7 +286,6 @@ html .gg-demo-bar { display: block; padding: 0 .85rem; border-radius: .85rem; ba
   html .gg-mobile-tabbar-shell .gg-mobile-tabbar a .gg-mobile-tab-icon { height: 1.3rem !important; width: 1.3rem !important; display: grid !important; place-items: center; flex: 0 0 1.3rem; position: static !important; margin: 0 !important; padding: 0 !important; transform: none !important; }
   html .gg-mobile-tabbar-shell .gg-mobile-tab-icon svg { width: 1.3rem; height: 1.3rem; }
   html .gg-mobile-tabbar-shell .gg-mobile-tabbar .gg-mobile-tab-label { display: block !important; position: static !important; height: .8rem !important; width: auto; margin: 0 !important; padding: 0 !important; transform: none !important; overflow: visible; clip: auto; font-size: .65rem !important; font-weight: 650; line-height: .8rem !important; }
-  html .gg-mobile-floating-feedback, html .gg-mobile-top-blocker, html .gg-mobile-bottom-blocker { display: none !important; }
   html .gg-profile-card { background: var(--gg-surface) !important; padding: 1rem; border-radius: 1.35rem; }
   html .gg-profile-hero { padding: 1.1rem; border-radius: 1.4rem; }
   html .gg-profile-card h3 { font-size: 1.1rem; line-height: 1.3; }

@@ -1739,7 +1739,7 @@ export default function GradeGlowDashboard({
 
       {isNavigationOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 p-0 backdrop-blur-sm sm:items-stretch sm:justify-end sm:p-4"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 p-0 sm:items-stretch sm:justify-end sm:p-4"
           onClick={() => setIsNavigationOpen(false)}
         >
           <nav
@@ -1882,7 +1882,7 @@ export default function GradeGlowDashboard({
         </div>
       )}
 
-      <div className="gg-app-shell mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 pb-4 pt-4 sm:gap-6 sm:px-6 lg:px-8 lg:pb-8 lg:pt-[calc(env(safe-area-inset-top,0px)+2rem)]">
+      <div className="gg-app-shell mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 pt-4 sm:gap-6 sm:px-6 lg:px-8 lg:pb-8 lg:pt-[calc(env(safe-area-inset-top,0px)+2rem)]">
         <header className="hidden overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl shadow-violet-950/20 ring-1 ring-white/10 lg:block">
           <div className="relative p-4 sm:p-7 lg:p-8">
             <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-fuchsia-500/25 blur-3xl" />

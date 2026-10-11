@@ -113,13 +113,10 @@ html,
 body {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
 }
 
 body {
-  padding-top: env(safe-area-inset-top, 0px);
   padding-right: env(safe-area-inset-right, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
   -webkit-text-size-adjust: 100%;
 }
@@ -191,9 +188,7 @@ textarea {
 
 @supports (padding: max(0px)) {
   body {
-    padding-top: max(env(safe-area-inset-top, 0px), 0px);
     padding-right: max(env(safe-area-inset-right, 0px), 0px);
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
     padding-left: max(env(safe-area-inset-left, 0px), 0px);
   }
 }
@@ -1343,9 +1338,6 @@ button,
 }
 
 @media (display-mode: standalone) and (max-width: 640px) {
-  body {
-    padding-top: 0;
-  }
 
   .gg-themed main,
   main.gg-themed {
@@ -1781,11 +1773,6 @@ button,
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.10) !important;
   }
 
-  .gg-themed .backdrop-blur,
-  .gg-themed .backdrop-blur-xl {
-    backdrop-filter: blur(10px) !important;
-  }
-
   .gg-themed nav[aria-label="GradeGlow Schnellnavigation"] {
     top: auto !important;
     right: 0.45rem !important;
@@ -1967,15 +1954,9 @@ button,
     font-size: 13px;
   }
 
-  body {
-    padding-top: 0 !important;
-  }
-
   .gg-app-shell {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 4.25rem) !important;
     padding-left: max(env(safe-area-inset-left, 0px), 0.62rem) !important;
     padding-right: max(env(safe-area-inset-right, 0px), 0.62rem) !important;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.9rem) !important;
     gap: 0.72rem !important;
   }
 
@@ -2090,10 +2071,6 @@ button,
 
 /* Mobile app shell v2: header in document flow, real timer tab, lower PWA tabbar. */
 @media (max-width: 1023px) {
-  .gg-app-shell {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 0.7rem) !important;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.15rem) !important;
-  }
 
   .gg-mobile-icon-button {
     height: 1.7rem !important;
@@ -2106,10 +2083,6 @@ button,
   body,
   .gg-themed {
     background-color: rgb(250, 245, 255) !important;
-  }
-
-  .gg-app-shell {
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4.45rem) !important;
   }
 }
 
@@ -2282,15 +2255,6 @@ button,
    document flow, the tabbar owns the bottom safe area, and premium tables turn
    into cards on small screens. */
 @media (max-width: 1023px) {
-  body {
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
-  }
-
-  .gg-app-shell {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 0.55rem) !important;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4.85rem) !important;
-  }
 
   .gg-premium-table-desktop {
     display: none !important;
@@ -2312,11 +2276,6 @@ button,
   body,
   .gg-themed {
     background: var(--gg-app-bg, #fbf7ff) !important;
-  }
-
-  .gg-app-shell {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 0.35rem) !important;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 3.75rem) !important;
   }
 }
 
@@ -2411,11 +2370,6 @@ button,
 
 @media (display-mode: standalone) and (max-width: 1023px) {
   /* Installed PWA: the OS already provides status space, so the internal header becomes unnecessary. */
-
-  .gg-app-shell {
-    padding-top: calc(env(safe-area-inset-top, 0px) + 0.55rem) !important;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 3.25rem) !important;
-  }
 }
 
 /* Fake-live Premium + final PWA safe-area polish --------------------------
@@ -2430,10 +2384,8 @@ button,
 
   .gg-app-shell {
     min-height: 100svh;
-    padding-top: max(calc(env(safe-area-inset-top, 0px) + 1rem), 2.05rem) !important;
     padding-right: max(env(safe-area-inset-right, 0px), 0.8rem) !important;
     padding-left: max(env(safe-area-inset-left, 0px), 0.8rem) !important;
-    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 4.7rem), 5.05rem) !important;
   }
 
   .gg-mobile-plus-teaser {
@@ -2485,19 +2437,9 @@ button,
     background: var(--gg-app-bg, #fbf7ff) !important;
   }
 
-  body {
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
-  }
-
   main.gg-themed > .mx-auto:not(.gg-app-shell) {
     padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.35rem), 2.8rem) !important;
     padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 1.2rem), 1.6rem) !important;
-  }
-
-  .gg-app-shell {
-    padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.25rem), 2.75rem) !important;
-    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 4.25rem), 4.7rem) !important;
   }
 }
 
@@ -2518,8 +2460,6 @@ button,
    tab bar, stronger quick actions and a bottom-sheet menu. */
 @media (max-width: 1023px) {
   .gg-app-shell {
-    padding-top: max(calc(env(safe-area-inset-top, 0px) + 1rem), 2rem) !important;
-    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 5.6rem), 6rem) !important;
     gap: 0.8rem !important;
   }
 
@@ -2668,13 +2608,6 @@ button,
   }
 }
 
-@media (display-mode: standalone) and (max-width: 1023px) {
-  .gg-app-shell {
-    padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.2rem), 2.55rem) !important;
-    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 5.35rem), 5.8rem) !important;
-  }
-}
-
 /* Mobile/PWA profile + handwriting UI fixes --------------------------------
    This pass answers the UI notes: readable type, active theme surfaces,
    smaller hero, less duplicated navigation, glassy hotbar, and a real in-app
@@ -2685,8 +2618,6 @@ button,
   }
 
   .gg-app-shell {
-    padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.05rem), 2.15rem) !important;
-    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 5.45rem), 5.9rem) !important;
     gap: 1rem !important;
   }
 
@@ -2880,18 +2811,10 @@ button,
   }
 }
 
-@media (display-mode: standalone) and (max-width: 1023px) {
-  .gg-app-shell {
-    padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.15rem), 2.55rem) !important;
-    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 5.55rem), 6rem) !important;
-  }
-}
-
 /* UI FIX 2 -------------------------------------------------------------- */
 html,
 body {
   max-width: 100%;
-  overflow-x: hidden;
   overscroll-behavior-x: none;
 }
 
@@ -2904,27 +2827,10 @@ body {
   .gg-app-shell {
     overflow-x: clip !important;
   }
-
-  .gg-app-shell {
-    padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.55rem), 3rem) !important;
-    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 5rem), 5.7rem) !important;
-  }
-}
-
-@media (display-mode: standalone) and (max-width: 1023px) {
-  .gg-app-shell {
-    padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.75rem), 3.35rem) !important;
-    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 5.1rem), 5.95rem) !important;
-  }
 }
 
 /* UI FIX 3 -------------------------------------------------------------- */
 @media (max-width: 1023px) {
-
-  .gg-app-shell {
-    padding-top: max(calc(env(safe-area-inset-top, 0px) + 2.45rem), 4.45rem) !important;
-    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 5.5rem), 6.2rem) !important;
-  }
 
   .gg-mobile-icon-button,
   .gg-mobile-icon-button-light {
@@ -3093,58 +2999,19 @@ body {
 @media (max-width: 1023px) {
 
   .gg-app-shell {
-    padding-top: max(calc(env(safe-area-inset-top, 0px) + 0.9rem), 2.1rem) !important;
-    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 6.25rem), 6.7rem) !important;
     overflow-x: clip !important;
-  }
-
-  .gg-mobile-floating-feedback {
-    position: fixed;
-    top: max(calc(env(safe-area-inset-top, 0px) + 0.55rem), 1rem);
-    right: max(calc(env(safe-area-inset-right, 0px) + 0.9rem), 0.9rem);
-    z-index: 54;
-    display: flex;
-    height: 2.25rem;
-    width: 2.25rem;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid color-mix(in srgb, var(--gg-border, #e2e8f0) 70%, transparent);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--gg-surface, #ffffff) 64%, transparent);
-    color: var(--gg-app-text, #0f172a);
-    text-decoration: none;
-    font-weight: 950;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
-    backdrop-filter: blur(20px) saturate(150%);
-  }
-
-  .gg-mobile-scroll-end-spacer {
-    display: block !important;
-    min-height: max(calc(env(safe-area-inset-bottom, 0px) + 5.5rem), 6rem);
-  }
-}
-
-@media (display-mode: standalone) and (max-width: 1023px) {
-  .gg-app-shell {
-    padding-top: max(calc(env(safe-area-inset-top, 0px) + 0.95rem), 2.3rem) !important;
-    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 6.4rem), 7rem) !important;
   }
 }
 
 /* UI fix 4: calmer mobile tabbar, clearer settings selection, stronger profile stats and planner agenda. */
 html,
 body {
-  overflow-x: hidden;
   overscroll-behavior-x: none;
 }
 
 .gg-readable-option-card.is-active,
 .gg-readable-option-card.is-active .gg-readable-option-description {
   color: #ffffff;
-}
-
-.gg-mobile-scroll-end-spacer {
-  height: 10rem;
 }
 
 .gg-profile-compare-grid {
@@ -3405,14 +3272,6 @@ body {
 
 /* UI fix 5: repair mobile scale, transparent icon-only hotbar, Apple-like planner density. */
 @media (max-width: 1023px) {
-
-  .gg-app-shell {
-    padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) + 7.25rem), 8.25rem) !important;
-  }
-
-  .gg-mobile-scroll-end-spacer {
-    height: 11.5rem !important;
-  }
 
   .gg-planner-panel {
     gap: 0.9rem !important;
@@ -3779,9 +3638,6 @@ body {
 }
 
 @media (max-width: 767px) {
-  .gg-planner-panel {
-    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px)) !important;
-  }
 
   .gg-plan-summary-grid {
     grid-template-columns: 1fr 1fr !important;

@@ -13,6 +13,13 @@ export default function PwaRegister() {
     if (!("serviceWorker" in navigator)) return;
 
     let refreshing = false;
+    let activeRegistration: ServiceWorkerRegistration | undefined;
+
+    const checkForUpdate = () => {
+      if (document.visibilityState === "visible") {
+        void activeRegistration?.update().catch(() => undefined);
+      }
+    };
 
     const handleControllerChange = () => {
       if (refreshing) return;
@@ -22,7 +29,8 @@ export default function PwaRegister() {
 
     const registerServiceWorker = async () => {
       try {
-        const registration = await navigator.serviceWorker.register("/sw.js");
+        const registration = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+        activeRegistration = registration;
 
         if (registration.waiting) {
           dispatchUpdateReady(registration);
@@ -44,11 +52,15 @@ export default function PwaRegister() {
     };
 
     navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);
+    window.addEventListener("pageshow", checkForUpdate);
+    document.addEventListener("visibilitychange", checkForUpdate);
     if (document.readyState === "complete") void registerServiceWorker();
     else window.addEventListener("load", registerServiceWorker, { once: true });
 
     return () => {
       navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);
+      window.removeEventListener("pageshow", checkForUpdate);
+      document.removeEventListener("visibilitychange", checkForUpdate);
       window.removeEventListener("load", registerServiceWorker);
     };
   }, []);

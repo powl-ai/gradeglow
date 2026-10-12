@@ -10,6 +10,8 @@ import { publishStudyActivity } from "../lib/studyActivity";
 import StudyCalendar from "./StudyCalendar";
 import { formatStudyMinutesExact, getSessionStudyMinutes } from "../lib/studyStats";
 import AppDialog from "./AppDialog";
+import ExamTopicsEditor from "./ExamTopicsEditor";
+import { describePlannedBlock, planTopicBlocks } from "../lib/examTopics";
 import type { CalendarEntry } from "../lib/calendarLayout";
 import type {
   AppUser,
@@ -488,6 +490,8 @@ const createStudySessionsForExam = (
   const candidates = getCandidateStudyDates(exam, studyWeekDays);
   let remainingMinutes = totalMinutes;
   const sessions: StudySessionItem[] = [];
+  const subject = exam.moduleName || exam.title;
+  const topicBlocks = planTopicBlocks(exam.topics ?? [], sessionCount);
 
   Array.from({ length: sessionCount }).forEach((_, index) => {
     if (remainingMinutes <= 0) return;
@@ -504,14 +508,17 @@ const createStudySessionsForExam = (
     bookedByDate.set(dateKey, (bookedByDate.get(dateKey) ?? 0) + cappedDuration);
     remainingMinutes -= cappedDuration;
 
+    const block = topicBlocks[index];
+    const described = block ? describePlannedBlock(block, subject) : null;
     sessions.push({
       id: crypto.randomUUID(),
       examId: exam.id,
-      title: `${sessions.length + 1}. Session · ${exam.moduleName || exam.title}`,
+      title: described?.title ?? `${sessions.length + 1}. Session · ${subject}`,
       dateKey,
       time: "",
       durationMinutes: cappedDuration,
-      focus: getFocusTopic(index, sessionCount),
+      focus: described?.focus ?? getFocusTopic(index, sessionCount),
+      ...(block?.kind === "topic" ? { topicId: block.topic.id } : {}),
       notes: "",
       isDone: false,
       isHidden: false,
@@ -826,6 +833,17 @@ export default function GradeGlowPlanner({
     }, 80);
   };
 
+  // Deep link from Home: /exams?exam=<id> opens that exam's detail panel (topics + plan).
+  const handledExamLinkRef = useRef(false);
+  useEffect(() => {
+    if (!isLoaded || handledExamLinkRef.current) return;
+    handledExamLinkRef.current = true;
+    const examId = new URLSearchParams(window.location.search).get("exam");
+    if (!examId || !sortedExams.some((exam) => exam.id === examId)) return;
+    setFocusedExamId(examId);
+    window.setTimeout(() => focusPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
+  }, [isLoaded, sortedExams]);
+
   const jumpToExamDetails = (examId: string, sessionId?: string) => {
     const exam = sortedExams.find((item) => item.id === examId);
     setFocusedExamId(examId);
@@ -1020,7 +1038,8 @@ export default function GradeGlowPlanner({
       });
     });
 
-    const manualSessions = exam.studySessions.filter((session) => session.isManual || session.userEdited);
+    // Keep manual/edited blocks and everything already done – regenerating must never erase learning history.
+    const manualSessions = exam.studySessions.filter((session) => session.isManual || session.userEdited || session.isDone);
     const generatedSessions = createStudySessionsForExam(exam, moduleById, booked, DEFAULT_LEARNING_PLAN_WEEK_DAYS);
     updateExam(examId, (current) => ({ ...current, studySessions: [...manualSessions, ...generatedSessions] }));
   };
@@ -1694,6 +1713,11 @@ export default function GradeGlowPlanner({
                     <div className="h-full rounded-full gg-chart-fill" style={{ width: `${focusedProgress?.percentage ?? 0}%` }} />
                   </div>
                   <p className="mt-2 text-xs font-black text-slate-400">{focusedProgress?.percentage ?? 0}% Fortschritt · {focusedProgress?.doneSessions ?? 0}/{focusedProgress?.totalSessions ?? 0} Sessions erledigt</p>
+                  <ExamTopicsEditor
+                    exam={focusedExam}
+                    onChange={(topics) => updateExam(focusedExam.id, (exam) => ({ ...exam, topics }))}
+                    onRebuildPlan={() => regenerateExamPlan(focusedExam.id)}
+                  />
                 </div>
                 <div className="mt-4 space-y-3">{focusedPlan.length === 0 ? <p className="rounded-3xl bg-white/10 p-4 text-sm leading-6 text-slate-300 ring-1 ring-white/10">Für diese Prüfung ist aktuell kein Lernblock geplant. Erzeuge einen Plan neu oder füge manuell eine Einheit hinzu.</p> : focusedPlan.map((session) => <div key={session.id} className={`rounded-3xl p-4 ring-1 ${selectedCalendarSessionId === session.id ? "bg-fuchsia-500/20 ring-fuchsia-300/40" : session.isDone ? "bg-emerald-500/15 ring-emerald-300/20" : "bg-white/10 ring-white/10"}`}><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><label className="flex min-w-0 flex-1 items-start gap-3"><input type="checkbox" className="mt-1 h-5 w-5 accent-emerald-400" checked={session.isDone} onChange={() => markStudySessionDone(focusedExam.id, session, !session.isDone)} /><span className="min-w-0"><span className="flex flex-wrap items-center gap-2"><span className="block font-black">{session.title}</span>{selectedCalendarSessionId === session.id && <span className="rounded-full bg-fuchsia-300 px-2 py-0.5 text-[0.65rem] font-black text-slate-950">aus Kalender</span>}</span><span className="mt-1 block text-sm leading-6 text-slate-300">{formatDate(session.dateKey)} · {formatTime(session.time)} · {formatMinutes(getSessionStudyMinutes(session))} · {session.focus || "Eigener Lernblock"}</span></span></label><div className="flex flex-wrap gap-2"><button type="button" className="rounded-xl bg-emerald-400 px-3 py-1.5 text-xs font-black text-slate-950 disabled:opacity-40" disabled={!focus.ready || Boolean(activeTimer)} onClick={() => startStudyTimer(focusedExam.id, session.id, session.title)}>Timer</button><button type="button" className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-black text-fuchsia-100 ring-1 ring-white/10" onClick={() => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, isHidden: !current.isHidden }))}>{session.isHidden ? "Einblenden" : "Ausblenden"}</button><button type="button" className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-black text-rose-100 ring-1 ring-white/10" onClick={() => deleteStudySession(focusedExam.id, session.id)}>Löschen</button></div></div><div className="mt-3 grid gap-2 sm:grid-cols-5"><select className="planner-detail-input sm:col-span-2" value={focusedExam.id} onChange={(event) => reassignStudySession(focusedExam.id, session.id, event.target.value)}>{sortedExams.map((exam) => <option key={exam.id} value={exam.id}>{exam.moduleName || exam.title}</option>)}</select><input type="date" className="planner-detail-input" value={session.dateKey} onChange={(event) => { if (!event.target.value) return; updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, dateKey: event.target.value })); }} /><input type="time" className="planner-detail-input" value={normalizeTimeInput(session.time) || ""} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, time: event.target.value }))} /><input type="number" min={1} className="planner-detail-input" value={session.durationMinutes} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, durationMinutes: Math.max(1, Math.round(Number(event.target.value) || current.durationMinutes)) }))} /><input className="planner-detail-input sm:col-span-2" value={session.title} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, title: event.target.value }))} placeholder="Titel" /></div><textarea className="planner-detail-input mt-2 min-h-20 w-full" value={session.notes} onChange={(event) => updateStudySession(focusedExam.id, session.id, (current) => ({ ...current, notes: event.target.value }))} placeholder="Notizen zu dieser Lerneinheit…" /></div>)}</div>
               </>}

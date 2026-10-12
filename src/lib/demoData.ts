@@ -31,6 +31,7 @@ const createStudySession = ({
   durationMinutes,
   focus,
   isDone = false,
+  topicId,
 }: {
   examId: string;
   title: string;
@@ -38,7 +39,9 @@ const createStudySession = ({
   durationMinutes: number;
   focus: string;
   isDone?: boolean;
+  topicId?: string;
 }): StudySessionItem => ({
+  ...(topicId ? { topicId } : {}),
   id: createId(),
   examId,
   title,
@@ -155,6 +158,12 @@ export const createDemoGradeGlowData = () => {
   ];
 
   const analysisExamId = createId();
+  const mathTopics = [
+    { id: createId(), name: "Folgen & Reihen", confidence: 2 as const },
+    { id: createId(), name: "Eigenwerte", confidence: 1 as const },
+    { id: createId(), name: "Komplexe Zahlen", confidence: 1 as const },
+    { id: createId(), name: "Matrizen & LGS", confidence: 3 as const },
+  ];
   const lawExamId = createId();
 
   const exams: ExamPlanItem[] = [
@@ -174,14 +183,24 @@ export const createDemoGradeGlowData = () => {
       dailyStudyLimitMinutes: 240,
       sessionGoalMinutes: 120,
       isHidden: false,
+      topics: mathTopics,
       studySessions: [
         createStudySession({
           examId: analysisExamId,
-          title: "Mathe Grundlagen wiederholen",
-          dateOffset: 2,
+          title: "Folgen & Reihen",
+          dateOffset: -1,
           durationMinutes: 120,
-          focus: "Definitionen, Standardaufgaben, Fehlerliste",
+          focus: "Konvergenzkriterien, Standardaufgaben, Fehlerliste",
           isDone: true,
+          topicId: mathTopics[0].id,
+        }),
+        createStudySession({
+          examId: analysisExamId,
+          title: "Eigenwerte",
+          dateOffset: 0,
+          durationMinutes: 90,
+          focus: "Verstehen: Skript/Folien, dann Beispielaufgaben",
+          topicId: mathTopics[1].id,
         }),
         createStudySession({
           examId: analysisExamId,

@@ -1297,7 +1297,7 @@ export default function StudyFriendsPanel({
         </div>
 
         {friends.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-violet-200 bg-violet-50/70 p-8 text-center text-sm font-semibold leading-6 text-violet-700">
+          <div className="gg-circle-empty rounded-3xl border border-dashed border-violet-200 bg-violet-50/70 p-8 text-center text-sm font-semibold leading-6 text-violet-700">
             Noch keine Freunde hinzugefügt. Sobald jemand Study Circle aktiviert
             und dir den Code gibt, siehst du hier freigegebene Lernzeit und
             Top-Fächer.

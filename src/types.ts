@@ -153,8 +153,19 @@ export type StudySessionItem = {
   isManual: boolean;
   source?: "ai" | "manual";
   userEdited?: boolean;
+  /** Topic of the exam this block covers (set by the topic-aware plan). */
+  topicId?: string;
   startedAtIso?: string;
   completedAtIso?: string;
+};
+
+/** 1 = unsicher, 2 = geht so, 3 = sitzt */
+export type TopicConfidence = 1 | 2 | 3;
+
+export type ExamTopic = {
+  id: string;
+  name: string;
+  confidence: TopicConfidence;
 };
 
 export type ExamPlanItem = {
@@ -174,6 +185,8 @@ export type ExamPlanItem = {
   sessionGoalMinutes: number;
   isHidden: boolean;
   studySessions: StudySessionItem[];
+  /** Exam content the plan is built from. Weak topics get more blocks. */
+  topics?: ExamTopic[];
 };
 
 

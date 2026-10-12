@@ -294,7 +294,7 @@ function renderMobileTabIcon(icon: MobileTabIconName) {
   }
 }
 
-const getTodayDateKey = () => new Date().toISOString().slice(0, 10);
+const getTodayDateKey = () => getDateKey(new Date());
 
 const formatTimeInputFromDate = (date: Date) => `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 
@@ -427,6 +427,8 @@ export default function GradeGlowDashboard({
   });
   const [standaloneTimerMode, setStandaloneTimerMode] = useState<FocusTimerMode>("focus");
   const [standaloneTimerMinutes, setStandaloneTimerMinutes] = useState("30");
+  // Planned block the timer was opened for (Home → "Start"); saving marks exactly this block done.
+  const [linkedTimerSessionId, setLinkedTimerSessionId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const quickRailRef = useRef<HTMLElement | null>(null);
@@ -442,7 +444,7 @@ export default function GradeGlowDashboard({
   const enabledFeatureIds = new Set(profile.enabledFeatureIds);
   const isRewardsEnabled = enabledFeatureIds.has("rewards");
   const todayKey = getTodayDateKey();
-  const yesterdayKey = addDaysLocal(createLocalDateFromKey(todayKey) ?? new Date(), -1).toISOString().slice(0, 10);
+  const yesterdayKey = getDateKey(addDaysLocal(createLocalDateFromKey(todayKey) ?? new Date(), -1));
 
   useEffect(() => {
     if (!isProfileLoaded || !isRewardsEnabled) return;
@@ -510,7 +512,26 @@ export default function GradeGlowDashboard({
     try { window.localStorage.removeItem(LAST_TIMER_EXAM_STORAGE_KEY); } catch { /* Optional selection cache. */ }
   }, [areExamsLoaded, exams, standaloneTimerExamId]);
 
+  useEffect(() => {
+    if (page !== "timer" || !areExamsLoaded) return;
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session");
+    if (!sessionId) return;
+    params.delete("session");
+    const query = params.toString();
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+    if (focus.hasSession) return;
+    const exam = exams.find((item) => item.studySessions.some((session) => session.id === sessionId));
+    const planned = exam?.studySessions.find((session) => session.id === sessionId);
+    if (!exam || !planned || planned.isDone) return;
+    setStandaloneTimerExamId(exam.id);
+    setStandaloneTimerMode("focus");
+    setStandaloneTimerMinutes(String(Math.max(5, Math.min(300, Math.round(planned.durationMinutes) || 30))));
+    setLinkedTimerSessionId(planned.id);
+  }, [page, areExamsLoaded, exams, focus.hasSession]);
+
   const updateStandaloneTimerExamId = (examId: string) => {
+    setLinkedTimerSessionId(null);
     setStandaloneTimerExamId(examId);
     if (typeof window === "undefined") return;
     try {
@@ -1423,6 +1444,9 @@ export default function GradeGlowDashboard({
   const globalTimerElapsedSeconds = globalTimer ? focus.elapsedSeconds : 0;
   const globalTimerModeLabel = globalTimer?.mode === "pomodoro" ? "Pomodoro" : globalTimer?.mode === "stopwatch" ? "Stoppuhr" : "Fokus-Timer";
   const standaloneTimerExam = exams.find((exam) => exam.id === standaloneTimerExamId) ?? null;
+  const linkedTimerSession = linkedTimerSessionId
+    ? standaloneTimerExam?.studySessions.find((session) => session.id === linkedTimerSessionId && !session.isDone) ?? null
+    : null;
   const standaloneTimerGoalMinutes = standaloneTimerMode === "pomodoro" ? 25 : standaloneTimerMode === "stopwatch" ? 300 : Math.max(1, Math.min(300, Math.round(Number(standaloneTimerMinutes) || 30)));
   const standaloneTimerLimitSeconds = globalTimer ? Math.max(1, globalTimer.goalMinutes) * 60 : standaloneTimerGoalMinutes * 60;
   const standaloneTimerDisplaySeconds = globalTimer?.mode === "stopwatch"
@@ -1436,16 +1460,18 @@ export default function GradeGlowDashboard({
 
   const startStandaloneTimer = () => {
     if (!standaloneTimerExam) return;
-    const title = standaloneTimerExam.moduleName || standaloneTimerExam.title || "Freie Lernzeit";
+    const subjectTitle = standaloneTimerExam.moduleName || standaloneTimerExam.title || "Freie Lernzeit";
+    const title = linkedTimerSession?.title || subjectTitle;
     const nextTimer = focus.store.start({
-      examId: standaloneTimerExam.id, sessionId: null, title, subjectTitle: title,
+      examId: standaloneTimerExam.id, sessionId: linkedTimerSession?.id ?? null, title, subjectTitle,
       mode: standaloneTimerMode, goalMinutes: standaloneTimerGoalMinutes,
     }, Date.now());
     if (!nextTimer) return;
     setFocusSaveMessage("");
     try { window.localStorage.setItem(LAST_TIMER_EXAM_STORAGE_KEY, standaloneTimerExam.id); } catch { /* Selection is optional. */ }
+    setLinkedTimerSessionId(null);
     void publishStudyActivity({
-      user, profile, status: "started", title, examId: standaloneTimerExam.id, sessionId: null,
+      user, profile, status: "started", title, examId: standaloneTimerExam.id, sessionId: nextTimer.sessionId ?? null,
       startedAtIso: new Date(nextTimer.startedAt).toISOString(),
     });
   };
@@ -2502,7 +2528,7 @@ export default function GradeGlowDashboard({
                     <small>{globalTimer ? globalTimerModeLabel : focus.status === "finished" ? "geschafft" : "bereit"}</small>
                   </div>
                 </div>
-                <div className="gg-timer-stage-meta"><strong>{globalTimer?.subjectTitle || standaloneTimerExam?.moduleName || standaloneTimerExam?.title || "Fach noch auswählen"}</strong></div>
+                <div className="gg-timer-stage-meta"><strong>{globalTimer?.subjectTitle || standaloneTimerExam?.moduleName || standaloneTimerExam?.title || "Fach noch auswählen"}</strong>{(globalTimer ? globalTimer.title !== globalTimer.subjectTitle && globalTimer.title : linkedTimerSession?.title) && <p className="gg-timer-block-title">{globalTimer ? globalTimer.title : linkedTimerSession?.title}</p>}</div>
               </div>
               <FocusReturnNotice />
               {globalTimer?.status === "finished" && <p className="gg-focus-completed" role="status">Fokusblock geschafft. Speichere deine Lernzeit oder verwirf die Session.</p>}
@@ -2516,7 +2542,7 @@ export default function GradeGlowDashboard({
                   <option value="focus">Fokus-Timer</option><option value="pomodoro">Pomodoro · 25 min</option><option value="stopwatch">Stoppuhr</option>
                 </select></label>
                 {standaloneTimerMode === "focus" && <div><span className="gg-timer-label">Dauer</span><div className="gg-timer-presets">
-                  {[15, 25, 30, 45, 60, 90].map((minutes) => <button key={minutes} type="button" className={standaloneTimerGoalMinutes === minutes ? "is-active" : ""} onClick={() => setStandaloneTimerMinutes(String(minutes))}>{minutes}</button>)}
+                  {[...new Set([15, 25, 30, 45, 60, 90, standaloneTimerGoalMinutes])].sort((a, b) => a - b).map((minutes) => <button key={minutes} type="button" className={standaloneTimerGoalMinutes === minutes ? "is-active" : ""} onClick={() => setStandaloneTimerMinutes(String(minutes))}>{minutes}</button>)}
                 </div></div>}
               </div>}
               <div className="gg-timer-actions gg-focus-actions">

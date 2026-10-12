@@ -151,7 +151,7 @@ html[data-color-mode="light"] .gg-home-feed .gg-feed-primary { background: #6240
 .gg-study-calendar button { cursor: pointer; }
 .gg-study-calendar button:not(.gg-calendar-event) { min-height: 2.75rem !important; }
 .gg-calendar-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .35rem .75rem .15rem; }
-.gg-study-calendar .gg-calendar-month-title { display: flex; align-items: baseline; gap: .45rem; min-height: 2.75rem; color: var(--gg-app-text); font-size: 1.3rem !important; font-weight: 750; text-transform: capitalize; letter-spacing: -.025em; }
+.gg-study-calendar .gg-calendar-month-title { display: flex; align-items: baseline; gap: .45rem; min-height: 2.75rem; color: var(--gg-app-text); font-size: 1.3rem !important; font-weight: 750; text-transform: capitalize; letter-spacing: -.01em; }
 .gg-calendar-month-title span { font-size: .75rem; font-weight: 500; color: var(--gg-muted); }
 .gg-calendar-toolbar-actions { display: flex; gap: .25rem; }
 .gg-calendar-toolbar-actions button { min-width: 2.75rem; min-height: 2.75rem; color: var(--gg-ui-accent); font-size: .85rem !important; font-weight: 700; border-radius: .8rem; }
@@ -244,7 +244,7 @@ html .gg-demo-bar { display: block; padding: 0 .85rem; border-radius: .85rem; ba
     display: block; position: relative; flex-shrink: 0; z-index: 50;
     height: calc(var(--gg-safe-top) + var(--gg-header-clearance) + var(--gg-header-height)); padding-top: calc(var(--gg-safe-top) + var(--gg-header-clearance));
     background: var(--gg-document-bg, #f4fbf7); border-bottom: 1px solid rgb(127 127 155 / .16);
-    color: var(--foreground); isolation: isolate;
+    color: var(--foreground);
     opacity: 1 !important; filter: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; text-shadow: none !important;
     background: var(--gg-document-bg, #f4fbf7) !important; transform: none !important;
   }
@@ -253,19 +253,21 @@ html .gg-demo-bar { display: block; padding: 0 .85rem; border-radius: .85rem; ba
   .gg-app-header::before, .gg-app-header::after { content: none !important; }
   body:has(.gg-app-header)::before { content: none !important; }
   .gg-app-header-inner { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; align-items: center; gap: .65rem; height: var(--gg-header-height); padding-inline: max(.75rem, env(safe-area-inset-left, 0px)) max(.75rem, env(safe-area-inset-right, 0px)); max-width: 64rem; margin-inline: auto; }
-  .gg-app-header h1 { text-align: center; font-size: 1.08rem; font-weight: 720; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; letter-spacing: -.025em; }
-  .gg-app-header h1.gg-header-wordmark { font-size: 1.28rem; font-weight: 800; letter-spacing: -.055em; }
+  .gg-app-header h1 { text-align: center; font-size: 1.08rem; font-weight: 700; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; letter-spacing: -.025em; }
+  .gg-app-header h1.gg-header-wordmark { font-size: 1.25rem; font-weight: 800; letter-spacing: -.03em; }
   .gg-header-action { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 50%; color: inherit; text-decoration: none; }
   .gg-header-action svg { display: block; width: 24px; height: 24px; }
   .gg-header-action:hover { background: rgb(127 127 155 / .12); }
   html .gg-native-layout > main { height: auto; margin-top: 0; padding: 0 !important; }
-  html body:has(.gg-app-header) .gg-app-shell { padding-top: 1rem; padding-inline: max(.9rem, env(safe-area-inset-left, 0px)) max(.9rem, env(safe-area-inset-right, 0px)) !important; padding-bottom: calc(var(--gg-nav-height) + env(safe-area-inset-bottom, 0px) + 16px); gap: 1rem !important; overflow-x: visible !important; }
+  html body:has(.gg-app-header) .gg-app-shell { padding-top: 1rem; padding-inline: max(.9rem, env(safe-area-inset-left, 0px)) max(.9rem, env(safe-area-inset-right, 0px)) !important; padding-bottom: 24px; gap: 1rem !important; overflow-x: visible !important; }
   html body:has(.gg-app-header) main.gg-themed > .mx-auto:not(.gg-app-shell) { padding-top: 1rem !important; padding-bottom: 0 !important; }
+  /* Tab bar is part of the flex column (not fixed): it always sits flush at the bottom,
+     paints the home-indicator area itself and nothing can scroll underneath it. */
   html .gg-native-layout > .gg-mobile-tabbar-shell.gg-themed {
-    position: fixed; left: 0; right: 0; bottom: max(env(safe-area-inset-bottom, 0px), 8px);
-    display: block; box-sizing: border-box; width: 100%; height: var(--gg-nav-height); margin: 0;
-    padding: 0 max(12px, env(safe-area-inset-right, 0px)) 0 max(12px, env(safe-area-inset-left, 0px));
-    background: transparent !important; border: 0;
+    position: relative; inset: auto; flex-shrink: 0; order: 99;
+    display: block; box-sizing: border-box; width: 100%; height: calc(var(--gg-nav-height) + var(--gg-safe-bottom)); margin: 0;
+    padding: 0 env(safe-area-inset-right, 0px) var(--gg-safe-bottom) env(safe-area-inset-left, 0px);
+    background: var(--gg-nav-background) !important; border: 0; border-top: 1px solid rgb(127 127 155 / .14);
     border-radius: 0; box-shadow: none;
     backdrop-filter: none; -webkit-backdrop-filter: none;
     pointer-events: auto; z-index: 30;
@@ -401,3 +403,41 @@ html .gg-themed .gg-timer-only-page .gg-timer-form label > span,
 html .gg-themed .gg-timer-only-page .gg-timer-label,
 html .gg-themed .gg-timer-only-page .gg-timer-subtitle { color: var(--gg-muted) !important; }
 html[data-color-mode="dark"] .gg-timer-only-page { --gg-surface: #111827; --gg-surface-soft: #1e293b; --gg-app-text: #f8fafc; --gg-muted: #cbd5e1; --gg-border: #475569; }
+
+/* iOS home-screen PWAs sometimes size a fixed inset:0 box shorter than the screen,
+   leaving a dead band at the bottom. In standalone mode the large viewport is the real screen. */
+@media (display-mode: standalone) and (max-width: 1023px) {
+  .gg-native-layout { bottom: auto; height: 100vh; height: 100lvh; }
+}
+
+/* Focus duration presets: dark surfaces in dark mode instead of white pills. */
+html[data-color-mode="dark"] .gg-timer-presets button:not(.is-active) {
+  background: rgb(255 255 255 / .06) !important; color: var(--gg-app-text, #e5e7f5) !important;
+  border: 1px solid rgb(255 255 255 / .14) !important; box-shadow: none !important;
+}
+
+/* Study Circle empty state: quiet dashed box that matches the dark theme. */
+html[data-color-mode="dark"] .gg-circle-empty {
+  background: rgb(255 255 255 / .04) !important; color: var(--gg-muted, #a5a8c2) !important;
+  border-color: rgb(255 255 255 / .16) !important;
+}
+
+/* Home "Heute dran": every block starts the focus timer for exactly that block. */
+.gg-home-today-list { display: grid; margin: .8rem 0 0; padding: 0; list-style: none; }
+.gg-home-today-list li { display: flex; align-items: center; gap: .75rem; padding: .75rem 0; }
+.gg-home-today-list li + li { border-top: 1px solid var(--gg-border); }
+.gg-home-today-list li > div { flex: 1; min-width: 0; }
+.gg-home-today-list strong { display: block; font-size: .9rem; font-weight: 700; color: var(--gg-app-text); overflow-wrap: anywhere; }
+.gg-home-today-list p { color: var(--gg-muted); font-size: .77rem; margin-top: .2rem; }
+.gg-home-today-list small { display: block; margin-top: .25rem; color: var(--gg-muted); font-size: .72rem; line-height: 1.35; }
+.gg-home-today-list li.is-overdue .gg-task-marker { background: #f59e0b; }
+.gg-home-today-list li.is-overdue small { color: #f59e0b; }
+.gg-home-start { flex-shrink: 0; display: grid; place-items: center; min-width: 3.6rem; min-height: 2.75rem; border-radius: .85rem; background: var(--gg-accent-500, #8b5cf6); color: white; font-size: .8rem; font-weight: 800; text-decoration: none; }
+.gg-home-upcoming { margin-top: .6rem; border-top: 1px solid var(--gg-border); padding-top: .6rem; }
+.gg-home-upcoming > p { margin: 0; }
+.gg-home-upcoming a { padding: .55rem 0; }
+.gg-home-upcoming small { color: var(--gg-muted) !important; }
+.gg-home-exam .gg-home-plan-state { color: var(--gg-ui-accent); font-weight: 700; font-size: .75rem; }
+.gg-home-exam .gg-home-plan-state.is-behind { color: #f59e0b; }
+.gg-home-exam .gg-home-plan-state.is-ok { color: #34d399; }
+.gg-timer-block-title { margin-top: .2rem; font-size: .8rem; color: var(--gg-muted); font-weight: 600; }

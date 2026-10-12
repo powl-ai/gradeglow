@@ -5,6 +5,7 @@ import type {
   ExamStatus,
   StudySessionItem,
 } from "../types";
+import { normalizeTopics } from "./examTopics";
 
 const LOCAL_EXAMS_KEY_PREFIX = "gradeglow-exams-v1";
 
@@ -79,6 +80,7 @@ const migrateStudySessions = (rawSessions: unknown, examId: string): StudySessio
         userEdited: record.userEdited === true,
         startedAtIso: asString(record.startedAtIso).trim() || undefined,
         completedAtIso: asString(record.completedAtIso).trim() || undefined,
+        ...(typeof record.topicId === "string" && record.topicId ? { topicId: record.topicId } : {}),
       } satisfies StudySessionItem;
     })
     .filter((session): session is StudySessionItem => Boolean(session));
@@ -91,7 +93,7 @@ export const migrateExams = (rawExams: unknown): ExamPlanItem[] => {
   if (!Array.isArray(rawExams)) return [];
 
   return rawExams
-    .map((rawExam) => {
+    .map((rawExam): ExamPlanItem | null => {
       if (typeof rawExam !== "object" || rawExam === null) return null;
 
       const record = rawExam as Record<string, unknown>;
@@ -118,6 +120,7 @@ export const migrateExams = (rawExams: unknown): ExamPlanItem[] => {
         sessionGoalMinutes: Math.max(15, Math.round(asNumber(record.sessionGoalMinutes, 90))),
         isHidden: record.isHidden === true,
         studySessions: migrateStudySessions(record.studySessions, id),
+        topics: normalizeTopics(record.topics),
       } satisfies ExamPlanItem;
     })
     .filter((exam): exam is ExamPlanItem => Boolean(exam));

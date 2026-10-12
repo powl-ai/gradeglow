@@ -93,7 +93,7 @@ export const migrateExams = (rawExams: unknown): ExamPlanItem[] => {
   if (!Array.isArray(rawExams)) return [];
 
   return rawExams
-    .map((rawExam) => {
+    .map((rawExam): ExamPlanItem | null => {
       if (typeof rawExam !== "object" || rawExam === null) return null;
 
       const record = rawExam as Record<string, unknown>;

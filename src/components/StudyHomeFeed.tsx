@@ -6,7 +6,11 @@ import { localDateKey, mondayOf, shiftDay } from "../lib/calendarLayout";
 import { getExamPlanStatus, getTodayBlocks } from "../lib/examTopics";
 import type { ExamPlanItem } from "../types";
 
+// Design: DESIGN.md. One thing glows per screen: the next block to start.
+
 const minutesLabel = formatStudyMinutesExact;
+const weekdayLetters = ["M", "D", "M", "D", "F", "S", "S"];
+const blocksLabel = (count: number) => `${count} ${count === 1 ? "Block" : "Blöcke"}`;
 
 export default function StudyHomeFeed({ name, exams, passedEcts, targetEcts, average, streak, weekMinutes, timerRunning }: {
   name: string; exams: ExamPlanItem[]; passedEcts: number; targetEcts: number;
@@ -19,55 +23,92 @@ export default function StudyHomeFeed({ name, exams, passedEcts, targetEcts, ave
   const todayDone = todaySessions.filter(session => session.isDone).length;
   const nextExam = visibleExams.filter(exam => exam.status !== "done" && exam.examDate >= today).sort((a, b) => a.examDate.localeCompare(b.examDate))[0];
   const progress = Math.min(100, Math.max(0, passedEcts / Math.max(1, targetEcts) * 100));
-  const dateLabel = (date: string) => date === today ? "Heute" : new Date(`${date}T12:00:00`).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" });
+  const dateLabel = (date: string) => date === today ? "heute" : new Date(`${date}T12:00:00`).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" });
   const todayBlocks = getTodayBlocks(visibleExams, today);
-  const firstBlock = todayBlocks[0];
+  const [firstBlock, ...moreBlocks] = todayBlocks;
   const timerHref = (sessionId?: string) => sessionId ? `/timer?session=${encodeURIComponent(sessionId)}` : "/timer";
-  const upcoming = sessions.filter(session => !session.isDone && session.dateKey > today).sort((a, b) => `${a.dateKey} ${a.time}`.localeCompare(`${b.dateKey} ${b.time}`)).slice(0, 2);
+  const upcoming = sessions.filter(session => !session.isDone && session.dateKey > today).sort((a, b) => `${a.dateKey} ${a.time}`.localeCompare(`${b.dateKey} ${b.time}`)).slice(0, 3);
   const nextExamStatus = nextExam ? getExamPlanStatus(nextExam, today) : null;
-  const daysLabel = (days: number) => days === 0 ? "heute" : days === 1 ? "morgen" : `in ${days} Tagen`;
+  const firstName = name.split(" ")[0];
+  const dayLine = now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
 
-  return <section className="gg-home-feed" aria-label="Dein Lernfeed">
-    <div className="gg-home-greeting"><p>{now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</p><h2>Hey {name.split(" ")[0]},<br />schön, dass du da bist.</h2></div>
-    <article className="gg-home-focus-card">
-      <div><span className="gg-feed-eyebrow">DEIN KLEINER GLOW-MOMENT</span><h3>{timerRunning ? "Du bist schon im Flow." : todayDone > 0 ? "Das war ein guter Anfang." : "Kleine Schritte. Großer Glow."}</h3><p>{timerRunning ? "Deine Session läuft weiter. Bleib bei einer Sache – du hast das." : todayDone > 0 ? "Noch ein Fokusblock oder erst mal eine verdiente Pause?" : "Du musst heute nicht alles schaffen. Fang mit einem Fokusblock an."}</p>
-        <Link className="gg-feed-primary" href={timerRunning ? "/timer" : timerHref(firstBlock?.id)}>{timerRunning ? "Zum laufenden Timer" : firstBlock ? `Starten: ${firstBlock.title}` : "Fokus starten"}<span aria-hidden="true">↗</span></Link>
-      </div>
-    </article>
-    <article className="gg-feed-card gg-home-week">
-      <div className="gg-feed-section-title"><h3>Deine Woche</h3><span>{streak > 0 ? `${streak} ${streak === 1 ? "Tag" : "Tage"} in Folge` : "Jeder Anfang zählt"}</span></div>
-      <div className="gg-home-week-days">{Array.from({ length: 7 }, (_, index) => {
+  const hero = timerRunning
+    ? { headline: "Dein Fokusblock läuft.", detail: "Bleib dran, der Timer zählt weiter.", action: { href: "/timer", label: "Zum Timer" } }
+    : firstBlock
+      ? {
+        headline: `${firstBlock.isOverdue ? "Nachholen" : "Heute"}: ${firstBlock.title || "Fokusblock"}`,
+        detail: `${firstBlock.isOverdue ? `Verpasst ${dateLabel(firstBlock.dateKey)} · ` : firstBlock.time ? `${firstBlock.time} · ` : ""}${minutesLabel(getSessionStudyMinutes(firstBlock))} · ${firstBlock.subject}`,
+        note: firstBlock.focus,
+        action: { href: timerHref(firstBlock.id), label: `${firstBlock.title || "Fokusblock"} starten` },
+      }
+      : todayDone > 0
+        ? { headline: "Für heute erledigt.", detail: `${todayDone} von ${todaySessions.length} Lernblöcken geschafft. Jetzt ist Pause dran.`, quiet: { href: "/timer", label: "Trotzdem weiterlernen" } }
+        : sessions.length > 0
+          ? { headline: "Heute ist frei.", detail: upcoming[0] ? `Nächster Block: ${dateLabel(upcoming[0].dateKey)}.` : "Kein Lernblock geplant.", quiet: { href: "/timer", label: "Freien Fokusblock starten" } }
+          : { headline: "Plan deine erste Klausur.", detail: "Trag Datum und Themen ein, GradeGlow verteilt die Lernblöcke rückwärts bis zur Prüfung.", action: { href: "/exams", label: "Klausur eintragen" } };
+
+  return <section className="gg-ds-home" aria-label="Heute">
+    <header className="gg-ds-hero">
+      <p className="gg-ds-small">Hey {firstName} · {dayLine}</p>
+      <h2 className="gg-ds-display">{hero.headline}</h2>
+      <p className="gg-ds-text">{hero.detail}</p>
+      {"note" in hero && hero.note && <p className="gg-ds-small">{hero.note}</p>}
+      {"action" in hero && hero.action && <Link className="gg-ds-button is-primary" href={hero.action.href}>{hero.action.label}</Link>}
+      {"quiet" in hero && hero.quiet && <Link className="gg-ds-button" href={hero.quiet.href}>{hero.quiet.label}</Link>}
+    </header>
+
+    {moreBlocks.length > 0 && <article className="gg-ds-panel">
+      <div className="gg-ds-panel-head"><h3>Auch heute dran</h3><span>{blocksLabel(moreBlocks.length)}</span></div>
+      <ul className="gg-ds-rows">{moreBlocks.map(block => <li key={block.id}>
+        <div><strong>{block.title || "Fokusblock"}</strong>
+          <p className={block.isOverdue ? "is-warn" : undefined}>{block.isOverdue ? `Verpasst ${dateLabel(block.dateKey)} · ` : ""}{block.subject} · {minutesLabel(getSessionStudyMinutes(block))}</p></div>
+        <Link className="gg-ds-chip" href={timerHref(block.id)} aria-label={`${block.title} jetzt starten`}>Start</Link>
+      </li>)}</ul>
+    </article>}
+
+    <article className="gg-ds-panel">
+      <div className="gg-ds-panel-head"><h3>Diese Woche</h3><span>{weekMinutes > 0 ? `${minutesLabel(weekMinutes)} gelernt` : "noch nichts gelernt"}</span></div>
+      <ol className="gg-ds-week">{Array.from({ length: 7 }, (_, index) => {
         const date = shiftDay(weekStart, index), key = localDateKey(date);
         const completed = sessions.some(session => session.dateKey === key && session.isDone);
-        return <div key={key} className={`${key === today ? "is-today" : ""} ${completed ? "is-done" : ""}`} aria-label={`${date.toLocaleDateString("de-DE", { weekday: "long" })}: ${completed ? "gelernt" : "noch keine abgeschlossene Session"}`}><span>{["M", "D", "M", "D", "F", "S", "S"][index]}</span><strong>{completed ? "✓" : date.getDate()}</strong></div>;
-      })}</div>
-      <p className="gg-feed-muted">{weekMinutes > 0 ? `${minutesLabel(weekMinutes)} diese Woche gelernt. Das zählt.` : "Eine abgeschlossene Session lässt deinen Tag aufleuchten."}</p>
+        return <li key={key} className={`${key === today ? "is-today" : ""} ${completed ? "is-done" : ""}`.trim() || undefined}
+          aria-label={`${date.toLocaleDateString("de-DE", { weekday: "long" })}: ${completed ? "gelernt" : "keine abgeschlossene Session"}`}>
+          <span aria-hidden="true">{weekdayLetters[index]}</span><strong aria-hidden="true">{date.getDate()}</strong>
+        </li>;
+      })}</ol>
+      {streak > 1 && <p className="gg-ds-small">{streak} Tage in Folge gelernt.</p>}
     </article>
-    <article className="gg-feed-card gg-home-agenda">
-      <div className="gg-feed-section-title"><h3>Heute dran</h3><Link href="/exams">Kalender ↗</Link></div>
-      {todayBlocks.length > 0 ? <ul className="gg-home-today-list">{todayBlocks.map(block => <li key={block.id} className={block.isOverdue ? "is-overdue" : ""}>
-        <span className="gg-task-marker" aria-hidden="true" />
-        <div><strong>{block.title || "Fokusblock"}</strong><p>{block.subject} · {minutesLabel(getSessionStudyMinutes(block))}</p>
-          {block.isOverdue ? <small>Verpasst am {dateLabel(block.dateKey)} – jetzt nachholen?</small> : block.focus ? <small>{block.focus}</small> : null}</div>
-        <Link className="gg-home-start" href={timerHref(block.id)} aria-label={`${block.title} jetzt starten`}>Start</Link>
+
+    {nextExam && nextExamStatus && <Link href={`/exams?exam=${encodeURIComponent(nextExam.id)}`} className="gg-ds-panel gg-ds-exam">
+      <div className="gg-ds-exam-head">
+        <p className="gg-ds-count"><strong>{nextExamStatus.daysUntil}</strong><span>{nextExamStatus.daysUntil === 1 ? "Tag" : "Tage"}</span></p>
+        <div><h3>{nextExam.title}</h3><p>{new Date(`${nextExam.examDate}T12:00:00`).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</p></div>
+      </div>
+      {nextExamStatus.totalSessions > 0 && <>
+        <div className="gg-ds-track" role="progressbar" aria-label="Lernplan erledigt" aria-valuemin={0} aria-valuemax={nextExamStatus.totalSessions} aria-valuenow={nextExamStatus.doneSessions}>
+          <i style={{ width: `${nextExamStatus.doneSessions / nextExamStatus.totalSessions * 100}%` }} />
+        </div>
+        <p className="gg-ds-small">{nextExamStatus.doneSessions} von {nextExamStatus.totalSessions} Blöcken{nextExamStatus.topicsTotal > 0 ? ` · ${nextExamStatus.topicsCovered} von ${nextExamStatus.topicsTotal} Themen` : ""}</p>
+      </>}
+      <p className={`gg-ds-status ${nextExamStatus.state === "behind" ? "is-warn" : ""}`.trim()}>
+        {nextExamStatus.state === "behind" ? `${blocksLabel(nextExamStatus.overdueSessions.length)} hinterher. Plan neu verteilen`
+          : nextExamStatus.state === "no-plan" ? "Noch kein Lernplan. Jetzt erstellen"
+          : nextExamStatus.topicsTotal === 0 ? "Themen eintragen, damit der Plan passt"
+          : "Du liegst im Plan"}<span aria-hidden="true"> ›</span>
+      </p>
+    </Link>}
+
+    {upcoming.length > 0 && <article className="gg-ds-panel">
+      <div className="gg-ds-panel-head"><h3>Als Nächstes</h3><Link href="/exams">Kalender</Link></div>
+      <ul className="gg-ds-rows">{upcoming.map(task => <li key={task.id}>
+        <div><strong>{task.title || "Fokusblock"}</strong><p>{dateLabel(task.dateKey)}{task.time ? ` · ${task.time}` : ""} · {task.subject}</p></div>
       </li>)}</ul>
-        : <div className="gg-home-empty"><p>{sessions.some(session => session.dateKey === today && session.isDone) ? "Alles für heute erledigt. Stark – jetzt ist Pause dran." : "Heute ist nichts geplant."}</p></div>}
-      {upcoming.length > 0 && <div className="gg-home-task-list gg-home-upcoming"><p className="gg-feed-muted">Als Nächstes</p>{upcoming.map(task => <Link href="/exams" key={task.id}><div><strong>{task.title || "Fokusblock"}</strong><small>{dateLabel(task.dateKey)}{task.time ? ` · ${task.time}` : ""} · {task.subject}</small></div><span aria-hidden="true">›</span></Link>)}</div>}
-      {todaySessions.length > 0 && <p className="gg-feed-muted gg-home-today-count">Heute {todayDone} von {todaySessions.length} Lernblöcken geschafft.</p>}
-      {sessions.length === 0 && <Link className="gg-feed-text-link" href="/exams">Klausur eintragen und Plan erstellen ↗</Link>}
-    </article>
-    {nextExam && nextExamStatus && <Link href={`/exams?exam=${encodeURIComponent(nextExam.id)}`} className="gg-feed-card gg-home-exam"><span className="gg-home-exam-icon" aria-hidden="true">▤</span><div><span className="gg-feed-eyebrow">NÄCHSTE PRÜFUNG · {daysLabel(nextExamStatus.daysUntil).toUpperCase()}</span><strong>{nextExam.title}</strong>
-      <p>{nextExamStatus.totalSessions > 0 ? `${nextExamStatus.doneSessions}/${nextExamStatus.totalSessions} Blöcke` : "Noch kein Lernplan"}{nextExamStatus.topicsTotal > 0 ? ` · ${nextExamStatus.topicsCovered}/${nextExamStatus.topicsTotal} Themen` : ""}</p>
-      {nextExamStatus.state === "behind" ? <p className="gg-home-plan-state is-behind">{nextExamStatus.overdueSessions.length} {nextExamStatus.overdueSessions.length === 1 ? "Block" : "Blöcke"} hinterher · Plan neu verteilen ›</p>
-        : nextExamStatus.topicsTotal === 0 ? <p className="gg-home-plan-state">Themen eintragen, damit dein Plan passt ›</p>
-        : <p className="gg-home-plan-state is-ok">Du liegst im Plan</p>}
-    </div><span aria-hidden="true">›</span></Link>}
-    <article className="gg-feed-card gg-home-progress">
-      <div className="gg-feed-section-title"><h3>Schau, wie weit du bist</h3><strong>{Math.round(progress)}%</strong></div>
-      <div className="gg-home-progress-track" role="progressbar" aria-label="Studienfortschritt" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}><i style={{ width: `${progress}%` }} /></div>
-      <div className="gg-home-progress-numbers"><span><strong>{passedEcts}</strong> / {targetEcts} ECTS</span><span>Schnitt <strong>{average > 0 ? average.toFixed(2).replace(".", ",") : "—"}</strong></span></div>
-      <Link href="/profile" className="gg-feed-text-link">Deinen Fortschritt ansehen ↗</Link>
-    </article>
-    <p className="gg-home-signoff">Dein Tempo. Dein Studium. Dein Glow.</p>
+    </article>}
+
+    <Link href="/profile" className="gg-ds-panel gg-ds-study">
+      <div className="gg-ds-panel-head"><h3>Studium</h3><span>{average > 0 ? `Schnitt ${average.toFixed(2).replace(".", ",")}` : "noch keine Noten"}</span></div>
+      <div className="gg-ds-track" role="progressbar" aria-label="Studienfortschritt" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)}><i style={{ width: `${progress}%` }} /></div>
+      <p className="gg-ds-small">{passedEcts} von {targetEcts} ECTS<span aria-hidden="true"> ›</span></p>
+    </Link>
   </section>;
 }

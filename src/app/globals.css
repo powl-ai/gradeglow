@@ -1599,17 +1599,18 @@ button,
     line-height: 1.25 !important;
   }
 
+  /* Screens moved to the design system (gg-design.css) are excluded. */
   .gg-themed .text-sm,
-  .gg-themed p,
+  .gg-themed p:not(.gg-ds-home *),
   .gg-themed label,
   .gg-themed summary,
-  .gg-themed li {
+  .gg-themed li:not(.gg-ds-home *) {
     font-size: 0.78rem !important;
     line-height: 1.26 !important;
   }
 
   .gg-themed .text-xs,
-  .gg-themed small,
+  .gg-themed small:not(.gg-ds-home *),
   .gg-themed [class*="text-[0"] {
     font-size: 0.66rem !important;
     line-height: 1.18 !important;

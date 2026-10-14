@@ -19,7 +19,7 @@ function load(relative) {
   return compiled.exports;
 }
 const { constellationFor, litStars, examShort, examColor, streakDays, CONSTELLATIONS } = load("src/neu/model.ts");
-const { planSessions, replan } = load("src/neu/plan.ts");
+const { planSessions, replan, pickStudyDays } = load("src/neu/plan.ts");
 
 test("every constellation edge points at an existing star", () => {
   for (const item of CONSTELLATIONS) for (const [a, b] of item.edges) {
@@ -27,9 +27,10 @@ test("every constellation edge points at an existing star", () => {
   }
 });
 
-test("the plan size picks the smallest constellation that fits, Orion for big plans", () => {
+test("the plan size picks the constellation with the closest number of stars", () => {
   assert.equal(constellationFor(4).name, "Kassiopeia");
   assert.equal(constellationFor(6).name, "Großer Wagen");
+  assert.equal(constellationFor(15).name, "Skorpion");
   assert.equal(constellationFor(18).name, "Orion");
   assert.equal(constellationFor(40).name, "Orion");
 });
@@ -104,4 +105,26 @@ test("streak survives until today is over", () => {
   assert.equal(streakDays(exams, "2026-10-15"), 2);
   assert.equal(streakDays(exams, "2026-10-14"), 2);
   assert.equal(streakDays(exams, "2026-10-16"), 0);
+});
+
+test("study days per week: evenly spread, the day before the exam always included", () => {
+  const days = Array.from({ length: 18 }, (_, i) => `d${String(i).padStart(2, "0")}`);
+  assert.equal(pickStudyDays(days, 6).length, 18);
+  const four = pickStudyDays(days, 4);
+  assert.equal(four.length, 12);
+  assert.equal(four.at(-1), "d17");
+  assert.equal(pickStudyDays(days, 3).length, 9);
+});
+
+test("plan with 4 study days a week has fewer, not denser, days", () => {
+  const six = planSessions(exam(), { today: "2026-10-14", makeId, daysPerWeek: 6 });
+  const four = planSessions(exam(), { today: "2026-10-14", makeId, daysPerWeek: 4 });
+  const daysOf = (list) => new Set(list.map((s) => s.dateKey)).size;
+  assert.ok(daysOf(four) < daysOf(six));
+  assert.ok(four.length < six.length);
+});
+
+test("many rounds of one topic become exercise blocks instead of 'Runde 12'", () => {
+  const sessions = planSessions(exam({ topics: [{ id: "t", name: "Hub", confidence: 2 }] }), { today: "2026-10-14", makeId });
+  assert.ok(sessions.every((s) => !/Runde (\d{2}|[3-9])/.test(s.title)));
 });

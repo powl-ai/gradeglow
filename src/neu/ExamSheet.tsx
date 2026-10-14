@@ -24,6 +24,7 @@ export default function ExamSheet({ ctx, examId, onClose }: { ctx: AppCtx; examI
   const [startDays, setStartDays] = useState(existing?.studyStartDays || PLAN_DEFAULTS.startDays);
   const [blockMinutes, setBlockMinutes] = useState(existing?.sessionGoalMinutes || PLAN_DEFAULTS.blockMinutes);
   const [dailyLimit, setDailyLimit] = useState(existing?.dailyStudyLimitMinutes || PLAN_DEFAULTS.dailyLimit);
+  const [perWeek, setPerWeek] = useState(existing?.studyDaysPerWeek ?? (existing ? 6 : PLAN_DEFAULTS.daysPerWeek));
   const [color, setColor] = useState<string>(existing ? examColor(existing, exams) : COLORS[activeCount % COLORS.length]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const valid = subject.trim().length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(date);
@@ -39,11 +40,12 @@ export default function ExamSheet({ ctx, examId, onClose }: { ctx: AppCtx; examI
       }),
       title: title.trim() || `Klausur ${subject.trim()}`, moduleName: subject.trim(),
       examDate: date, examTime: time, topics,
-      studyStartDays: startDays, sessionGoalMinutes: blockMinutes, dailyStudyLimitMinutes: dailyLimit,
+      studyStartDays: startDays, sessionGoalMinutes: blockMinutes, dailyStudyLimitMinutes: dailyLimit, studyDaysPerWeek: perWeek,
     } as ExamPlanItem;
     const withColor = { ...base, ...(ctx.limits.premiumThemes ? { color } : {}) } as ExamPlanItem;
     const planChanged = !existing || existing.examDate !== date || existing.studyStartDays !== startDays
       || existing.sessionGoalMinutes !== blockMinutes || existing.dailyStudyLimitMinutes !== dailyLimit
+      || (existing.studyDaysPerWeek ?? 6) !== perWeek
       || (existing.topics ?? []).map((t) => t.name).join("|") !== names.join("|");
     const next = !existing
       ? { ...withColor, studySessions: planSessions(withColor, { today, booked: bookedMinutes(exams) }) }
@@ -90,6 +92,11 @@ export default function ExamSheet({ ctx, examId, onClose }: { ctx: AppCtx; examI
           <p className="gn-muted" style={{ fontSize: 13 }}>Schwache Themen bekommen mehr Lernblöcke. Wie sicher du bist, stellst du danach bei der Klausur ein.</p>
         </section>
         <section className="gn-card gn-form">
+          <label>Lerntage pro Woche
+            <div className="gn-seg" style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))", background: "var(--soft)" }}>
+              {[2, 3, 4, 5, 6].map((value) => <button key={value} type="button" aria-pressed={perWeek === value} onClick={() => setPerWeek(value)}>{value}</button>)}
+            </div>
+          </label>
           <div className="gn-form-row three">
             <label>Lernstart<select value={startDays} onChange={(e) => setStartDays(Number(e.target.value))}>{withValue([7, 14, 21, 28, 42, 56], startDays).map((v) => <option key={v} value={v}>{v} Tage</option>)}</select></label>
             <label>Block<select value={blockMinutes} onChange={(e) => setBlockMinutes(Number(e.target.value))}>{withValue([30, 45, 60, 90, 120], blockMinutes).map((v) => <option key={v} value={v}>{v} min</option>)}</select></label>

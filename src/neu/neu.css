@@ -150,8 +150,8 @@ html[data-color-mode="dark"] .gn-sky { box-shadow: 0 0 0 1px rgba(255, 255, 255,
 @keyframes gn-tw { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.9; } }
 .gn-next { animation: gn-next 1.8s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
 @keyframes gn-next { 0%, 100% { opacity: 0.45; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.15); } }
-.gn-pills { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
-.gn-pill { position: relative; height: 36px; max-width: 60%; padding: 0 14px; border-radius: 999px; background: var(--btn); font-size: 13px; font-weight: 700;
+.gn-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
+.gn-pill { position: relative; height: 36px; max-width: 46%; padding: 0 14px; border-radius: 999px; background: var(--btn); font-size: 13px; font-weight: 700;
   display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; }
 .gn-pill select { position: absolute; inset: 0; opacity: 0; font-size: 16px; }
 .gn-pill i { width: 8px; height: 8px; border-radius: 99px; flex-shrink: 0; }
@@ -205,7 +205,10 @@ html[data-color-mode="dark"] .gn-sky { box-shadow: 0 0 0 1px rgba(255, 255, 255,
 .gn-form label em { font-style: normal; font-weight: 600; }
 .gn-form-row.three label { white-space: nowrap; }
 .gn-form :is(input, select, textarea) { width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 12px;
-  background: var(--soft); color: var(--ink); font: 500 16px/1.35 inherit; font-family: inherit; appearance: none; -webkit-appearance: none; }
+  background: var(--soft); color: var(--ink); font-family: inherit; font-size: 16px; font-weight: 500; line-height: 1.35;
+  appearance: none; -webkit-appearance: none; color-scheme: light; }
+html[data-color-mode="dark"] .gn-form :is(input, select, textarea) { color-scheme: dark; }
+.gn-form :is(input, textarea)::placeholder { color: var(--faint); opacity: 1; }
 .gn-form textarea { resize: vertical; }
 .gn-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .gn-form-row.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }

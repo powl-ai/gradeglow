@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { setDemoPlan } from "../lib/guestDemo";
 import type { AccentColor, ThemeMode } from "../types";
 import type { AppCtx } from "./NeuApp";
 import { ACCENTS } from "./model";
@@ -37,6 +38,16 @@ export default function SettingsSheet({ ctx, onClose }: { ctx: AppCtx; onClose: 
           <label>Name<input value={name} onChange={(e) => setName(e.target.value)} autoComplete="given-name" /></label>
           <p className="gn-muted" style={{ fontSize: 13 }}>{user.email ?? "Ohne E-Mail angemeldet"} · {premium ? "Premium" : "Kostenlos"}</p>
         </section>
+
+        {user.provider === "demo" && (
+          <section className="gn-card">
+            <div className="gn-row" style={{ justifyContent: "space-between" }}>
+              <div><strong>Demo: Premium testen</strong><small>Schaltet Farben und unbegrenzte Klausuren in der Demo frei.</small></div>
+              <button type="button" className="gn-chip" aria-pressed={premium} onClick={() => setDemoPlan(premium ? "free" : "premium")}
+                style={premium ? { background: "var(--accent)", color: "#fff" } : undefined}>{premium ? "An" : "Aus"}</button>
+            </div>
+          </section>
+        )}
 
         <section className="gn-card">
           <div className="gn-row" style={{ justifyContent: "space-between" }}>

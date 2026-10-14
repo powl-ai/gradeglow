@@ -38,20 +38,24 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
 
   // What the timer would start: the picked block, else today's first block, else the next exam.
   const todayBlocks = getTodayBlocks(visible, today);
-  const options = (() => {
-    const open = visible.flatMap((exam) => exam.studySessions
-      .filter((s) => !s.isHidden && !s.isDone && s.dateKey <= dateKey(new Date(Date.now() + 7 * 86_400_000)))
-      .map((s) => ({ exam, session: s as StudySessionItem | null })))
-      .sort((a, b) => `${a.session?.dateKey} ${a.session?.time}`.localeCompare(`${b.session?.dateKey} ${b.session?.time}`))
-      .slice(0, 12);
-    return [...open, ...visible.map((exam) => ({ exam, session: null }))];
-  })();
   const fallback = todayBlocks[0] ? { examId: todayBlocks[0].examId, sessionId: todayBlocks[0].id } : { examId: visible[0]?.id ?? null, sessionId: null };
   const pick = active ? { examId: active.examId, sessionId: active.sessionId }
     : ctx.focusPick.examId || ctx.focusPick.sessionId ? ctx.focusPick : fallback;
   const exam = visible.find((item) => item.id === pick.examId)
     ?? visible.find((item) => item.studySessions.some((s) => s.id === pick.sessionId)) ?? visible[0];
   const block = exam?.studySessions.find((s) => s.id === pick.sessionId) ?? null;
+  // Open blocks of the chosen exam: missed ones and the next ones, in date order.
+  const openBlocks = (exam?.studySessions ?? [])
+    .filter((s) => !s.isHidden && !s.isDone)
+    .sort((x, y) => `${x.dateKey} ${x.time}`.localeCompare(`${y.dateKey} ${y.time}`))
+    .slice(0, 12);
+  const pickExam = (examId: string) => {
+    const next = visible.find((item) => item.id === examId);
+    const first = next?.studySessions.filter((s) => !s.isHidden && !s.isDone)
+      .sort((x, y) => `${x.dateKey} ${x.time}`.localeCompare(`${y.dateKey} ${y.time}`))[0];
+    ctx.setFocusPick({ examId, sessionId: first && first.dateKey <= today ? first.id : null });
+    setMinutes(null);
+  };
   const [minutes, setMinutes] = useState<number | null>(null);
   const goal = active?.goalMinutes ?? minutes ?? (block?.durationMinutes && block.durationMinutes <= 180 ? Math.round(block.durationMinutes) : 45);
   const [message, setMessage] = useState("");
@@ -134,7 +138,6 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
   const edgeOn = constellation.edges.filter(([a, b]) => a < shown && b < shown);
   const edgeOff = constellation.edges.filter(([a, b]) => !(a < shown && b < shown));
   const line = (edges: [number, number][]) => edges.map(([a, b]) => `M${stars[a].x} ${stars[a].y}L${stars[b].x} ${stars[b].y}`).join("") || "M0 0";
-  const optionValue = (examId: string, sessionId: string | null) => `${examId}|${sessionId ?? ""}`;
 
   return (
     <div className="gn-scroll">
@@ -197,13 +200,18 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
       <div className="gn-pills">
         <label className="gn-pill">
           <i style={{ background: examColor(exam, visible) }} />
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{block?.title || `Frei · ${exam.moduleName || exam.title}`}</span>{Icon.down()}
-          <select aria-label="Lernblock wählen" disabled={Boolean(active)} value={optionValue(exam.id, block?.id ?? null)}
-            onChange={(event) => { const [examId, sessionId] = event.target.value.split("|"); ctx.setFocusPick({ examId, sessionId: sessionId || null }); setMinutes(null); }}>
-            {options.map(({ exam: item, session }) => (
-              <option key={optionValue(item.id, session?.id ?? null)} value={optionValue(item.id, session?.id ?? null)}>
-                {session ? `${session.title || "Fokusblock"} · ${dayLabel(session.dateKey, today)}` : `Freie Lernzeit · ${item.moduleName || item.title}`}
-              </option>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{examShort(exam)}</span>{Icon.down()}
+          <select aria-label="Klausur wählen" disabled={Boolean(active)} value={exam.id} onChange={(event) => pickExam(event.target.value)}>
+            {visible.map((item) => <option key={item.id} value={item.id}>{item.moduleName || item.title}</option>)}
+          </select>
+        </label>
+        <label className="gn-pill">
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{block?.title || "Freie Lernzeit"}</span>{Icon.down()}
+          <select aria-label="Lernblock wählen" disabled={Boolean(active)} value={block?.id ?? ""}
+            onChange={(event) => { ctx.setFocusPick({ examId: exam.id, sessionId: event.target.value || null }); setMinutes(null); }}>
+            <option value="">Freie Lernzeit</option>
+            {openBlocks.map((s) => (
+              <option key={s.id} value={s.id}>{s.dateKey < today ? "Verpasst · " : ""}{s.title || "Fokusblock"} · {dayLabel(s.dateKey, today)}</option>
             ))}
           </select>
         </label>

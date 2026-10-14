@@ -2,14 +2,23 @@ import { describePlannedBlock, planTopicBlocks } from "../lib/examTopics";
 import type { ExamPlanItem, StudySessionItem } from "../types";
 import { addDays, dateKey, daysBetween, fromKey } from "./model";
 
-// Backward plan for one exam: spreads study blocks over the days before the
-// exam, respects a daily limit across all exams and skips Sundays.
+// Backward plan for one exam: spreads study blocks over the user's study days
+// before the exam (n per week, never Sundays) and respects a daily limit
+// across all exams.
 
-export const PLAN_DEFAULTS = { startDays: 21, dailyLimit: 120, blockMinutes: 60, minutesPerDay: 50 };
+export const PLAN_DEFAULTS = { startDays: 21, dailyLimit: 120, blockMinutes: 60, minutesPerDay: 60, daysPerWeek: 4 };
 
-type Options = { today: string; booked?: Map<string, number>; makeId?: () => string };
+type Options = { today: string; booked?: Map<string, number>; daysPerWeek?: number; makeId?: () => string };
 
-export function planSessions(exam: ExamPlanItem, { today, booked = new Map(), makeId = () => crypto.randomUUID() }: Options): StudySessionItem[] {
+/** Keeps `perWeek` of every 6 days (Mon–Sat), evenly spread; the day before the exam always stays. */
+export const pickStudyDays = (days: string[], perWeek: number) => {
+  const n = Math.min(6, Math.max(1, Math.round(perWeek)));
+  if (n >= 6) return days;
+  // Count back from the exam so the last day before it is always a study day.
+  return [...days].reverse().filter((_, i) => (i * n) % 6 < n).reverse();
+};
+
+export function planSessions(exam: ExamPlanItem, { today, booked = new Map(), daysPerWeek = exam.studyDaysPerWeek ?? 6, makeId = () => crypto.randomUUID() }: Options): StudySessionItem[] {
   const daysUntil = daysBetween(today, exam.examDate);
   if (exam.status === "done" || daysUntil < 1) return [];
   const startDays = exam.studyStartDays > 0 ? exam.studyStartDays : PLAN_DEFAULTS.startDays;
@@ -19,7 +28,8 @@ export function planSessions(exam: ExamPlanItem, { today, booked = new Map(), ma
   const first = Math.max(0, daysUntil - startDays);
   const days = Array.from({ length: daysUntil - first }, (_, i) => dateKey(addDays(fromKey(today), first + i)))
     .filter((key) => fromKey(key).getDay() !== 0);
-  const candidates = days.length > 0 ? days : [dateKey(addDays(fromKey(exam.examDate), -1))];
+  const picked = pickStudyDays(days, daysPerWeek);
+  const candidates = picked.length > 0 ? picked : [dateKey(addDays(fromKey(exam.examDate), -1))];
 
   const total = exam.targetStudyMinutes > 0
     ? exam.targetStudyMinutes
@@ -40,7 +50,9 @@ export function planSessions(exam: ExamPlanItem, { today, booked = new Map(), ma
     if (!day) break;
     load.set(day.key, day.used + length);
     const block = topics[i];
-    const described = block ? describePlannedBlock(block, subject) : null;
+    const described = block?.kind === "topic" && block.round >= 3
+      ? { title: `${block.topic.name} · Aufgaben`, focus: "Aufgaben und Altklausuren zu diesem Thema rechnen" }
+      : block ? describePlannedBlock(block, subject) : null;
     sessions.push({
       id: makeId(), examId: exam.id,
       title: described?.title ?? `Lernblock ${i + 1}`,
@@ -63,9 +75,9 @@ export const bookedMinutes = (exams: ExamPlanItem[], exceptExamId?: string) => {
 };
 
 /** Re-plan the open future: keeps done, manual and hand-edited blocks and everything in the past. */
-export const replan = (exam: ExamPlanItem, all: ExamPlanItem[], today: string) => {
+export const replan = (exam: ExamPlanItem, all: ExamPlanItem[], today: string, daysPerWeek = exam.studyDaysPerWeek ?? 6) => {
   const keep = exam.studySessions.filter((s) => s.isDone || s.isManual || s.userEdited || s.dateKey < today);
-  const fresh = planSessions(exam, { today, booked: bookedMinutes(all, exam.id) });
+  const fresh = planSessions(exam, { today, booked: bookedMinutes(all, exam.id), daysPerWeek });
   return [...keep, ...fresh]
     .sort((a, b) => `${a.dateKey} ${a.time}`.localeCompare(`${b.dateKey} ${b.time}`));
 };

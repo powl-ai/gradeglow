@@ -58,8 +58,10 @@ export const dayLabel = (key: string, todayKey: string) => {
 };
 
 // Constellations -------------------------------------------------------------
-// Stick figures of real constellations in a 366 × 260 box. Star order is the
-// order in which finished blocks light them; `m` is relative brightness.
+// Stick figures of the main stars of real constellations in a 366 × 260 box.
+// Star order is the order in which finished blocks light them; `m` is relative
+// brightness. Stars and blocks are matched proportionally, the last block
+// always completes the figure.
 
 export type Star = { x: number; y: number; m: number; tint?: string };
 export type Constellation = { id: string; name: string; stars: Star[]; edges: [number, number][] };
@@ -80,6 +82,12 @@ export const CONSTELLATIONS: Constellation[] = [
     { x: 80, y: 196, m: 1.6, tint: "#dfe8ff" }, { x: 100, y: 146, m: 1 }, { x: 130, y: 108, m: 1.3 }, { x: 116, y: 72, m: 0.9 },
     { x: 150, y: 50, m: 0.9 }, { x: 186, y: 62, m: 1 }, { x: 250, y: 122, m: 1.2 }, { x: 256, y: 178, m: 1 }, { x: 330, y: 152, m: 1.3 },
   ], edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [2, 6], [6, 7], [7, 0], [6, 8], [7, 8]] },
+  { id: "sco", name: "Skorpion", stars: [
+    { x: 248, y: 112, m: 1.8, tint: "#ffb38a" }, { x: 270, y: 96, m: 1 }, { x: 306, y: 100, m: 1.2 }, { x: 312, y: 70, m: 1.2 },
+    { x: 318, y: 42, m: 0.9 }, { x: 300, y: 128, m: 1 }, { x: 232, y: 130, m: 1 }, { x: 216, y: 154, m: 1.2 },
+    { x: 204, y: 180, m: 0.9 }, { x: 186, y: 206, m: 1 }, { x: 156, y: 224, m: 1 }, { x: 120, y: 228, m: 1.2 },
+    { x: 92, y: 212, m: 1 }, { x: 80, y: 188, m: 1.1 }, { x: 96, y: 170, m: 1.5 },
+  ], edges: [[0, 1], [1, 2], [2, 3], [3, 4], [2, 5], [0, 6], [6, 7], [7, 8], [8, 9], [9, 10], [10, 11], [11, 12], [12, 13], [13, 14]] },
   { id: "ori", name: "Orion", stars: [
     { x: 160, y: 170, m: 1.2 }, { x: 182, y: 164, m: 1.3 }, { x: 204, y: 158, m: 1.1 },
     { x: 128, y: 96, m: 1.8, tint: "#ffd2a8" }, { x: 228, y: 108, m: 1.3 }, { x: 180, y: 66, m: 0.9 },
@@ -90,9 +98,10 @@ export const CONSTELLATIONS: Constellation[] = [
   ], edges: [[5, 3], [5, 4], [3, 0], [4, 2], [0, 1], [1, 2], [0, 6], [2, 7], [1, 8], [8, 9], [3, 10], [10, 11], [11, 12], [4, 15], [13, 14], [14, 15], [15, 16], [16, 17]] },
 ];
 
-/** The smallest constellation that has a star for every block (Orion for big plans). */
+/** The constellation whose star count is closest to the number of blocks (ties: the bigger one). */
 export const constellationFor = (blockCount: number) =>
-  CONSTELLATIONS.find((item) => item.stars.length >= blockCount) ?? CONSTELLATIONS[CONSTELLATIONS.length - 1];
+  [...CONSTELLATIONS].sort((a, b) =>
+    Math.abs(a.stars.length - blockCount) - Math.abs(b.stars.length - blockCount) || b.stars.length - a.stars.length)[0];
 
 /** How many stars are lit when `done` of `total` blocks are finished. */
 export const litStars = (constellation: Constellation, done: number, total: number) => {

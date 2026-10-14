@@ -189,6 +189,8 @@ export type ExamPlanItem = {
   topics?: ExamTopic[];
   /** Optional colour (hex) chosen by premium users; otherwise the app picks one. */
   color?: string;
+  /** Study days per week the plan uses for this exam (new app; old exams: 6). */
+  studyDaysPerWeek?: number;
 };
 
 

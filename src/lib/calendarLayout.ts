@@ -6,8 +6,11 @@ export type CalendarEntry = {
 export const localDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 export const shiftDay = (date: Date, offset: number) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + offset);
 export const mondayOf = (date: Date) => shiftDay(date, -((date.getDay() + 6) % 7));
-export const initialTimelineMinute = (isToday: boolean, currentMinute: number, firstStart?: number) =>
-  isToday ? Math.max(360, Math.min(1080, currentMinute - 60)) : firstStart ?? 360;
+export const initialTimelineMinute = (isToday: boolean, currentMinute: number, firstStart?: number, firstOpenStart?: number) => {
+  if (!isToday) return firstStart ?? 360;
+  const aroundNow = Math.max(360, Math.min(1080, currentMinute - 60));
+  return firstOpenStart !== undefined && firstOpenStart < aroundNow ? Math.max(0, firstOpenStart - 30) : aroundNow;
+};
 export const shouldShowHourLabel = (hour: number, currentMinute: number, isToday: boolean) =>
   !isToday || Math.abs((hour - currentMinute / 60) * 44) >= 14;
 export const timeInMinutes = (time: string): number | null => {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, CSSProperties, FormEvent, ReactNode } from "react";
 import { useDocumentAppearance } from "../hooks/useDocumentAppearance";
 import GlowRewardsPanel from "./GlowRewardsPanel";
@@ -12,7 +12,6 @@ import StudyHomeFeed from "./StudyHomeFeed";
 import LearningTrend from "./LearningTrend";
 import EctsProgressRing from "./EctsProgressRing";
 import { formatStudyMinutesExact, getSessionStudyMinutes } from "../lib/studyStats";
-import Mascot from "./Mascot";
 import { useFocusSession } from "./FocusSessionProvider";
 import FocusReturnNotice from "./FocusReturnNotice";
 import { getFocusElapsedMs } from "../lib/focusSession";
@@ -1209,7 +1208,8 @@ export default function GradeGlowDashboard({
         minutes,
         label: date.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }),
         dayNumber: date.getDate(),
-        isCurrentMonth: date.getMonth() === now.getMonth(),
+        weekLabel: `${date.getDate()}. ${date.toLocaleDateString("de-DE", { month: "short" }).replace(".", "")}`,
+        isFuture: dateKey > getDateKey(now),
         isToday: dateKey === getDateKey(now),
       };
     });
@@ -1259,13 +1259,6 @@ export default function GradeGlowDashboard({
       maxDailyMinutes: Math.max(...Object.values(minutesByDateKey), 0),
     };
   }, [analytics.progress, exams]);
-
-  const profileLearningCalendarMonthLabels = profileStudyStats.learningCalendarDays.reduce<Array<{ key: string; label: string; index: number }>>((labels, day, index) => {
-    if (day.dayNumber <= 7 || index === 0) {
-      labels.push({ key: `${day.dateKey}-month`, label: createLocalDateFromKey(day.dateKey)?.toLocaleDateString("de-DE", { month: "short" }) ?? "", index });
-    }
-    return labels;
-  }, []);
 
   const target = targetAverage ? parseNumber(targetAverage) : 0;
   const remainingGradedEcts = targetRemainingEcts
@@ -2054,7 +2047,7 @@ export default function GradeGlowDashboard({
         </section>
       )}
 
-        {page !== "timer" && <FocusReturnNotice withMascot />}
+        {page !== "timer" && <FocusReturnNotice />}
 
         {globalTimer && !["overview", "exams", "timer"].includes(page) && (
           <section className="rounded-3xl bg-slate-950 p-4 text-white shadow-xl shadow-violet-950/10 ring-1 ring-white/10 sm:p-5">
@@ -2387,32 +2380,24 @@ export default function GradeGlowDashboard({
                 </div>
               </div>
 
-              <div className="gg-profile-heatmap-months">
-                {profileLearningCalendarMonthLabels.map((label) => (
-                  <span key={label.key} style={{ gridColumnStart: (label.index % 7) + 1 }}>{label.label}</span>
+              <div className="gg-heatmap" role="img" aria-label={`Lernzeit der letzten 6 Wochen: ${profileStudyStats.learningCalendarDays.filter((day) => day.minutes > 0).length} Lerntage`}>
+                <span />
+                {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((label) => (
+                  <span key={label}>{label}</span>
                 ))}
-              </div>
-              <div className="gg-profile-heatmap-layout">
-                <div className="gg-profile-heatmap-weekdays">
-                  {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((label) => (
-                    <span key={label}>{label}</span>
-                  ))}
-                </div>
-                <div className="gg-profile-heatmap-grid">
-                  {profileStudyStats.learningCalendarDays.map((day) => {
-                    const level = getLearningHeatLevel(day.minutes, profileStudyStats.maxDailyMinutes);
-                    return (
-                      <span
-                        key={day.dateKey}
-                        className={`gg-profile-heatmap-cell ${day.isCurrentMonth ? '' : 'is-muted'} ${day.isToday ? 'is-today' : ''}`}
-                        data-level={level}
+                {profileStudyStats.learningCalendarDays.map((day, index) => {
+                  const level = getLearningHeatLevel(day.minutes, profileStudyStats.maxDailyMinutes);
+                  return (
+                    <Fragment key={day.dateKey}>
+                      {index % 7 === 0 && <span className="gg-heatmap-week">{day.weekLabel}</span>}
+                      <i
+                        className={`${day.isToday ? 'is-today' : ''} ${day.isFuture ? 'is-future' : ''}`.trim() || undefined}
+                        data-level={day.isFuture ? undefined : level}
                         title={`${day.label}: ${formatStudyMinutesLabel(day.minutes)}`}
-                      >
-                        <i />
-                      </span>
-                    );
-                  })}
-                </div>
+                      />
+                    </Fragment>
+                  );
+                })}
               </div>
             </div>
 
@@ -2520,7 +2505,6 @@ export default function GradeGlowDashboard({
               </div>
               {!focus.storageAvailable && <p className="gg-focus-warning" role="status">Der Gerätespeicher ist nicht verfügbar. Diese Session kann nach dem Schließen verloren gehen.</p>}
               <div className="gg-timer-stage gg-focus-stage">
-                <div className="gg-focus-mascot"><Mascot mood={focus.mood} /></div>
                 <div className={`gg-timer-ring ${focus.status === "running" ? "is-running" : ""}`}
                   style={{ "--gg-timer-progress": `${standaloneTimerProgress * 3.6}deg` } as CSSProperties}>
                   <div className="gg-timer-ring-inner">

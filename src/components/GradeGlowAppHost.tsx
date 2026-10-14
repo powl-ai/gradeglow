@@ -35,6 +35,20 @@ export default function GradeGlowAppHost({ children }: { children: ReactNode }) 
   const currentPath = useRef(pathname);
   const shell = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    // iOS home-screen apps can report a CSS viewport (vh/lvh, inset:0) that does not
+    // match the area actually shown, which pushed the tab bar off-screen. innerHeight
+    // is the real visible height, so the shell is sized from it.
+    const root = document.documentElement;
+    const sync = () => root.style.setProperty("--gg-app-height", `${window.innerHeight}px`);
+    sync();
+    window.addEventListener("resize", sync);
+    window.addEventListener("orientationchange", sync);
+    return () => {
+      window.removeEventListener("resize", sync);
+      window.removeEventListener("orientationchange", sync);
+    };
+  }, []);
+  useEffect(() => {
     const record = (event: Event) => {
       const main = shell.current?.querySelector("main");
       if (main && event.target === main) scrollPositions.current.set(currentPath.current, main.scrollTop);

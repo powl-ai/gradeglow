@@ -42,6 +42,11 @@ test("calendar initial scroll clamps today to 06–18, other days honor early/la
   assert.equal(initialTimelineMinute(false, 750, 180), 180);
   assert.equal(initialTimelineMinute(false, 750, 1320), 1320);
 });
+test("calendar today scrolls up to an unfinished block from earlier today", () => {
+  assert.equal(initialTimelineMinute(true, 17 * 60 + 28, 600, 600), 570);
+  assert.equal(initialTimelineMinute(true, 17 * 60 + 28, 600, undefined), 988);
+  assert.equal(initialTimelineMinute(true, 9 * 60, 1080, 1080), 480);
+});
 test("hour label collision hides within 14 pixels only, not yesterday", () => {
   assert.equal(shouldShowHourLabel(22, 21 * 60 + 29, true), true);
   assert.equal(shouldShowHourLabel(22, 21 * 60 + 45, true), false);

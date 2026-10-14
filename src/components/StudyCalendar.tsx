@@ -24,18 +24,20 @@ function DayTimeline({ date, entries, onOpen }: { date: Date; entries: CalendarE
   const key = localDateKey(date);
   const isToday = key === localDateKey(now);
   const firstStart = positions[0]?.start;
+  // An unfinished block from earlier today must not sit hidden above the "now" line.
+  const firstOpenStart = positions.find(item => !item.entry.isDone)?.start;
   useLayoutEffect(() => {
     if (initialized.current) return;
     const node = timeline.current, viewport = node?.parentElement;
     if (!node || !viewport) return;
     const frame = requestAnimationFrame(() => {
       const current = new Date();
-      const target = initialTimelineMinute(isToday, current.getHours() * 60 + current.getMinutes(), firstStart);
+      const target = initialTimelineMinute(isToday, current.getHours() * 60 + current.getMinutes(), firstStart, firstOpenStart);
       viewport.scrollTo({ top: node.offsetTop + target / 60 * HOUR_HEIGHT, behavior: "instant" });
       initialized.current = true;
     });
     return () => cancelAnimationFrame(frame);
-  }, [firstStart, isToday]);
+  }, [firstStart, firstOpenStart, isToday]);
   return <>
     {untimed.length > 0 && <div className="gg-calendar-untimed"><span>Ohne Uhrzeit</span><div>{untimed.map(entry => <button type="button" key={entry.id} data-kind={entry.kind} onClick={() => onOpen(entry)}>{entry.title}</button>)}</div></div>}
     <div className="gg-calendar-timeline-viewport" aria-label="Tageskalender">

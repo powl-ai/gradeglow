@@ -32,7 +32,7 @@ export default function FocusSettingsCard() {
   };
 
   return <section className="gg-focus-settings" aria-label="Fokus-Einstellungen">
-    <FocusReturnNotice withMascot />
+    <FocusReturnNotice />
     <h2>Fokus-Schutz</h2>
     <p>Der Fokus-Schutz blendet kleine In-App-Erinnerungen aus und fragt vor dem Verwerfen nach. Du kannst die App jederzeit verlassen; unabhängig vom Schutz zählt der Timer nur Vordergrundzeit, mit 10 Sekunden Kulanz bei kurzen Unterbrechungen.</p>
     <label className="gg-focus-toggle"><span>Fokus-Schutz aktivieren<small>Freiwillig · auf diesem Gerät</small></span><input type="checkbox" checked={focus.settings.protectionEnabled} disabled={!focus.ready} onChange={(event) => focus.store.updateSettings({ protectionEnabled: event.target.checked }, Date.now())} /></label>

@@ -66,7 +66,7 @@ dialog.gg-app-dialog::backdrop { background: rgb(4 6 16 / .68); }
 .gg-home-greeting > p { color: var(--gg-muted); font-size: .8rem; text-transform: capitalize; }
 .gg-home-greeting h2 { margin-top: .45rem; color: var(--gg-app-text); font-size: clamp(1.45rem, 5.2vw, 1.9rem); font-weight: 750; line-height: 1.2; letter-spacing: -.04em; }
 .gg-home-feed .gg-feed-card { background: var(--gg-surface); border: 1px solid var(--gg-border); border-radius: 1.35rem; padding: 1rem; min-width: 0; box-shadow: none; }
-.gg-home-feed .gg-home-focus-card { display: grid; grid-template-columns: minmax(0, 1fr) clamp(5.25rem, 25vw, 8rem); gap: .25rem; align-items: center; border-radius: 1.5rem; padding: 1.1rem; background: linear-gradient(120deg, #f0e6ff, #fae9f1); border: 1px solid #d2b9ea; color: #302143; }
+.gg-home-feed .gg-home-focus-card { display: grid; grid-template-columns: minmax(0, 1fr); gap: .25rem; align-items: center; border-radius: 1.5rem; padding: 1.1rem; background: linear-gradient(120deg, #f0e6ff, #fae9f1); border: 1px solid #d2b9ea; color: #302143; }
 html[data-color-mode="dark"] .gg-home-feed .gg-home-focus-card { background: linear-gradient(120deg, #2a2044, #343054); border-color: #5b4d75; color: #f8f1ff; }
 .gg-feed-eyebrow { display: block; font-size: .65rem; font-weight: 750; letter-spacing: .09em; line-height: 1.5; }
 .gg-home-focus-card h3 { margin-top: .65rem; font-size: clamp(1.25rem, 4.8vw, 1.7rem); line-height: 1.18; letter-spacing: -.035em; font-weight: 760; }
@@ -316,7 +316,7 @@ html .gg-demo-bar { display: block; padding: 0 .85rem; border-radius: .85rem; ba
   .gg-daily-glow-dialog .gg-dialog-panel { max-width: 28rem; }
 }
 @media (max-width: 380px) {
-  .gg-home-feed .gg-home-focus-card { padding: .9rem; grid-template-columns: minmax(0, 1fr) 5.1rem; }
+  .gg-home-feed .gg-home-focus-card { padding: .9rem; }
   .gg-home-focus-card h3 { font-size: 1.2rem; }
   .gg-calendar-toolbar { padding-inline: .65rem; }
   .gg-calendar-month-title { font-size: 1.15rem; }
@@ -404,10 +404,12 @@ html .gg-themed .gg-timer-only-page .gg-timer-label,
 html .gg-themed .gg-timer-only-page .gg-timer-subtitle { color: var(--gg-muted) !important; }
 html[data-color-mode="dark"] .gg-timer-only-page { --gg-surface: #111827; --gg-surface-soft: #1e293b; --gg-app-text: #f8fafc; --gg-muted: #cbd5e1; --gg-border: #475569; }
 
-/* iOS home-screen PWAs sometimes size a fixed inset:0 box shorter than the screen,
-   leaving a dead band at the bottom. In standalone mode the large viewport is the real screen. */
-@media (display-mode: standalone) and (max-width: 1023px) {
-  .gg-native-layout { bottom: auto; height: 100vh; height: 100lvh; }
+/* The shell is exactly as tall as the area iOS really shows (measured in
+   GradeGlowAppHost). 100lvh was taller than that in home-screen mode and clipped
+   the tab bar. If iOS leaves a band below the app, it is painted like the tab bar. */
+@media (max-width: 1023px) {
+  .gg-native-layout { bottom: auto; height: 100dvh; height: var(--gg-app-height, 100dvh); }
+  html:has(.gg-native-layout), body:has(.gg-native-layout) { background: var(--gg-nav-background) !important; }
 }
 
 /* Focus duration presets: dark surfaces in dark mode instead of white pills. */
@@ -441,3 +443,19 @@ html[data-color-mode="dark"] .gg-circle-empty {
 .gg-home-exam .gg-home-plan-state.is-behind { color: #f59e0b; }
 .gg-home-exam .gg-home-plan-state.is-ok { color: #34d399; }
 .gg-timer-block-title { margin-top: .2rem; font-size: .8rem; color: var(--gg-muted); font-weight: 600; }
+
+/* Profile heatmap: a small 6-week calendar. Weekdays across, one row per week,
+   labelled with the week's Monday. No month header, no stretched tiles. */
+.gg-heatmap { display: grid; grid-template-columns: 3.1rem repeat(7, minmax(0, 1.6rem)); gap: .3rem; justify-content: start; align-items: center; margin-top: 1rem; }
+.gg-heatmap > span { font-size: .62rem; font-weight: 650; color: var(--gg-muted, #94a3b8); text-align: center; line-height: 1; }
+.gg-heatmap > .gg-heatmap-week { text-align: left; white-space: nowrap; }
+.gg-heatmap > i { display: block; aspect-ratio: 1; border-radius: .3rem; background: var(--gg-border, #e2e8f0); }
+.gg-heatmap > i[data-level="1"] { background: rgba(16, 185, 129, .25); }
+.gg-heatmap > i[data-level="2"] { background: rgba(16, 185, 129, .45); }
+.gg-heatmap > i[data-level="3"] { background: rgba(16, 185, 129, .7); }
+.gg-heatmap > i[data-level="4"] { background: #059669; }
+.gg-heatmap > i.is-future { background: transparent; box-shadow: inset 0 0 0 1px var(--gg-border, #e2e8f0); }
+.gg-heatmap > i.is-today { box-shadow: inset 0 0 0 2px var(--gg-ui-accent, #6d28d9); }
+html[data-color-mode="dark"] .gg-heatmap > i:not([data-level]),
+html[data-color-mode="dark"] .gg-heatmap > i[data-level="0"] { background: rgb(255 255 255 / .08); }
+html[data-color-mode="dark"] .gg-heatmap > i.is-future { background: transparent; }

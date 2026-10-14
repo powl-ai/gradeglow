@@ -67,7 +67,7 @@ export default function Heute({ ctx }: { ctx: AppCtx }) {
                 <div className="gn-row" style={{ gap: 8 }}>
                   <span className="gn-hero-pill">{firstExam ? examShort(firstExam) : first.subject}</span>
                   <span style={{ fontSize: 13, fontWeight: 600, opacity: 0.85 }}>
-                    {first.isOverdue ? `verpasst ${dayLabel(first.dateKey, today)}` : first.time || "heute"} · {minutesLabel(getSessionStudyMinutes(first))}
+                    {first.isOverdue ? `verpasst ${dayLabel(first.dateKey, today).toLowerCase()}` : first.time || "heute"} · {minutesLabel(getSessionStudyMinutes(first))}
                   </span>
                 </div>
                 <div>

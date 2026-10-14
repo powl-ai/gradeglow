@@ -40,6 +40,15 @@ export const minutesLabel = (minutes: number) => {
   return h === 0 ? `${m} min` : m === 0 ? `${h} h` : `${h} h ${m} min`;
 };
 
+/** Days in a row with a finished block. A streak stays alive until today is over. */
+export const streakDays = (exams: Pick<ExamPlanItem, "studySessions">[], today: string) => {
+  const days = new Set(exams.flatMap((exam) => exam.studySessions.filter((s) => s.isDone && !s.isHidden).map((s) => s.dateKey)));
+  let cursor = days.has(today) ? fromKey(today) : addDays(fromKey(today), -1);
+  let count = 0;
+  while (days.has(dateKey(cursor))) { count += 1; cursor = addDays(cursor, -1); }
+  return count;
+};
+
 export const dayLabel = (key: string, todayKey: string) => {
   const diff = daysBetween(todayKey, key);
   if (diff === 0) return "Heute";

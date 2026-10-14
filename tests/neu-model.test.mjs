@@ -18,7 +18,7 @@ function load(relative) {
   compiled._compile(ts.transpileModule(fs.readFileSync(file, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, file);
   return compiled.exports;
 }
-const { constellationFor, litStars, examShort, examColor, CONSTELLATIONS } = load("src/neu/model.ts");
+const { constellationFor, litStars, examShort, examColor, streakDays, CONSTELLATIONS } = load("src/neu/model.ts");
 const { planSessions, replan } = load("src/neu/plan.ts");
 
 test("every constellation edge points at an existing star", () => {
@@ -96,4 +96,12 @@ test("replan keeps done and hand-made blocks", () => {
   const result = replan(exam({ studySessions: [done, manual] }), [], "2026-10-14");
   assert.ok(result.some((s) => s.id === "d") && result.some((s) => s.id === "m"));
   assert.ok(result.length > 2);
+});
+
+test("streak survives until today is over", () => {
+  const done = (dateKey) => ({ dateKey, isDone: true, isHidden: false });
+  const exams = [{ studySessions: [done("2026-10-13"), done("2026-10-14")] }];
+  assert.equal(streakDays(exams, "2026-10-15"), 2);
+  assert.equal(streakDays(exams, "2026-10-14"), 2);
+  assert.equal(streakDays(exams, "2026-10-16"), 0);
 });

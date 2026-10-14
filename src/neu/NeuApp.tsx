@@ -9,7 +9,7 @@ import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { useGradeGlowExams } from "../hooks/useGradeGlowExams";
 import { useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
 import type { AppUser, ExamPlanItem, GradeGlowProfile, PlanLimits } from "../types";
-import { ACCENTS, dateKey } from "./model";
+import { ACCENTS, dateKey, streakDays } from "./model";
 import { Icon } from "./Icons";
 import Heute from "./Heute";
 import Kalender from "./Kalender";
@@ -90,7 +90,7 @@ function Shell({ user, logout, fontClass }: { user: AppUser; logout: () => Promi
   const ctx: AppCtx = useMemo(() => ({
     user, exams, setExams, loaded: isLoaded, today, profile, saveProfile, limits, logout,
     name: (profile.displayName || user.displayName || "").split(" ")[0],
-    streak: profile.currentStudyStreakDays || 0,
+    streak: streakDays(exams, today),
     go: (next, sessionId, nextExamId) => {
       if (sessionId !== undefined) setFocusPick({ examId: nextExamId ?? null, sessionId });
       if (next === "klausuren" && nextExamId) setExamId(nextExamId);

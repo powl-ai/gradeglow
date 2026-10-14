@@ -81,17 +81,15 @@ test("ECTS is an 88px SVG circle, never conic or masked, with only percent insid
   assert.match(markup, />8 %<\/text>/);
   assert.doesNotMatch(markup, /conic-gradient|mask|ECTS|Schnitt/);
 });
-test("completed today carries today + done classes in the week strip", () => {
+test("completed today still carries today + done classes and an interior checkmark", () => {
   const Home = loadTs("src/components/StudyHomeFeed.tsx").default;
   const markup = renderToStaticMarkup(React.createElement(Home, {
     name: "Test", exams: [{ studySessions: [{ dateKey: localDateKey(new Date()), isDone: true, isHidden: false }], examDate: "2000-01-01" }],
     passedEcts: 14, targetEcts: 180, average: 1.7, streak: 1, weekMinutes: 2, timerRunning: false,
   }));
-  assert.match(markup, /class="is-today is-done"/);
-  assert.match(markup, /Für heute erledigt\./);
-  const css = fs.readFileSync(path.join(root, "src/app/gg-design.css"), "utf8");
-  assert.match(css, /\.gg-ds-week \.is-done strong \{/);
-  assert.match(css, /\.gg-ds-week \.is-today strong \{/);
+  assert.match(markup, /class="is-today is-done"[^]*?<strong>✓<\/strong>/);
+  const css = fs.readFileSync(path.join(root, "src/app/mobile-ui.css"), "utf8");
+  assert.match(css, /\.is-today\.is-done strong \{ border: 2px solid var\(--gg-ui-accent\)/);
 });
 
 // Exercise the actual Provider lifecycle with browser events and a mocked

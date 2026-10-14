@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Manrope } from "next/font/google";
 import GradeGlowAppHost from "../components/GradeGlowAppHost";
 import { APPEARANCE_BOOTSTRAP_SCRIPT } from "../lib/appearance";
 import PwaRegister from "../components/PwaRegister";
@@ -10,9 +9,6 @@ import AdSenseScript from "../components/AdSenseScript";
 import "./globals.css";
 import "./mobile-ui.css";
 import "./homescreen-icons.css";
-import "./gg-design.css";
-
-const manrope = Manrope({ subsets: ["latin", "latin-ext"], variable: "--gg-font", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://gradeglow.app"),
@@ -51,7 +47,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="de" className={`h-full antialiased ${manrope.variable}`} suppressHydrationWarning>
+    <html lang="de" className="h-full antialiased" suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOTSTRAP_SCRIPT }} /></head>
       <body className="h-full flex flex-col">
         <PwaRegister />

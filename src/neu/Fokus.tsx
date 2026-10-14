@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFocusSession } from "../components/FocusSessionProvider";
 import { getExamPlanStatus, getTodayBlocks } from "../lib/examTopics";
 import { getFocusElapsedMs } from "../lib/focusSession";
+import { getSessionStudyMinutes } from "../lib/studyStats";
 import type { StudySessionItem } from "../types";
 import type { AppCtx } from "./NeuApp";
 import { Icon } from "./Icons";
 import { constellationFor, dateKey, dayLabel, examColor, examShort, litStars, minutesLabel, timeOf } from "./model";
 
 const DURATIONS = [25, 45, 60, 90];
+const VIEW_KEY = "gn-fokus-view";
 const pad = (n: number) => String(n).padStart(2, "0");
 const clock = (seconds: number) => {
   const s = Math.max(0, Math.round(seconds));
@@ -53,6 +55,13 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
   const [minutes, setMinutes] = useState<number | null>(null);
   const goal = active?.goalMinutes ?? minutes ?? (block?.durationMinutes && block.durationMinutes <= 180 ? Math.round(block.durationMinutes) : 45);
   const [message, setMessage] = useState("");
+  // Sky or plain list: a per-device preference, remembered between visits.
+  const [asList, setAsList] = useState(false);
+  useEffect(() => { try { setAsList(window.localStorage.getItem(VIEW_KEY) === "list"); } catch { /* optional */ } }, []);
+  const flip = () => setAsList((current) => {
+    try { window.localStorage.setItem(VIEW_KEY, current ? "sky" : "list"); } catch { /* optional */ }
+    return !current;
+  });
 
   const status = exam ? getExamPlanStatus(exam, today) : null;
   const constellation = constellationFor(status?.totalSessions ?? 0);
@@ -117,6 +126,7 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
     );
   }
 
+  const planned = exam.studySessions.filter((s) => !s.isHidden).sort((x, y) => `${x.dateKey} ${x.time}`.localeCompare(`${y.dateKey} ${y.time}`));
   // Centre each figure in the sky above the caption (drawing area 366 × 270).
   const xs = constellation.stars.map((star) => star.x), ys = constellation.stars.map((star) => star.y);
   const dx = (366 - Math.min(...xs) - Math.max(...xs)) / 2, dy = (262 - Math.min(...ys) - Math.max(...ys)) / 2;
@@ -132,33 +142,57 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
         <h1>Fokus</h1>
       </header>
 
-      <section className="gn-sky" role="img" aria-label={`${constellation.name}: ${lit} von ${stars.length} Sternen`}>
-        <svg viewBox="0 0 366 330" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-          <defs>
-            <radialGradient id="gn-halo"><stop offset="0" stopColor="#fff" stopOpacity="0.9" /><stop offset="0.35" stopColor="#c8b6ff" stopOpacity="0.45" /><stop offset="1" stopColor="#8f6bff" stopOpacity="0" /></radialGradient>
-          </defs>
-          {DUST.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r={p.r} fill="#fff" opacity={p.o} className={p.c} />)}
-          <path d={line(edgeOff)} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="1" strokeDasharray="2 4" />
-          <path d={line(edgeOn)} fill="none" stroke="rgba(214,200,255,0.75)" strokeWidth="1.4" strokeLinecap="round" />
-          {stars.map((star, index) => {
-            const on = index < lit, next = index === lit && running;
-            return (
-              <g key={index} className={next ? "gn-next" : undefined}>
-                {(on || next) && <circle cx={star.x} cy={star.y} r={on ? 9 + star.m * 5 : 16} fill="url(#gn-halo)" />}
-                {(on || next) && <path d={spark(star.x, star.y, on ? 5 + star.m * 3.5 : 10)} fill="#fff" opacity={0.92} />}
-                <circle cx={star.x} cy={star.y} r={on ? 1.6 + star.m : next ? 2.4 : 1.4 + star.m * 0.4} fill={on ? star.tint ?? "#fff" : next ? "#fff" : "rgba(255,255,255,0.32)"} />
-              </g>
-            );
-          })}
-        </svg>
-        <div className="gn-sky-caption">
-          <div>
-            <strong>{constellation.name} <em>· {examShort(exam)}</em></strong>
-            <small>{running ? `Stern ${Math.min(lit + 1, stars.length)} von ${stars.length} entsteht gerade` : `${lit} von ${stars.length} Sternen`}</small>
+      <div className={`gn-flip ${asList ? "is-flipped" : ""}`}>
+        <button type="button" className="gn-sky gn-face" onClick={flip} aria-hidden={asList} tabIndex={asList ? -1 : 0} aria-label={`${constellation.name}: ${lit} von ${stars.length} Sternen. Tippen für die Liste`}>
+          <svg viewBox="0 0 366 330" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <defs>
+              <radialGradient id="gn-halo"><stop offset="0" stopColor="#fff" stopOpacity="0.9" /><stop offset="0.35" stopColor="#c8b6ff" stopOpacity="0.45" /><stop offset="1" stopColor="#8f6bff" stopOpacity="0" /></radialGradient>
+            </defs>
+            {DUST.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r={p.r} fill="#fff" opacity={p.o} className={p.c} />)}
+            <path d={line(edgeOff)} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="1" strokeDasharray="2 4" />
+            <path d={line(edgeOn)} fill="none" stroke="rgba(214,200,255,0.75)" strokeWidth="1.4" strokeLinecap="round" />
+            {stars.map((star, index) => {
+              const on = index < lit, next = index === lit && running;
+              return (
+                <g key={index} className={next ? "gn-next" : undefined}>
+                  {(on || next) && <circle cx={star.x} cy={star.y} r={on ? 9 + star.m * 5 : 16} fill="url(#gn-halo)" />}
+                  {(on || next) && <path d={spark(star.x, star.y, on ? 5 + star.m * 3.5 : 10)} fill="#fff" opacity={0.92} />}
+                  <circle cx={star.x} cy={star.y} r={on ? 1.6 + star.m : next ? 2.4 : 1.4 + star.m * 0.4} fill={on ? star.tint ?? "#fff" : next ? "#fff" : "rgba(255,255,255,0.32)"} />
+                </g>
+              );
+            })}
+          </svg>
+          <div className="gn-sky-caption">
+            <div>
+              <strong>{constellation.name} <em>· {examShort(exam)}</em></strong>
+              <small>{running ? `Stern ${Math.min(lit + 1, stars.length)} von ${stars.length} entsteht gerade` : `${lit} von ${stars.length} Sternen`}</small>
+            </div>
+            {status && status.daysUntil >= 0 && <span>noch {status.daysUntil} {status.daysUntil === 1 ? "Tag" : "Tage"}</span>}
           </div>
-          {status && status.daysUntil >= 0 && <span>noch {status.daysUntil} {status.daysUntil === 1 ? "Tag" : "Tage"}</span>}
+        </button>
+        <div className="gn-face gn-face-back gn-blocks" aria-hidden={!asList}>
+          <button type="button" className="gn-blocks-head" onClick={flip} aria-label="Sternbild zeigen" tabIndex={asList ? 0 : -1}>
+            <div><strong>{examShort(exam)}</strong><small>{status ? `${status.doneSessions} von ${status.totalSessions} Blöcken` : ""}</small></div>
+            <span className="gn-tag">Sternbild</span>
+          </button>
+          <ul className="gn-list">
+            {planned.map((s) => {
+              const topic = exam.topics?.find((t) => t.id === s.topicId)?.name;
+              const isNext = s.id === block?.id && !s.isDone;
+              return (
+                <li key={s.id}>
+                  <span className={`gn-check ${s.isDone ? "is-done" : ""} ${isNext ? "is-today" : ""}`}>{s.isDone && Icon.check(12)}</span>
+                  <div>
+                    <strong style={s.isDone ? { color: "var(--muted)" } : undefined}>{s.title || "Fokusblock"}</strong>
+                    <small>{dayLabel(s.dateKey, today)} · {minutesLabel(getSessionStudyMinutes(s))}{topic && topic !== s.title ? ` · ${topic}` : ""}</small>
+                  </div>
+                </li>
+              );
+            })}
+            {planned.length === 0 && <li><small>Noch keine Lernblöcke geplant.</small></li>}
+          </ul>
         </div>
-      </section>
+      </div>
 
       <div className="gn-pills">
         <label className="gn-pill">

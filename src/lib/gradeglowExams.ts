@@ -121,6 +121,7 @@ export const migrateExams = (rawExams: unknown): ExamPlanItem[] => {
         isHidden: record.isHidden === true,
         studySessions: migrateStudySessions(record.studySessions, id),
         topics: normalizeTopics(record.topics),
+        ...(typeof record.color === "string" && /^#[0-9a-f]{6}$/i.test(record.color) ? { color: record.color } : {}),
       } satisfies ExamPlanItem;
     })
     .filter((exam): exam is ExamPlanItem => Boolean(exam));

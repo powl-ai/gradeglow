@@ -28,8 +28,8 @@ export default function Heute({ ctx }: { ctx: AppCtx }) {
       <header className="gn-top">
         <h1>GradeGlow</h1>
         <div className="gn-actions">
-          <a className="gn-icon" href="/exams" aria-label="Klausur hinzufügen">{Icon.plus()}</a>
-          <a className="gn-icon" href="/settings" aria-label="Profil und Einstellungen">{Icon.user()}</a>
+          <button type="button" className="gn-icon" aria-label="Klausur hinzufügen" onClick={() => ctx.openExam(null)}>{Icon.plus()}</button>
+          <button type="button" className="gn-icon" aria-label="Einstellungen" onClick={ctx.openSettings}>{Icon.user()}</button>
         </div>
       </header>
 
@@ -56,7 +56,7 @@ export default function Heute({ ctx }: { ctx: AppCtx }) {
           <section className="gn-card gn-empty">
             <h2 className="gn-h3">Leg deine erste Klausur an</h2>
             <p>Datum und Themen eintragen, GradeGlow plant die Lernblöcke rückwärts bis zur Prüfung.</p>
-            <a className="gn-go" href="/exams">Klausur anlegen</a>
+            <button type="button" className="gn-go" style={{ width: "100%" }} onClick={() => ctx.openExam(null)}>Klausur anlegen</button>
           </section>
         ) : (
           <>

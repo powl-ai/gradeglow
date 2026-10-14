@@ -7,11 +7,19 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const file = path.join(root, "src/neu/model.ts");
-const compiled = new Module(file);
-compiled.filename = file;
-compiled._compile(ts.transpileModule(fs.readFileSync(file, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, file);
-const { constellationFor, litStars, examShort, examColor, CONSTELLATIONS } = compiled.exports;
+const cache = new Map();
+function load(relative) {
+  const file = path.resolve(root, relative);
+  if (cache.has(file)) return cache.get(file).exports;
+  const compiled = new Module(file);
+  compiled.filename = file;
+  cache.set(file, compiled);
+  compiled.require = (id) => load(path.relative(root, path.resolve(path.dirname(file), id)) + ".ts");
+  compiled._compile(ts.transpileModule(fs.readFileSync(file, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, file);
+  return compiled.exports;
+}
+const { constellationFor, litStars, examShort, examColor, CONSTELLATIONS } = load("src/neu/model.ts");
+const { planSessions, replan } = load("src/neu/plan.ts");
 
 test("every constellation edge points at an existing star", () => {
   for (const item of CONSTELLATIONS) for (const [a, b] of item.edges) {
@@ -49,4 +57,43 @@ test("exam colours: custom hex wins, otherwise a stable palette slot", () => {
   assert.equal(examColor({ id: "b", color: "#123456" }, all), "#123456");
   assert.equal(examColor({ id: "b" }, all), examColor({ id: "b" }, all));
   assert.notEqual(examColor({ id: "a" }, all), examColor({ id: "b" }, all));
+});
+
+const exam = (patch = {}) => ({
+  id: "e1", title: "Klausur Mathe", moduleId: null, moduleName: "Mathe", examDate: "2026-11-07", examTime: "", kind: "exam",
+  status: "planned", priority: "normal", notes: "", studyStartDays: 21, targetStudyMinutes: 0, dailyStudyLimitMinutes: 120,
+  sessionGoalMinutes: 60, isHidden: false, studySessions: [], topics: [], ...patch,
+});
+let n = 0;
+const makeId = () => `s${n++}`;
+
+test("plan: blocks sit before the exam, never on Sundays, within the daily limit", () => {
+  const sessions = planSessions(exam(), { today: "2026-10-14", makeId });
+  assert.ok(sessions.length > 5);
+  for (const s of sessions) {
+    assert.ok(s.dateKey >= "2026-10-17" && s.dateKey < "2026-11-07", s.dateKey);
+    assert.notEqual(new Date(`${s.dateKey}T12:00:00`).getDay(), 0);
+  }
+  const perDay = new Map();
+  sessions.forEach((s) => perDay.set(s.dateKey, (perDay.get(s.dateKey) ?? 0) + s.durationMinutes));
+  assert.ok([...perDay.values()].every((minutes) => minutes <= 120));
+});
+
+test("plan: topics become block titles, weak topics first, final review last", () => {
+  const topics = [{ id: "t1", name: "Eigenwerte", confidence: 1 }, { id: "t2", name: "LGS", confidence: 3 }];
+  const sessions = planSessions(exam({ topics }), { today: "2026-10-14", makeId });
+  assert.equal(sessions[0].title, "Eigenwerte");
+  assert.match(sessions.at(-1).title, /Finale Wiederholung/);
+});
+
+test("plan: nothing for exams today or in the past", () => {
+  assert.equal(planSessions(exam({ examDate: "2026-10-14" }), { today: "2026-10-14", makeId }).length, 0);
+});
+
+test("replan keeps done and hand-made blocks", () => {
+  const done = { id: "d", examId: "e1", title: "x", dateKey: "2026-10-13", time: "", durationMinutes: 60, focus: "", notes: "", isDone: true, isHidden: false, isManual: false };
+  const manual = { ...done, id: "m", dateKey: "2026-10-20", isDone: false, isManual: true };
+  const result = replan(exam({ studySessions: [done, manual] }), [], "2026-10-14");
+  assert.ok(result.some((s) => s.id === "d") && result.some((s) => s.id === "m"));
+  assert.ok(result.length > 2);
 });

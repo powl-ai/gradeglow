@@ -18,11 +18,11 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
   if (!exam) {
     return (
       <div className="gn-scroll">
-        <header className="gn-top"><h1>Klausuren</h1><div className="gn-actions"><a className="gn-icon" href="/exams" aria-label="Klausur hinzufügen">{Icon.plus()}</a></div></header>
+        <header className="gn-top"><h1>Klausuren</h1><div className="gn-actions"><button type="button" className="gn-icon" aria-label="Klausur hinzufügen" onClick={() => ctx.openExam(null)}>{Icon.plus()}</button></div></header>
         <section className="gn-card gn-empty">
           <h2 className="gn-h3">Noch keine Klausur</h2>
           <p>Trag Datum und Themen ein. GradeGlow verteilt die Lernblöcke rückwärts bis zur Prüfung.</p>
-          <a className="gn-go" href="/exams">Klausur anlegen</a>
+          <button type="button" className="gn-go" style={{ width: "100%" }} onClick={() => ctx.openExam(null)}>Klausur anlegen</button>
         </section>
       </div>
     );
@@ -47,7 +47,7 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
     <div className="gn-scroll">
       <header className="gn-top">
         <h1>Klausuren</h1>
-        <div className="gn-actions"><a className="gn-icon" href="/exams" aria-label="Klausur hinzufügen oder bearbeiten">{Icon.plus()}</a></div>
+        <div className="gn-actions"><button type="button" className="gn-icon text" onClick={() => ctx.openExam(exam.id)}>Bearbeiten</button><button type="button" className="gn-icon" aria-label="Klausur hinzufügen" onClick={() => ctx.openExam(null)}>{Icon.plus()}</button></div>
       </header>
 
       <div className="gn-chips" aria-label="Klausur wählen">
@@ -85,7 +85,7 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
             {topics.length > 0 && <span className="gn-muted" style={{ fontSize: 13, fontWeight: 600, flex: "none" }}>Tippen zum Ändern</span>}
           </div>
           {topics.length === 0 ? (
-            <p className="gn-muted" style={{ fontSize: 14, marginTop: 6 }}>Noch keine Themen. <a className="gn-link" href={`/exams?exam=${encodeURIComponent(exam.id)}`}>Themen eintragen</a>, damit schwache Themen mehr Blöcke bekommen.</p>
+            <p className="gn-muted" style={{ fontSize: 14, marginTop: 6 }}>Noch keine Themen. <button type="button" className="gn-link" onClick={() => ctx.openExam(exam.id)}>Themen eintragen</button>, damit schwache Themen mehr Blöcke bekommen.</p>
           ) : (
             <ul className="gn-list">
               {topics.map((topic) => (

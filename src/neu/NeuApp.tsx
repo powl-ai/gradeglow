@@ -4,15 +4,19 @@ import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, Dispatch, ReactNode, SetStateAction } from "react";
 import AuthGate from "../components/AuthGate";
 import FocusSessionProvider from "../components/FocusSessionProvider";
+import { useDocumentAppearance } from "../hooks/useDocumentAppearance";
+import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { useGradeGlowExams } from "../hooks/useGradeGlowExams";
 import { useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
-import type { AppUser, ExamPlanItem } from "../types";
+import type { AppUser, ExamPlanItem, GradeGlowProfile, PlanLimits } from "../types";
 import { ACCENTS, dateKey } from "./model";
 import { Icon } from "./Icons";
 import Heute from "./Heute";
 import Kalender from "./Kalender";
 import Fokus from "./Fokus";
 import Klausuren from "./Klausuren";
+import ExamSheet from "./ExamSheet";
+import SettingsSheet from "./SettingsSheet";
 import "./neu.css";
 
 export type Tab = "heute" | "kalender" | "fokus" | "klausuren";
@@ -23,6 +27,8 @@ const TABS: { id: Tab; label: string; icon: (on: boolean) => ReactNode }[] = [
   { id: "klausuren", label: "Klausuren", icon: Icon.book },
 ];
 
+type Sheet = { kind: "settings" } | { kind: "exam"; examId: string | null } | null;
+
 /** Shared by every screen. */
 export type AppCtx = {
   user: AppUser;
@@ -32,7 +38,13 @@ export type AppCtx = {
   loaded: boolean;
   today: string;
   streak: number;
+  profile: GradeGlowProfile;
+  saveProfile: (profile: GradeGlowProfile) => Promise<unknown>;
+  limits: PlanLimits;
+  logout: () => Promise<void>;
   go: (tab: Tab, focusSessionId?: string, examId?: string) => void;
+  openSettings: () => void;
+  openExam: (examId: string | null) => void;
   focusPick: { examId: string | null; sessionId: string | null };
   setFocusPick: (pick: { examId: string | null; sessionId: string | null }) => void;
   examId: string | null;
@@ -42,9 +54,9 @@ export type AppCtx = {
 export default function NeuApp({ fontClass }: { fontClass: string }) {
   return (
     <AuthGate>
-      {({ user }) => (
+      {({ user, logout }) => (
         <FocusSessionProvider key={user.uid} uid={user.uid}>
-          <Shell user={user} fontClass={fontClass} />
+          <Shell user={user} logout={logout} fontClass={fontClass} />
         </FocusSessionProvider>
       )}
     </AuthGate>
@@ -56,10 +68,13 @@ const readTab = (): Tab => {
   return TABS.some((tab) => tab.id === hash) ? (hash as Tab) : "heute";
 };
 
-function Shell({ user, fontClass }: { user: AppUser; fontClass: string }) {
+function Shell({ user, logout, fontClass }: { user: AppUser; logout: () => Promise<void>; fontClass: string }) {
   const { exams, setExams, isLoaded } = useGradeGlowExams(user);
-  const { profile } = useGradeGlowProfile(user);
+  const { profile, saveProfile, isProfileLoaded } = useGradeGlowProfile(user);
+  const { limits } = useGradeGlowAccess(user);
+  useDocumentAppearance(profile.themeMode, profile.activePageThemeId, isProfileLoaded);
   const [tab, setTab] = useState<Tab>("heute");
+  const [sheet, setSheet] = useState<Sheet>(null);
   const [focusPick, setFocusPick] = useState<AppCtx["focusPick"]>({ examId: null, sessionId: null });
   const [examId, setExamId] = useState<string | null>(null);
   const [today, setToday] = useState(() => dateKey(new Date()));
@@ -73,7 +88,7 @@ function Shell({ user, fontClass }: { user: AppUser; fontClass: string }) {
   }, []);
 
   const ctx: AppCtx = useMemo(() => ({
-    user, exams, setExams, loaded: isLoaded, today,
+    user, exams, setExams, loaded: isLoaded, today, profile, saveProfile, limits, logout,
     name: (profile.displayName || user.displayName || "").split(" ")[0],
     streak: profile.currentStudyStreakDays || 0,
     go: (next, sessionId, nextExamId) => {
@@ -82,8 +97,10 @@ function Shell({ user, fontClass }: { user: AppUser; fontClass: string }) {
       window.history.replaceState(null, "", `#${next}`);
       setTab(next);
     },
+    openSettings: () => setSheet({ kind: "settings" }),
+    openExam: (id) => setSheet({ kind: "exam", examId: id }),
     focusPick, setFocusPick, examId, setExamId,
-  }), [user, exams, setExams, isLoaded, today, profile.displayName, profile.currentStudyStreakDays, focusPick, examId]);
+  }), [user, exams, setExams, isLoaded, today, profile, saveProfile, limits, logout, focusPick, examId]);
 
   const accent = ACCENTS[profile.accentColor] ?? ACCENTS.violet;
 
@@ -100,6 +117,8 @@ function Shell({ user, fontClass }: { user: AppUser; fontClass: string }) {
           </button>
         ))}
       </nav>
+      {sheet?.kind === "settings" && <SettingsSheet ctx={ctx} onClose={() => setSheet(null)} />}
+      {sheet?.kind === "exam" && <ExamSheet ctx={ctx} examId={sheet.examId} onClose={() => setSheet(null)} />}
     </div>
   );
 }

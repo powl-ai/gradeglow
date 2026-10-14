@@ -50,7 +50,7 @@ export default function Kalender({ ctx }: { ctx: AppCtx }) {
         <h1>Kalender</h1>
         <div className="gn-actions">
           <button type="button" className="gn-icon text" onClick={() => setSelected(today)}>Heute</button>
-          <a className="gn-icon" href="/exams" aria-label="Lernblock oder Prüfung hinzufügen">{Icon.plus()}</a>
+          <button type="button" className="gn-icon" aria-label="Klausur hinzufügen" onClick={() => ctx.openExam(null)}>{Icon.plus()}</button>
         </div>
       </header>
 

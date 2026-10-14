@@ -111,7 +111,7 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
         <section className="gn-card gn-empty">
           <h2 className="gn-h3">Noch keine Klausur</h2>
           <p>Leg eine Klausur an, dann sammelst du beim Lernen Sterne für ihr Sternbild.</p>
-          <a className="gn-go" href="/exams">Klausur anlegen</a>
+          <button type="button" className="gn-go" style={{ width: "100%" }} onClick={() => ctx.openExam(null)}>Klausur anlegen</button>
         </section>
       </div>
     );

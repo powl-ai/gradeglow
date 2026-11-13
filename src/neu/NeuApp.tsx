@@ -15,11 +15,13 @@ import Heute from "./Heute";
 import Kalender from "./Kalender";
 import Fokus from "./Fokus";
 import Klausuren from "./Klausuren";
+import Profil from "./Profil";
 import ExamSheet from "./ExamSheet";
 import SettingsSheet from "./SettingsSheet";
 import "./neu.css";
 
-export type Tab = "heute" | "kalender" | "fokus" | "klausuren";
+/** Screens. "profil" is reached from the Heute header and has no slot in the tab bar. */
+export type Tab = "heute" | "kalender" | "fokus" | "klausuren" | "profil";
 const TABS: { id: Tab; label: string; icon: (on: boolean) => ReactNode }[] = [
   { id: "heute", label: "Heute", icon: Icon.home },
   { id: "kalender", label: "Kalender", icon: Icon.calendar },
@@ -65,7 +67,7 @@ export default function NeuApp({ fontClass }: { fontClass: string }) {
 
 const readTab = (): Tab => {
   const hash = typeof window === "undefined" ? "" : window.location.hash.slice(1);
-  return TABS.some((tab) => tab.id === hash) ? (hash as Tab) : "heute";
+  return hash === "profil" || TABS.some((tab) => tab.id === hash) ? (hash as Tab) : "heute";
 };
 
 function Shell({ user, logout, fontClass }: { user: AppUser; logout: () => Promise<void>; fontClass: string }) {
@@ -78,6 +80,10 @@ function Shell({ user, logout, fontClass }: { user: AppUser; logout: () => Promi
   const [focusPick, setFocusPick] = useState<AppCtx["focusPick"]>({ examId: null, sessionId: null });
   const [examId, setExamId] = useState<string | null>(null);
   const [today, setToday] = useState(() => dateKey(new Date()));
+  // The profile loads modules and timetable on first visit and then stays mounted,
+  // so a pending cloud save is not cut off by switching tabs.
+  const [profilSeen, setProfilSeen] = useState(false);
+  useEffect(() => { if (tab === "profil") setProfilSeen(true); }, [tab]);
 
   useEffect(() => {
     setTab(readTab());
@@ -103,13 +109,25 @@ function Shell({ user, logout, fontClass }: { user: AppUser; logout: () => Promi
   }), [user, exams, setExams, isLoaded, today, profile, saveProfile, limits, logout, focusPick, examId]);
 
   const accent = ACCENTS[profile.accentColor] ?? ACCENTS.violet;
+  const waitTitle = tab === "heute" ? "GradeGlow" : TABS.find((item) => item.id === tab)?.label ?? "GradeGlow";
 
   return (
     <div className={`gn ${fontClass}`} style={{ "--accent": accent } as CSSProperties}>
-      {tab === "heute" && <Heute ctx={ctx} />}
-      {tab === "kalender" && <Kalender ctx={ctx} />}
-      {tab === "fokus" && <Fokus ctx={ctx} />}
-      {tab === "klausuren" && <Klausuren ctx={ctx} />}
+      {tab === "profil" ? null : !isLoaded ? (
+        // Until the exams are there, no screen may claim "noch keine Klausur".
+        <div className="gn-scroll" aria-busy="true">
+          <header className="gn-top"><h1>{waitTitle}</h1></header>
+          <p className="gn-wait">Deine Klausuren werden geladen.</p>
+        </div>
+      ) : (
+        <>
+          {tab === "heute" && <Heute ctx={ctx} />}
+          {tab === "kalender" && <Kalender ctx={ctx} />}
+          {tab === "fokus" && <Fokus ctx={ctx} />}
+          {tab === "klausuren" && <Klausuren ctx={ctx} />}
+        </>
+      )}
+      {(tab === "profil" || profilSeen) && <Profil ctx={ctx} hidden={tab !== "profil"} />}
       <nav className="gn-tabs" aria-label="Navigation">
         {TABS.map((item) => (
           <button key={item.id} type="button" aria-current={tab === item.id ? "page" : undefined} onClick={() => ctx.go(item.id)}>

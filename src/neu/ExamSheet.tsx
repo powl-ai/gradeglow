@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createTopic } from "../lib/examTopics";
 import type { ExamPlanItem, ExamTopic } from "../types";
 import type { AppCtx } from "./NeuApp";
-import { addDays, dateKey, examColor, fromKey } from "./model";
+import { addDays, dateKey, examColor, examSlots, fromKey } from "./model";
 import { PLAN_DEFAULTS, bookedMinutes, planSessions, replan } from "./plan";
 
 const COLORS = ["#6d3af0", "#f08a24", "#1f9d8a", "#e0457b", "#2f7cf6", "#b8860b"];
@@ -13,8 +13,9 @@ const withValue = (list: number[], value: number) => (list.includes(value) ? lis
 export default function ExamSheet({ ctx, examId, onClose }: { ctx: AppCtx; examId: string | null; onClose: () => void }) {
   const { exams, setExams, today, limits } = ctx;
   const existing = exams.find((exam) => exam.id === examId) ?? null;
-  const activeCount = exams.filter((exam) => !exam.isHidden && exam.status !== "done" && exam.examDate >= today).length;
-  const blocked = !existing && activeCount >= limits.maxExams;
+  const slots = examSlots(exams, today, limits.maxExams);
+  const activeCount = slots.used;
+  const blocked = !existing && slots.full;
 
   const [subject, setSubject] = useState(existing?.moduleName || existing?.title || "");
   const [title, setTitle] = useState(existing && existing.title !== existing.moduleName ? existing.title : "");
@@ -66,17 +67,19 @@ export default function ExamSheet({ ctx, examId, onClose }: { ctx: AppCtx; examI
   return (
     <div className="gn-sheet" role="dialog" aria-modal="true" aria-label={existing ? "Klausur bearbeiten" : "Klausur anlegen"}>
       <header className="gn-sheet-head">
-        <button type="button" className="gn-link" onClick={onClose}>Abbrechen</button>
+        <button type="button" className="gn-link" onClick={onClose}>{blocked ? "Schließen" : "Abbrechen"}</button>
         <strong>{existing ? "Klausur bearbeiten" : "Neue Klausur"}</strong>
-        <button type="button" className="gn-link" disabled={!valid || blocked} onClick={save}>Sichern</button>
+        {blocked ? <span /> : <button type="button" className="gn-link" disabled={!valid} onClick={save}>Sichern</button>}
       </header>
       <div className="gn-sheet-body gn-stack">
-        {blocked && (
+        {blocked ? (
           <section className="gn-card">
-            <strong className="gn-h3">Mehr Klausuren mit Premium</strong>
-            <p className="gn-muted" style={{ fontSize: 14, marginTop: 4 }}>Kostenlos planst du {limits.maxExams} Klausuren gleichzeitig. Mit Premium unbegrenzt, dazu eigene Farben und Themes.</p>
+            <strong className="gn-h3">{limits.maxExams} Klausuren sind geplant</strong>
+            <p className="gn-muted gn-note">Das ist die Grenze im kostenlosen Plan. Vergangene und abgeschlossene Klausuren zählen nicht mit, und bestehende kannst du weiter bearbeiten. Mit Premium gibt es keine Grenze.</p>
           </section>
-        )}
+        ) : (
+        <>
+        {!existing && slots.left === 1 && <p className="gn-muted gn-note" style={{ textAlign: "center" }}>Das ist deine letzte freie Klausur im kostenlosen Plan.</p>}
         <section className="gn-card gn-form">
           <label>Fach<input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="z. B. Analysis I und Lineare Algebra" autoComplete="off" /></label>
           <label><span>Bezeichnung <em className="gn-muted">(optional)</em></span><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z. B. Wiederholungsklausur" autoComplete="off" /></label>
@@ -118,6 +121,8 @@ export default function ExamSheet({ ctx, examId, onClose }: { ctx: AppCtx; examI
         </section>
         {existing && (
           <button type="button" className="gn-danger" onClick={remove}>{confirmDelete ? "Wirklich löschen? Nochmal tippen" : "Klausur löschen"}</button>
+        )}
+        </>
         )}
       </div>
     </div>

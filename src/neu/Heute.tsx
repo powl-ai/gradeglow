@@ -20,6 +20,8 @@ export default function Heute({ ctx }: { ctx: AppCtx }) {
   const firstExam = first ? visible.find((exam) => exam.id === first.examId) : undefined;
   const firstStatus = firstExam ? getExamPlanStatus(firstExam, today) : null;
   const nextStatus = nextExam ? getExamPlanStatus(nextExam, today) : null;
+  // An upcoming exam without any block: the plan is missing, not finished.
+  const unplanned = visible.find((exam) => { const status = getExamPlanStatus(exam, today); return status.state === "no-plan" && status.daysUntil >= 1; });
   const upcoming = sessions.filter((s) => !s.isDone && s.dateKey > today)
     .sort((a, b) => `${a.dateKey} ${a.time}`.localeCompare(`${b.dateKey} ${b.time}`))[0];
 
@@ -29,7 +31,7 @@ export default function Heute({ ctx }: { ctx: AppCtx }) {
         <h1>GradeGlow</h1>
         <div className="gn-actions">
           <button type="button" className="gn-icon" aria-label="Klausur hinzufügen" onClick={() => ctx.openExam(null)}>{Icon.plus()}</button>
-          <button type="button" className="gn-icon" aria-label="Einstellungen" onClick={ctx.openSettings}>{Icon.user()}</button>
+          <button type="button" className="gn-icon" aria-label="Profil" onClick={() => ctx.go("profil")}>{Icon.user()}</button>
         </div>
       </header>
 
@@ -86,8 +88,11 @@ export default function Heute({ ctx }: { ctx: AppCtx }) {
               <section className="gn-card">
                 <h3 className="gn-h3">{sessions.some((s) => s.dateKey === today && s.isDone) ? "Für heute erledigt" : "Heute ist frei"}</h3>
                 <p className="gn-muted" style={{ fontSize: 14, marginTop: 4 }}>
-                  {upcoming ? `Nächster Block: ${upcoming.title || "Fokusblock"}, ${dayLabel(upcoming.dateKey, today)}${upcoming.time ? ` um ${upcoming.time}` : ""}.` : "Kein Lernblock geplant."}
+                  {upcoming ? `Nächster Block: ${upcoming.title || "Fokusblock"}, ${dayLabel(upcoming.dateKey, today)}${upcoming.time ? ` um ${upcoming.time}` : ""}.`
+                    : nextExam ? "Kein Lernblock geplant." : "Alle eingetragenen Klausuren liegen hinter dir."}
                 </p>
+                {unplanned && <button type="button" className="gn-link gn-hit" onClick={() => ctx.go("klausuren", undefined, unplanned.id)}>Lernplan für {examShort(unplanned)} erstellen</button>}
+                {!nextExam && <button type="button" className="gn-link gn-hit" onClick={() => ctx.openExam(null)}>Nächste Klausur anlegen</button>}
               </section>
             )}
 

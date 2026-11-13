@@ -1,16 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { getExamPlanStatus } from "../lib/examTopics";
 import { getSessionStudyMinutes } from "../lib/studyStats";
 import type { TopicConfidence } from "../types";
 import type { AppCtx } from "./NeuApp";
 import { Icon } from "./Icons";
-import { addDays, dateKey, dayLabel, examColor, examShort, fromKey, minutesLabel } from "./model";
+import { addDays, dateKey, dayLabel, examColor, examShort, examSlots, fromKey, minutesLabel } from "./model";
+import { replan } from "./plan";
 
 const CONFIDENCE: Record<number, string> = { 1: "unsicher", 2: "geht so", 3: "sicher" };
 
 export default function Klausuren({ ctx }: { ctx: AppCtx }) {
   const { exams, setExams, today } = ctx;
+  const [planNote, setPlanNote] = useState("");
   const visible = exams.filter((exam) => !exam.isHidden)
     .sort((a, b) => Number(a.examDate < today) - Number(b.examDate < today) || a.examDate.localeCompare(b.examDate));
   const exam = visible.find((item) => item.id === ctx.examId) ?? visible[0];
@@ -40,6 +43,17 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
       : { ...topic, confidence: ((topic.confidence % 3) + 1) as TopicConfidence }),
   }));
 
+  // Exams from before the new app, or ones that were too close, can have no blocks at all.
+  const canPlan = status.state === "no-plan" && status.daysUntil >= 1;
+  const createPlan = () => {
+    const planned = replan(exam, exams, today);
+    if (planned.every((s) => s.isHidden)) { setPlanNote("Bis zur Prüfung ist dein Tageslimit schon durch andere Klausuren belegt. Erhöh „Max./Tag“ unter Bearbeiten."); return; }
+    setPlanNote("");
+    setExams((previous) => previous.map((item) => (item.id === exam.id ? { ...item, studySessions: planned } : item)));
+  };
+  const slots = examSlots(exams, today, ctx.limits.maxExams);
+  const daysText = status.daysUntil < 0 ? "Vorbei" : status.daysUntil === 0 ? "Heute" : `${status.daysUntil} ${status.daysUntil === 1 ? "Tag" : "Tage"}`;
+
   const stateLabel = status.state === "behind" ? `${status.overdueSessions.length} ${status.overdueSessions.length === 1 ? "Block" : "Blöcke"} hinterher`
     : status.state === "no-plan" ? "Noch kein Lernplan" : status.state === "done" ? "Vorbei" : "Im Plan";
 
@@ -67,7 +81,7 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
             </div>
           </div>
           <div className="gn-stats">
-            <div><span>Noch</span><strong>{Math.max(0, status.daysUntil)} {status.daysUntil === 1 ? "Tag" : "Tage"}</strong></div>
+            <div><span>{status.daysUntil > 0 ? "Noch" : "Prüfung"}</span><strong>{daysText}</strong></div>
             <div><span>Blöcke</span><strong>{status.doneSessions}/{status.totalSessions}</strong></div>
             <div><span>Gelernt</span><strong>{minutesLabel(learned)}</strong></div>
           </div>
@@ -77,6 +91,8 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
               <span style={{ width: 7, height: 7, borderRadius: 99, background: status.state === "behind" ? "#ffb26b" : "#5ff0a0" }} />{stateLabel}
             </span>
           </div>
+          {canPlan && <button type="button" className="gn-white" onClick={createPlan}>Lernplan erstellen</button>}
+          {canPlan && planNote && <p>{planNote}</p>}
         </section>
 
         <section className="gn-card" aria-label="Themen">
@@ -128,6 +144,12 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
             </ul>
           )}
         </section>
+
+        {slots.limited && (
+          <p className="gn-muted gn-note" style={{ textAlign: "center" }}>
+            {slots.used} von {slots.max} Klausuren im kostenlosen Plan{slots.full ? ". Vergangene und abgeschlossene zählen nicht mit." : "."}
+          </p>
+        )}
       </div>
     </div>
   );

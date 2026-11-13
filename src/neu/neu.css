@@ -238,3 +238,41 @@ html[data-color-mode="dark"] .gn-form :is(input, select, textarea) { color-schem
 
 .gn-tabs svg { width: 20px; height: 20px; }
 .gn-blocks-head strong { font-size: 16px; }
+
+/* Etappe 2 ------------------------------------------------------------------ */
+.gn-wait { padding: 28px 16px; text-align: center; font-size: 14px; color: var(--muted); }
+.gn-note { font-size: 13px; line-height: 1.45; margin-top: 4px; }
+.gn-count { font-size: 13px; font-weight: 600; }
+.gn-hit { min-height: 44px; display: inline-flex; align-items: center; }
+.gn-h2 .gn-hit { margin: -14px 0; }
+.gn-tap { width: 100%; min-height: 44px; text-align: left; }
+.gn-list li > .gn-tap { flex: 1; min-width: 0; }
+.gn-num { flex: none; font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.gn-time { flex: 0 0 44px; font-size: 12px; font-weight: 700; line-height: 1.35; color: var(--muted); font-variant-numeric: tabular-nums; }
+.gn-group + .gn-group { margin-top: 14px; }
+.gn-group-title { font-size: 13px; font-weight: 700; color: var(--muted); }
+
+/* Calendar: month */
+.gn-month { padding: 12px 8px 4px; }
+.gn-month-head, .gn-month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; }
+.gn-month-head span { font-size: 12px; font-weight: 600; color: var(--muted); }
+.gn-month-grid { margin-top: 6px; }
+.gn-month-grid button { display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 46px; padding: 4px 0 2px; }
+.gn-month-grid b { width: 30px; height: 30px; border-radius: 999px; display: grid; place-items: center; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gn-month-grid span { display: flex; gap: 2px; height: 5px; }
+.gn-month-grid i { width: 5px; height: 5px; border-radius: 99px; }
+.gn-month-grid .is-out { color: var(--faint); }
+.gn-month-grid .is-out span { opacity: 0.45; }
+.gn-month-grid .is-today b { color: var(--now); font-weight: 800; }
+.gn-month-grid button[aria-pressed="true"] b { background: var(--accent); color: #fff; font-weight: 800; }
+.gn-month-key { padding: 6px 8px 0; font-size: 12px; color: var(--muted); text-align: center; }
+.gn-month-foot { padding: 18px 16px 10px; }
+.gn-month-foot > .gn-row strong { font-size: 15px; font-weight: 700; }
+
+/* Profile: collected constellations. The sky is night in both modes, like the Fokus card. */
+.gn-skies { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.gn-skycard { display: flex; flex-direction: column; padding: 6px 12px 12px; border-radius: 18px; color: #fff; text-align: left;
+  background: radial-gradient(120% 90% at 50% 0%, #33237a 0, #1a1446 45%, #0b0a1f 100%); }
+.gn-skycard svg { width: 100%; height: auto; }
+.gn-skycard strong { font-size: 14px; font-weight: 800; }
+.gn-skycard small { font-size: 12px; font-weight: 600; opacity: 0.7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

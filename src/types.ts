@@ -187,6 +187,10 @@ export type ExamPlanItem = {
   studySessions: StudySessionItem[];
   /** Exam content the plan is built from. Weak topics get more blocks. */
   topics?: ExamTopic[];
+  /** Optional colour (hex) chosen by premium users; otherwise the app picks one. */
+  color?: string;
+  /** Study days per week the plan uses for this exam (new app; old exams: 6). */
+  studyDaysPerWeek?: number;
 };
 
 

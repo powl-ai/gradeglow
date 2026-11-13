@@ -110,3 +110,54 @@ export const litStars = (constellation: Constellation, done: number, total: numb
   if (done >= total) return stars;
   return Math.min(stars - 1, Math.floor((done / total) * stars));
 };
+
+// Month view -------------------------------------------------------------------
+
+/** Same day of another month; clamps to the month's last day (31 Jan + 1 → 28/29 Feb). */
+export const addMonths = (key: string, months: number) => {
+  const date = fromKey(key);
+  const first = new Date(date.getFullYear(), date.getMonth() + months, 1);
+  const lastDay = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  return dateKey(new Date(first.getFullYear(), first.getMonth(), Math.min(date.getDate(), lastDay)));
+};
+
+export type MonthCell = { key: string; inMonth: boolean };
+
+/** Full weeks (Mon–Sun) covering the month of `key`; days of neighbouring months are flagged. */
+export const monthCells = (key: string): MonthCell[] => {
+  const date = fromKey(key);
+  const first = new Date(date.getFullYear(), date.getMonth(), 1);
+  const daysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const lead = (first.getDay() + 6) % 7;
+  const start = addDays(first, -lead);
+  return Array.from({ length: Math.ceil((lead + daysInMonth) / 7) * 7 }, (_, index) => {
+    const day = addDays(start, index);
+    return { key: dateKey(day), inMonth: day.getMonth() === first.getMonth() };
+  });
+};
+
+// Free limit ---------------------------------------------------------------------
+
+type SlotExam = Pick<ExamPlanItem, "isHidden" | "status" | "examDate">;
+
+/** Exams that count towards the plan limit: visible, not done, not in the past. */
+export const examSlots = (exams: SlotExam[], today: string, maxExams: number) => {
+  const used = exams.filter((exam) => !exam.isHidden && exam.status !== "done" && exam.examDate >= today).length;
+  const limited = Number.isFinite(maxExams);
+  return { used, max: maxExams, limited, full: limited && used >= maxExams, left: limited ? Math.max(0, maxExams - used) : Number.POSITIVE_INFINITY };
+};
+
+// Constellation collection -------------------------------------------------------
+
+export type CollectedSky = { examId: string; name: string; examDate: string; constellation: Constellation; lit: number; complete: boolean };
+
+/** One sky per exam with a plan. Complete ones first (latest exam first), then the ones in progress. */
+export const skyCollection = (exams: Pick<ExamPlanItem, "id" | "title" | "moduleName" | "examDate" | "isHidden" | "studySessions">[]): CollectedSky[] =>
+  exams.filter((exam) => !exam.isHidden).flatMap((exam) => {
+    const sessions = exam.studySessions.filter((s) => !s.isHidden);
+    if (sessions.length === 0) return [];
+    const done = sessions.filter((s) => s.isDone).length;
+    const constellation = constellationFor(sessions.length);
+    const lit = litStars(constellation, done, sessions.length);
+    return [{ examId: exam.id, name: examShort(exam), examDate: exam.examDate, constellation, lit, complete: done >= sessions.length }];
+  }).sort((a, b) => Number(b.complete) - Number(a.complete) || b.examDate.localeCompare(a.examDate));

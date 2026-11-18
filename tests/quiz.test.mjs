@@ -17,7 +17,7 @@ function loadTs(relativePath) {
   }).outputText, file);
   return compiled.exports;
 }
-const { parseQuiz, blendPct, QUIZ_LENGTH } = loadTs("src/lib/quiz.ts");
+const { parseQuiz, blendPct, QUIZ_LENGTH, SAMPLE_QUIZ } = loadTs("src/lib/quiz.ts");
 
 const question = (i) => ({ q: `Frage ${i}`, options: ["a", "b", "c", "d"], answer: i % 4, why: "weil" });
 
@@ -34,4 +34,8 @@ test("blendPct weighs the latest result more", () => {
   assert.equal(blendPct(undefined, 50), 50);
   assert.equal(blendPct(100, 0), 40);
   assert.equal(blendPct(20, 100), 68);
+});
+
+test("sample questions for preview links are valid", () => {
+  assert.equal(parseQuiz(JSON.stringify({ questions: SAMPLE_QUIZ })).length, QUIZ_LENGTH);
 });

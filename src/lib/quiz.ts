@@ -37,3 +37,19 @@ export const QUICK_CHECK: { q: string; options: [string, string, string] }[] = [
   { q: "Wie oft musstest du heute ins Skript oder in die Lösung schauen?", options: ["Ständig", "Ab und zu", "Kaum"] },
   { q: "Erkennst du bei einer neuen Aufgabe, welcher Ansatz passt?", options: ["Nein", "Manchmal", "Meistens"] },
 ];
+
+/** Fixed questions for preview links without an API key, so the whole flow can be tested for free. */
+export const SAMPLE_QUIZ: QuizQuestion[] = [
+  { q: "Welche Eigenwerte hat die Matrix A = [[2, 0], [0, 3]]?", options: ["0 und 5", "2 und 3", "5 und 6", "1 und 6"], answer: 1,
+    why: "Bei einer Diagonalmatrix stehen die Eigenwerte auf der Diagonalen." },
+  { q: "Wie lautet das charakteristische Polynom von A = [[1, 2], [2, 1]]?", options: ["λ^2 + 2λ − 3", "λ^2 − 3", "λ^2 − 2λ − 3", "λ^2 − 2λ + 5"], answer: 2,
+    why: "det(A − λI) = (1 − λ)^2 − 4 = λ^2 − 2λ − 3, also Eigenwerte 3 und −1." },
+  { q: "λ ist ein Eigenwert von A. Welcher Wert ist dann sicher ein Eigenwert von A^2?", options: ["2λ", "λ + 2", "sqrt(λ)", "λ^2"], answer: 3,
+    why: "Aus Av = λv folgt A^2 v = A(λv) = λ^2 v." },
+  { q: "Die Summe aller Eigenwerte einer Matrix (mit Vielfachheit) ist gleich …", options: ["der Spur", "der Determinante", "dem Rang", "der Anzahl der Zeilen"], answer: 0,
+    why: "Die Spur ist die Summe, die Determinante das Produkt der Eigenwerte." },
+  { q: "Eine 3×3-Matrix A hat die Eigenwerte 1, 2 und 0. Ist A invertierbar?", options: ["Ja, weil sie drei verschiedene Eigenwerte hat", "Nein, weil 0 ein Eigenwert ist", "Ja, weil 1 ein Eigenwert ist", "Das kann man nicht sagen"], answer: 1,
+    why: "det(A) ist das Produkt der Eigenwerte, hier 0. Also ist A nicht invertierbar." },
+  { q: "Wann ist eine n×n-Matrix sicher diagonalisierbar?", options: ["Wenn ihre Determinante nicht 0 ist", "Wenn alle Einträge positiv sind", "Wenn sie n verschiedene Eigenwerte hat", "Wenn sie eine obere Dreiecksmatrix ist"], answer: 2,
+    why: "n verschiedene Eigenwerte liefern n linear unabhängige Eigenvektoren." },
+];

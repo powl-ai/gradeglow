@@ -18,6 +18,7 @@ export default function QuizSheet({ ctx, examId, topicId, onClose }: { ctx: AppC
   const premium = limits.premiumThemes && (user.provider === "firebase" || previewTest);
 
   const [questions, setQuestions] = useState<QuizQuestion[] | null>(null);
+  const [sample, setSample] = useState(false);
   const [error, setError] = useState("");
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
@@ -35,9 +36,9 @@ export default function QuizSheet({ ctx, examId, topicId, onClose }: { ctx: AppC
           method: "POST", headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}), ...(previewTest ? { "x-gradeglow-test-premium": "1" } : {}) },
           body: JSON.stringify({ subject: exam.moduleName || exam.title, topic: topic.name }),
         });
-        const body = (await res.json().catch(() => ({}))) as { questions?: QuizQuestion[]; error?: string };
+        const body = (await res.json().catch(() => ({}))) as { questions?: QuizQuestion[]; error?: string; sample?: boolean };
         if (!res.ok || !body.questions) throw new Error(body.error || "Die Fragen konnten nicht geladen werden.");
-        if (!cancelled) setQuestions(body.questions);
+        if (!cancelled) { setQuestions(body.questions); setSample(body.sample === true); }
       } catch (caught) {
         if (!cancelled) setError(caught instanceof Error ? caught.message : "Die Fragen konnten nicht geladen werden.");
       }
@@ -105,7 +106,7 @@ export default function QuizSheet({ ctx, examId, topicId, onClose }: { ctx: AppC
                 </button>
               </>
             )}
-            <p className="gn-muted gn-note" style={{ marginTop: 12 }}>Von einer KI erstellt. Wenn eine Lösung falsch wirkt, verlass dich auf dein Skript.</p>
+            <p className="gn-muted gn-note" style={{ marginTop: 12 }}>{sample ? "Beispielfragen zum Testen (Preview ohne KI-Schlüssel), immer zu Eigenwerten." : "Von einer KI erstellt. Wenn eine Lösung falsch wirkt, verlass dich auf dein Skript."}</p>
           </section>
         ) : check ? (
           <section className="gn-card gn-quiz">

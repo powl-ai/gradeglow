@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { isPremiumPlan, mergeEntitlementSources } from "../../../lib/gradeglowAccess";
-import { parseQuiz, QUIZ_LENGTH } from "../../../lib/quiz";
+import { parseQuiz, QUIZ_LENGTH, SAMPLE_QUIZ } from "../../../lib/quiz";
 
-// Short multiple-choice quiz on one exam topic, written by Claude. Premium only.
-// Needs ANTHROPIC_API_KEY in the Vercel project. ANTHROPIC_QUIZ_MODEL is optional.
+// Short multiple-choice quiz on one exam topic, written by an AI model. Premium only.
+// Provider: QUIZ_PROVIDER = "anthropic" (default, needs ANTHROPIC_API_KEY, optional ANTHROPIC_QUIZ_MODEL)
+// or "mistral" (needs MISTRAL_API_KEY, optional MISTRAL_QUIZ_MODEL).
+// Without a key, preview links get fixed sample questions so the flow can be tested for free.
 
 export const runtime = "nodejs";
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "";
-const MODEL = process.env.ANTHROPIC_QUIZ_MODEL || "claude-haiku-5-5";
+const PROVIDER = process.env.QUIZ_PROVIDER === "mistral" ? "mistral" : "anthropic";
+const API_KEY = PROVIDER === "mistral" ? process.env.MISTRAL_API_KEY : process.env.ANTHROPIC_API_KEY;
+const IS_PREVIEW = process.env.VERCEL_ENV === "preview" || process.env.NODE_ENV === "development";
 const PER_HOUR = 12;
 const recent = new Map<string, number[]>(); // best effort per server instance
 
@@ -50,17 +54,17 @@ const uidFromToken = (token: string) => {
 const clean = (value: unknown, max: number) => (typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, max) : "");
 
 export async function POST(request: Request) {
-  if (!process.env.ANTHROPIC_API_KEY || !PROJECT_ID) {
+  if (!API_KEY && !IS_PREVIEW) {
     return NextResponse.json({ error: "Das Quiz ist noch nicht eingerichtet." }, { status: 503 });
   }
   // Preview deployments sit behind the Vercel login; there the test switch (and the demo) counts as
   // premium and needs no Firebase login. The live app always checks the account.
-  const testPremium = (process.env.VERCEL_ENV === "preview" || process.env.NODE_ENV === "development")
-    && request.headers.get("x-gradeglow-test-premium") === "1";
+  const testPremium = IS_PREVIEW && request.headers.get("x-gradeglow-test-premium") === "1";
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
   const uid = token ? uidFromToken(token) : null;
   if (!uid && !testPremium) return NextResponse.json({ error: "Bitte melde dich an." }, { status: 401 });
 
+  if (!testPremium && !PROJECT_ID) return NextResponse.json({ error: "Das Quiz ist noch nicht eingerichtet." }, { status: 503 });
   if (uid && !testPremium) {
     try {
       // Unverified uid only picks the documents; Firestore rejects the read if the token is not this user's.
@@ -83,6 +87,7 @@ export async function POST(request: Request) {
   const subject = clean(input.subject, 120);
   const topic = clean(input.topic, 120);
   if (!topic) return NextResponse.json({ error: "Kein Thema angegeben." }, { status: 400 });
+  if (!API_KEY) return NextResponse.json({ questions: SAMPLE_QUIZ, sample: true });
 
   const prompt = `Du schreibst ein kurzes Übungsquiz für eine Studentin oder einen Studenten an einer deutschen Universität.
 Fach: ${subject || "unbekannt"}
@@ -95,15 +100,31 @@ Formeln als einfacher Text (z. B. x^2, sqrt(2), A^T), kein LaTeX.
 Antworte nur mit JSON in dieser Form, ohne Text davor oder danach:
 {"questions":[{"q":"Frage","options":["A","B","C","D"],"answer":0,"why":"Ein Satz, warum das stimmt"}]}`;
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
-    body: JSON.stringify({ model: MODEL, max_tokens: 2500, messages: [{ role: "user", content: prompt }] }),
-  });
-  if (!res.ok) return NextResponse.json({ error: "Die Fragen konnten nicht erstellt werden. Versuch es gleich nochmal." }, { status: 502 });
-  const body = (await res.json()) as { content?: { type: string; text?: string }[] };
-  const text = (body.content ?? []).filter((part) => part.type === "text").map((part) => part.text ?? "").join("");
-  const questions = parseQuiz(text);
+  const text = await ask(prompt, API_KEY).catch(() => "");
+  const questions = text ? parseQuiz(text) : null;
   if (!questions) return NextResponse.json({ error: "Die Fragen konnten nicht erstellt werden. Versuch es gleich nochmal." }, { status: 502 });
   return NextResponse.json({ questions });
+}
+
+/** One prompt to the configured provider, returns the answer text. */
+async function ask(prompt: string, key: string): Promise<string> {
+  if (PROVIDER === "mistral") {
+    const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model: process.env.MISTRAL_QUIZ_MODEL || "mistral-small-latest", max_tokens: 2500,
+        response_format: { type: "json_object" }, messages: [{ role: "user", content: prompt }] }),
+    });
+    if (!res.ok) throw new Error(`mistral ${res.status}`);
+    const body = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    return body.choices?.[0]?.message?.content ?? "";
+  }
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({ model: process.env.ANTHROPIC_QUIZ_MODEL || "claude-haiku-5-5", max_tokens: 2500, messages: [{ role: "user", content: prompt }] }),
+  });
+  if (!res.ok) throw new Error(`anthropic ${res.status}`);
+  const body = (await res.json()) as { content?: { type: string; text?: string }[] };
+  return (body.content ?? []).filter((part) => part.type === "text").map((part) => part.text ?? "").join("");
 }

@@ -100,7 +100,7 @@ export default function ExamSheet({ ctx, examId, onClose }: { ctx: AppCtx; examI
           <label><span>Themen <em className="gn-muted">(eins pro Zeile)</em></span>
             <textarea rows={5} value={topicsText} onChange={(e) => setTopicsText(e.target.value)} placeholder={"Eigenwerte\nIntegralrechnung\nLineare Gleichungssysteme"} />
           </label>
-          <p className="gn-muted" style={{ fontSize: 15 }}>Schwache Themen bekommen mehr Lernblöcke. Wie sicher du bist, stellst du danach bei der Klausur ein.</p>
+          <p className="gn-muted" style={{ fontSize: 14 }}>Schwache Themen bekommen mehr Lernblöcke. Wie sicher du bist, stellst du danach bei der Klausur ein.</p>
         </section>
         <section className="gn-card gn-form">
           <label>Lerntage pro Woche
@@ -115,11 +115,11 @@ export default function ExamSheet({ ctx, examId, onClose }: { ctx: AppCtx; examI
             <label>Block<select value={blockMinutes} onChange={(e) => setBlockMinutes(Number(e.target.value))}>{withValue([30, 45, 60, 90, 120], blockMinutes).map((v) => <option key={v} value={v}>{v} min</option>)}</select></label>
             <label>Max./Tag<select value={dailyLimit} onChange={(e) => setDailyLimit(Number(e.target.value))}>{withValue([60, 90, 120, 180, 240, 300], dailyLimit).map((v) => <option key={v} value={v}>{(v / 60).toLocaleString("de-DE")} h</option>)}</select></label>
           </div>
-          {existing && <p className="gn-muted" style={{ fontSize: 15 }}>Änderst du Datum, Themen oder diese Werte, plant GradeGlow die offenen Blöcke neu. Erledigte bleiben.</p>}
+          {existing && <p className="gn-muted" style={{ fontSize: 14 }}>Änderst du Datum, Themen oder diese Werte, plant GradeGlow die offenen Blöcke neu. Erledigte bleiben.</p>}
         </section>
         <section className="gn-card">
           <div className="gn-row" style={{ justifyContent: "space-between" }}>
-            <strong style={{ fontSize: 17 }}>Farbe</strong>
+            <strong style={{ fontSize: 16 }}>Farbe</strong>
             {!limits.premiumThemes && <span className="gn-tag">Premium</span>}
           </div>
           <div className="gn-swatches" style={{ marginTop: 12 }}>

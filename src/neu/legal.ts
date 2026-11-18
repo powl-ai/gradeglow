@@ -6,9 +6,9 @@ import { GRADEGLOW_SUPPORT_EMAIL } from "../lib/appVersion";
 
 /** Operator details. Fill in before going public: an Impressum without them is not valid. */
 export const LEGAL_OWNER = {
-  name: "[Vor- und Nachname]",
-  street: "[Straße und Hausnummer]",
-  city: "[PLZ und Ort]",
+  name: "Paul Matti Vock",
+  street: "Binzstraße 61A",
+  city: "13189 Berlin",
   email: GRADEGLOW_SUPPORT_EMAIL,
 };
 
@@ -58,7 +58,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
         title: "Deine Rechte",
         text: `Du kannst Auskunft, Berichtigung, Löschung, Einschränkung und eine Kopie deiner Daten verlangen und der Verarbeitung widersprechen. Schreib dafür an ${LEGAL_OWNER.email}. Beschweren kannst du dich bei einer Datenschutzaufsicht, etwa der Berliner Beauftragten für Datenschutz und Informationsfreiheit.`,
       },
-      { title: "Konto löschen", text: `Schreib eine E-Mail an ${LEGAL_OWNER.email} von der Adresse deines Kontos. Wir löschen Konto und Lerndaten innerhalb von 30 Tagen.` },
+      { title: "Konto löschen", text: `In der App unter Einstellungen → Konto löschen. Das entfernt dein Konto und alle Lerndaten sofort. Alternativ schreib an ${LEGAL_OWNER.email}.` },
     ],
   },
   {
@@ -70,7 +70,7 @@ export const LEGAL_DOCS: LegalDoc[] = [
       { title: "Fair bleiben", text: "Nutze GradeGlow nur für dich selbst und nicht, um den Dienst zu stören, auszulesen oder zu missbrauchen. Sonst können wir dein Konto sperren." },
       { title: "Verfügbarkeit", text: "Wir geben uns Mühe, dass alles läuft, können aber keine ständige Verfügbarkeit garantieren. Sichere wichtige Daten wie Noten zusätzlich selbst." },
       { title: "Haftung", text: "Wir haften unbeschränkt bei Vorsatz und grober Fahrlässigkeit und bei Verletzung von Leben, Körper oder Gesundheit. Sonst nur bei Verletzung wesentlicher Pflichten und begrenzt auf den typischen, vorhersehbaren Schaden." },
-      { title: "Kündigen", text: "Du kannst GradeGlow jederzeit nicht mehr nutzen und dein Konto löschen lassen (siehe Datenschutz)." },
+      { title: "Kündigen", text: "Du kannst GradeGlow jederzeit nicht mehr nutzen und dein Konto in den Einstellungen löschen." },
       { title: "Änderungen und Recht", text: "Wenn sich diese Bedingungen ändern, sagen wir dir das in der App. Es gilt deutsches Recht." },
     ],
   },

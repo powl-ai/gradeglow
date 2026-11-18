@@ -72,7 +72,7 @@ export default function Kalender({ ctx }: { ctx: AppCtx }) {
       <section className="gn-cal" style={{ marginTop: 12 }} aria-label="Kalender">
         <div className="gn-row" style={{ justifyContent: "space-between", padding: "10px 12px 0" }}>
           <button type="button" className="gn-icon" style={{ width: 36, height: 36, transform: "scaleX(-1)" }} aria-label={isMonth ? "Vorheriger Monat" : "Vorherige Woche"} onClick={() => step(-1)}>{Icon.chevron()}</button>
-          <strong style={{ fontSize: 17, flex: "none" }}>{isMonth ? fromKey(selected).toLocaleDateString("de-DE", { month: "long", year: "numeric" }) : <>{fromKey(week[0]).toLocaleDateString("de-DE", { day: "numeric", month: "short" })} – {fromKey(week[6]).toLocaleDateString("de-DE", { day: "numeric", month: "short" })}</>}</strong>
+          <strong style={{ fontSize: 16, flex: "none" }}>{isMonth ? fromKey(selected).toLocaleDateString("de-DE", { month: "long", year: "numeric" }) : <>{fromKey(week[0]).toLocaleDateString("de-DE", { day: "numeric", month: "short" })} – {fromKey(week[6]).toLocaleDateString("de-DE", { day: "numeric", month: "short" })}</>}</strong>
           <button type="button" className="gn-icon" style={{ width: 36, height: 36 }} aria-label={isMonth ? "Nächster Monat" : "Nächste Woche"} onClick={() => step(1)}>{Icon.chevron()}</button>
         </div>
         {!isMonth && <div className="gn-days">
@@ -113,11 +113,11 @@ export default function Kalender({ ctx }: { ctx: AppCtx }) {
             <div className="gn-month-foot">
               <div className="gn-row" style={{ justifyContent: "space-between" }}>
                 <strong>Prüfungen im {fromKey(selected).toLocaleDateString("de-DE", { month: "long" })}</strong>
-                <span className="gn-muted" style={{ fontSize: 15, fontWeight: 600, flex: "none" }}>
+                <span className="gn-muted" style={{ fontSize: 14, fontWeight: 600, flex: "none" }}>
                   {monthSessions.length > 0 ? `${monthSessions.length} ${monthSessions.length === 1 ? "Block" : "Blöcke"} · ${minutesLabel(monthSessions.reduce((sum, s) => sum + getSessionStudyMinutes(s), 0))}` : "keine Blöcke"}
                 </span>
               </div>
-              {monthExams.length === 0 ? <p className="gn-muted" style={{ fontSize: 16, marginTop: 6 }}>Keine Prüfung in diesem Monat.</p> : (
+              {monthExams.length === 0 ? <p className="gn-muted" style={{ fontSize: 15, marginTop: 6 }}>Keine Prüfung in diesem Monat.</p> : (
                 <ul className="gn-list">
                   {monthExams.map((exam) => (
                     <li key={exam.id}>
@@ -136,7 +136,7 @@ export default function Kalender({ ctx }: { ctx: AppCtx }) {
           <>
             <div className="gn-dayhead">
               <strong>{fromKey(selected).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</strong>
-              <span className="gn-muted" style={{ fontSize: 15, fontWeight: 600 }}>{total > 0 ? minutesLabel(total) : "frei"}</span>
+              <span className="gn-muted" style={{ fontSize: 14, fontWeight: 600 }}>{total > 0 ? minutesLabel(total) : "frei"}</span>
             </div>
             {(examsToday.length > 0 || untimed.length > 0) && (
               <ul className="gn-list" style={{ padding: "0 16px 8px" }}>
@@ -177,7 +177,7 @@ export default function Kalender({ ctx }: { ctx: AppCtx }) {
               const items = sessions.filter((s) => s.dateKey === key).sort((a, b) => (a.time || "99").localeCompare(b.time || "99"));
               return (
                 <li key={key} style={{ alignItems: "flex-start" }}>
-                  <div style={{ flex: "0 0 64px" }}><strong style={{ fontSize: 16, color: key === today ? "var(--now)" : undefined }}>{dayLabel(key, today)}</strong></div>
+                  <div style={{ flex: "0 0 64px" }}><strong style={{ fontSize: 15, color: key === today ? "var(--now)" : undefined }}>{dayLabel(key, today)}</strong></div>
                   <div className="gn-stack" style={{ gap: 6 }}>
                     {visible.filter((exam) => exam.examDate === key).map((exam) => (
                       <div key={exam.id} className="gn-row" style={{ gap: 8 }}>

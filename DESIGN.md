@@ -7,11 +7,11 @@ Claude oder ChatGPT, hält sich daran. Was hier nicht steht, wird nicht erfunden
 
 **Auf jedem Screen leuchtet genau eine Sache: das, was du als Nächstes tun sollst.**
 
-Alles andere ist ruhig: Tinte auf warmem Grund, weiße Flächen. Auf Heute ist es der nächste Lernblock,
+Alles andere ist ruhig: Tinte auf kühlem Hellgrau, weiße Flächen mit leichter Tiefe. Auf Heute ist es der nächste Lernblock,
 bei Klausuren die gewählte Klausur, im Fokus der Start-Button. Wenn zwei Dinge leuchten, leuchtet keins.
 
-Ruhig heißt nicht leer und nicht riesig: normale Größen (Titel 22 px, keine Plakat-Überschriften), ein
-warmer Grund statt Reinweiß, und Farbe dort, wo sie Information trägt (Akzent, Klausurfarben, Sternbild).
+Ruhig heißt nicht leer und nicht riesig: normale Größen (Titel 22 px, keine Plakat-Überschriften), Hellgrau
+statt Reinweiß (kein Creme, das ist ein typischer KI-Look), Tiefe durch Schatten, und Farbe dort, wo sie Information trägt (Akzent, Klausurfarben, Sternbild).
 
 ## Tokens
 
@@ -19,18 +19,22 @@ Alle Werte sind Variablen auf `.gn` in `src/neu/neu.css`. Komponenten nutzen nur
 
 | Rolle | Variable | Hell | Dunkel | Wofür |
 | --- | --- | --- | --- | --- |
-| Grund | `--ground` | `#f5f4f0` | `#111114` | Seitenhintergrund |
-| Fläche | `--card` | `#ffffff` | `#1b1b20` | Karten, Listen, Tab-Leiste |
-| Tonstufe | `--soft` | `#efeeea` | `#26262c` | Felder, Zweitbuttons, leere Tage |
+| Grund | `--ground` | `#eceef1` | `#0e0f12` | Seitenhintergrund |
+| Fläche | `--card` | `#ffffff` | `#1a1b20` | Karten, Listen, Tab-Leiste |
+| Tonstufe | `--soft` | `#e6e8ec` | `#25262c` | Felder, Zweitbuttons, leere Tage |
 | Tinte | `--ink` | `#16161a` | `#f2f2f4` | Aller Lauftext, aktiver Tab |
 | Leise | `--muted` | `#6a6a72` | `#a2a2ab` | Nur Nebeninfos (Datum, Fach, Dauer) |
-| Akzent | `--accent` | Nutzerwahl | Nutzerwahl | Die eine leuchtende Sache |
+| Akzent | `--accent` | Nutzerwahl, Standard Aubergine `#3f1d62` | gleich | Die eine leuchtende Sache |
+| Hero-Button | `--hero-btn` | Standard Flieder `#cdbcff` (Text `#2a123f`), sonst Weiß | gleich | Button auf der Akzentfläche, Hauptbutton im Dunkelmodus |
+| Tiefe | `--lift` | weicher Schatten | Schatten + Lichtkante | Unter Karten, Listen, Icon-Buttons |
 | Auf Akzent | `--on-accent` | `#fff` | `#fff` | Text auf der Akzentfläche |
 | Nacht | `--night` | `#15142a` | `#15142a` | Sternbild-Himmel (in beiden Modi Nacht) |
 | Warnung | `--warn` | `#c2410c` | `#fb923c` | Verpasst, hinterher |
 | Jetzt | `--now` | `#e5484d` | `#e5484d` | Heutiger Tag im Kalender, Jetzt-Linie |
 
 - Der Akzent ist frei wählbar. Nie eine feste Akzentfarbe schreiben, immer `var(--accent)`.
+- Kein Tailwind-Lila (`#6d3af0`, `#7c3aed`): genau das liest sich als KI-Website. Lila ja, aber Aubergine
+  mit Flieder (`ACCENTS`/`HERO_BUTTON` in `src/neu/model.ts`).
 - Klausurfarben (`examColor`) sind Information, kein Schmuck: als 8-px-Punkt oder Kalenderfläche.
 
 ## Schrift
@@ -51,8 +55,8 @@ Alle Werte sind Variablen auf `.gn` in `src/neu/neu.css`. Komponenten nutzen nur
 
 | Nicht | Stattdessen |
 | --- | --- |
-| Verläufe, auch auf Buttons und Hintergrund | Flache Farbe |
-| Schatten, Glow, Blur, Glas | Tonstufe (Grund → Fläche → `--soft`) |
+| Bunte Verläufe, Verläufe als Hintergrund | Flache Farbe. Erlaubt: leichte Tonverschiebung *einer* Farbe auf der Akzentfläche |
+| Eigene Schatten pro Komponente, Blur, Glas | `--lift` für Flächen, farbiger Schein nur unter der Akzentfläche |
 | Deko-Kreise, Muster, Maskottchen, Emoji | Nichts, oder echte Inhalte |
 | Gesperrte Großbuchstaben-Labels | Normaler Satz in 13 px |
 | Rahmen um Karten, Haarlinien als Trenner | Abstand. Ausnahme: Kalender-Stundenraster |
@@ -63,9 +67,9 @@ Alle Werte sind Variablen auf `.gn` in `src/neu/neu.css`. Komponenten nutzen nur
 
 ## Bausteine
 
-- **Akzentfläche (`.gn-hero`):** flach `--accent`, darin Meta-Zeile (13 px, 80 %), Titel, Fortschritt,
-  ein weißer Button. Pro Screen höchstens eine.
-- **Hauptaktion (`.gn-go`):** voll rund, 48 px, flach `--accent`. Verb zuerst.
+- **Akzentfläche (`.gn-hero`):** `--accent` mit leichter Tonverschiebung und farbigem Schein darunter,
+  darin Meta-Zeile (13 px, 80 %), Titel, Fortschritt, ein Button in `--hero-btn`. Pro Screen höchstens eine.
+- **Hauptaktion (`.gn-go`):** voll rund, 48 px, `--accent` (dunkel: `--hero-btn`). Verb zuerst.
 - **Zweitaktion:** `.gn-go.quiet` oder `.gn-chip` auf `--soft`.
 - **Liste (`.gn-agenda`, `.gn-list`):** Titel in Tinte, darunter eine Zeile in `--muted`, kein Trenner.
 - **Fortschritt (`.gn-bar`):** 6 px, Track `--soft`.
@@ -80,7 +84,7 @@ Unter `prefers-reduced-motion` alles aus.
 
 ## Stand
 
-- [x] Tokens flach, ohne Verlauf/Schatten (alle Screens)
+- [x] Tokens: Hellgrau-Grund, `--lift`-Tiefe, Aubergine/Flieder als Standard (alle Screens)
 - [x] Heute: Datum als Titel, Wochenleiste ohne Karte, weitere Blöcke als Agenda
 - [x] Tab-Leiste angedockt
 - [ ] Kalender: Badges (`.gn-badge`) noch durch Punkte ersetzen

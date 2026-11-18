@@ -3,12 +3,17 @@ import type { AccentColor, ExamPlanItem } from "../types";
 // Pure helpers for the new app (/neu). No React, no Firebase: easy to test.
 
 export const ACCENTS: Record<AccentColor, string> = {
-  violet: "#6d3af0", pink: "#db2777", blue: "#2563eb", emerald: "#0f9f6e",
+  violet: "#3f1d62", pink: "#db2777", blue: "#2563eb", emerald: "#0f9f6e",
   amber: "#d97706", cyan: "#0891b2", rose: "#e11d48",
 };
 
+/** Button on the hero (and main button in dark mode) per accent: [background, text]. Default white. */
+export const HERO_BUTTON: Partial<Record<AccentColor, [string, string]>> = {
+  violet: ["#cdbcff", "#2a123f"],
+};
+
 /** Default colour per exam (by position) until the user picks one (premium). */
-const EXAM_PALETTE = ["#6d3af0", "#f08a24", "#1f9d8a", "#e0457b", "#2f7cf6", "#b8860b"];
+const EXAM_PALETTE = ["#7b5cd6", "#f08a24", "#1f9d8a", "#e0457b", "#2f7cf6", "#b8860b"];
 export const examColor = (exam: Pick<ExamPlanItem, "id">, all: Pick<ExamPlanItem, "id">[]) => {
   const custom = (exam as { color?: unknown }).color;
   if (typeof custom === "string" && /^#[0-9a-f]{6}$/i.test(custom)) return custom;

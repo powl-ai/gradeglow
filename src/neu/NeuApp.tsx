@@ -9,7 +9,7 @@ import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
 import { useGradeGlowExams } from "../hooks/useGradeGlowExams";
 import { useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
 import type { AppUser, ExamPlanItem, GradeGlowProfile, PlanLimits } from "../types";
-import { ACCENTS, dateKey, streakDays } from "./model";
+import { ACCENTS, HERO_BUTTON, dateKey, streakDays } from "./model";
 import { Icon } from "./Icons";
 import Heute from "./Heute";
 import Kalender from "./Kalender";
@@ -109,10 +109,11 @@ function Shell({ user, logout, fontClass }: { user: AppUser; logout: () => Promi
   }), [user, exams, setExams, isLoaded, today, profile, saveProfile, limits, logout, focusPick, examId]);
 
   const accent = ACCENTS[profile.accentColor] ?? ACCENTS.violet;
+  const [heroBtn, heroBtnInk] = HERO_BUTTON[profile.accentColor] ?? ["#fff", accent];
   const waitTitle = tab === "heute" ? "GradeGlow" : TABS.find((item) => item.id === tab)?.label ?? "GradeGlow";
 
   return (
-    <div className={`gn ${fontClass}`} style={{ "--accent": accent } as CSSProperties}>
+    <div className={`gn ${fontClass}`} style={{ "--accent": accent, "--hero-btn": heroBtn, "--hero-btn-ink": heroBtnInk } as CSSProperties}>
       {tab === "profil" ? null : !isLoaded ? (
         // Until the exams are there, no screen may claim "noch keine Klausur".
         <div className="gn-scroll" aria-busy="true">

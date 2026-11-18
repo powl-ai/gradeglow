@@ -7,7 +7,7 @@ import type { AppCtx } from "./NeuApp";
 import { addDays, dateKey, examColor, examSlots, fromKey } from "./model";
 import { PLAN_DEFAULTS, bookedMinutes, planSessions, replan } from "./plan";
 
-const COLORS = ["#6d3af0", "#f08a24", "#1f9d8a", "#e0457b", "#2f7cf6", "#b8860b"];
+const COLORS = ["#7b5cd6", "#f08a24", "#1f9d8a", "#e0457b", "#2f7cf6", "#b8860b"];
 const withValue = (list: number[], value: number) => (list.includes(value) ? list : [...list, value].sort((a, b) => a - b));
 
 export default function ExamSheet({ ctx, examId, onClose }: { ctx: AppCtx; examId: string | null; onClose: () => void }) {

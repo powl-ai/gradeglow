@@ -1,12 +1,6 @@
-import type { Metadata } from "next";
-import { Figtree } from "next/font/google";
-import NeuApp from "../../neu/NeuApp";
+import { redirect } from "next/navigation";
 
-// The new GradeGlow runs here in parallel to the old app until it replaces it.
-const figtree = Figtree({ subsets: ["latin", "latin-ext"], weight: ["500", "600", "700", "800"], variable: "--gn-font", display: "swap" });
-
-export const metadata: Metadata = { title: "GradeGlow Neu" };
-
+// The new app moved to /. Old bookmarks and home-screen icons still land in the right place.
 export default function NeuPage() {
-  return <NeuApp fontClass={figtree.variable} />;
+  redirect("/");
 }

@@ -10,7 +10,7 @@ import FocusSessionProvider from "./FocusSessionProvider";
 import type { DashboardPage } from "./GradeGlowDashboard";
 
 const dashboardRoutes: Record<string, DashboardPage> = {
-  "/": "overview",
+  "/alt": "overview",
   "/profile": "profile",
   "/insights": "insights",
   "/friends": "friends",

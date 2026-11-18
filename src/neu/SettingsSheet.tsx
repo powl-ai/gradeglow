@@ -73,6 +73,16 @@ export default function SettingsSheet({ ctx, onClose }: { ctx: AppCtx; onClose: 
           </div>
         </section>
 
+        <section className="gn-card">
+          <strong style={{ fontSize: 15 }}>Alte Version</strong>
+          <p className="gn-muted gn-note">Study Circle, Bezahlung und Backup gibt es vorerst noch in der alten Version. Deine Daten sind in beiden dieselben.</p>
+          <a className="gn-link gn-hit" href="/alt">Alte Version öffnen</a>
+        </section>
+
+        <p className="gn-muted gn-note" style={{ textAlign: "center" }}>
+          <a className="gn-hit" href="/legal/impressum">Impressum</a> · <a className="gn-hit" href="/legal/privacy">Datenschutz</a> · <a className="gn-hit" href="/legal/terms">AGB</a>
+        </p>
+
         <button type="button" className="gn-danger" onClick={() => { void ctx.logout(); }}>Abmelden</button>
       </div>
     </div>

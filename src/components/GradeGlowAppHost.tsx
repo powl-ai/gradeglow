@@ -39,13 +39,24 @@ export default function GradeGlowAppHost({ children }: { children: ReactNode }) 
     // match the area actually shown, which pushed the tab bar off-screen. innerHeight
     // is the real visible height, so the shell is sized from it.
     const root = document.documentElement;
-    const sync = () => root.style.setProperty("--gg-app-height", `${window.innerHeight}px`);
+    // As a home-screen app, iOS sometimes reports innerHeight too small right after launch,
+    // which left a gap under the tab bar. There the app always covers the whole screen.
+    const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true
+      || window.matchMedia("(display-mode: standalone)").matches;
+    const sync = () => {
+      const screenHeight = window.innerWidth > window.innerHeight ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
+      const height = standalone ? Math.max(window.innerHeight, screenHeight) : window.innerHeight;
+      root.style.setProperty("--gg-app-height", `${height}px`);
+    };
     sync();
-    window.addEventListener("resize", sync);
-    window.addEventListener("orientationchange", sync);
+    const later = [window.setTimeout(sync, 300), window.setTimeout(sync, 1200)];
+    const events = ["resize", "orientationchange", "pageshow"] as const;
+    events.forEach((name) => window.addEventListener(name, sync));
+    document.addEventListener("visibilitychange", sync);
     return () => {
-      window.removeEventListener("resize", sync);
-      window.removeEventListener("orientationchange", sync);
+      later.forEach((id) => window.clearTimeout(id));
+      events.forEach((name) => window.removeEventListener(name, sync));
+      document.removeEventListener("visibilitychange", sync);
     };
   }, []);
   useEffect(() => {

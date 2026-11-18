@@ -96,6 +96,16 @@ function Shell({ user, logout, fontClass }: { user: AppUser; logout: () => Promi
   const [profilSeen, setProfilSeen] = useState(false);
   useEffect(() => { if (tab === "profil") setProfilSeen(true); }, [tab]);
 
+  // Home-screen app: a swipe from the left edge would go "back" to an older page. Block it there.
+  useEffect(() => {
+    const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true
+      || window.matchMedia("(display-mode: standalone)").matches;
+    if (!standalone) return undefined;
+    const block = (event: TouchEvent) => { const x = event.touches[0]?.clientX ?? 99; if (x < 16) event.preventDefault(); };
+    document.addEventListener("touchstart", block, { passive: false });
+    return () => document.removeEventListener("touchstart", block);
+  }, []);
+
   useEffect(() => {
     setTab(readTab());
     const onHash = () => setTab(readTab());

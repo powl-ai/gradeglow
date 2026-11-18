@@ -32,11 +32,11 @@ export default function SettingsSheet({ ctx, onClose }: { ctx: AppCtx; onClose: 
         <button type="button" className="gn-link" onClick={() => { if (name.trim() && name.trim() !== profile.displayName) update({ displayName: name.trim() }); onClose(); }}>Fertig</button>
       </header>
       <div className="gn-sheet-body gn-stack">
-        {error && <p className="gn-card" style={{ color: "var(--warn)", fontSize: 15 }}>{error}</p>}
+        {error && <p className="gn-card" style={{ color: "var(--warn)", fontSize: 16 }}>{error}</p>}
 
         <section className="gn-card gn-form">
           <label>Name<input value={name} onChange={(e) => setName(e.target.value)} autoComplete="given-name" /></label>
-          <p className="gn-muted" style={{ fontSize: 14 }}>{user.email ?? "Ohne E-Mail angemeldet"} · {premium ? "Premium" : "Kostenlos"}</p>
+          <p className="gn-muted" style={{ fontSize: 15 }}>{user.email ?? "Ohne E-Mail angemeldet"} · {premium ? "Premium" : "Kostenlos"}</p>
         </section>
 
         {user.provider === "demo" && (
@@ -51,7 +51,7 @@ export default function SettingsSheet({ ctx, onClose }: { ctx: AppCtx; onClose: 
 
         <section className="gn-card">
           <div className="gn-row" style={{ justifyContent: "space-between" }}>
-            <strong style={{ fontSize: 16 }}>Akzentfarbe</strong>
+            <strong style={{ fontSize: 17 }}>Akzentfarbe</strong>
             {!premium && <span className="gn-tag">Premium</span>}
           </div>
           <div className="gn-swatches" style={{ marginTop: 12 }}>
@@ -61,11 +61,11 @@ export default function SettingsSheet({ ctx, onClose }: { ctx: AppCtx; onClose: 
                 onClick={() => update({ accentColor: key })} />
             ))}
           </div>
-          {!premium && <p className="gn-muted" style={{ fontSize: 14, marginTop: 10 }}>Mit Premium färbst du die ganze App in deiner Farbe, dazu eigene Farben pro Klausur.</p>}
+          {!premium && <p className="gn-muted" style={{ fontSize: 15, marginTop: 10 }}>Mit Premium färbst du die ganze App in deiner Farbe, dazu eigene Farben pro Klausur.</p>}
         </section>
 
         <section className="gn-card">
-          <strong style={{ fontSize: 16 }}>Darstellung</strong>
+          <strong style={{ fontSize: 17 }}>Darstellung</strong>
           <div className="gn-seg" style={{ marginTop: 12, background: "var(--soft)" }}>
             {MODES.map((mode) => (
               <button key={mode.value} type="button" aria-pressed={(profile.themeMode || "system") === mode.value} onClick={() => update({ themeMode: mode.value })}>{mode.label}</button>
@@ -74,7 +74,7 @@ export default function SettingsSheet({ ctx, onClose }: { ctx: AppCtx; onClose: 
         </section>
 
         <section className="gn-card">
-          <strong style={{ fontSize: 16 }}>Alte Version</strong>
+          <strong style={{ fontSize: 17 }}>Alte Version</strong>
           <p className="gn-muted gn-note">Study Circle, Bezahlung und Backup gibt es vorerst noch in der alten Version. Deine Daten sind in beiden dieselben.</p>
           <a className="gn-link gn-hit" href="/alt">Alte Version öffnen</a>
         </section>

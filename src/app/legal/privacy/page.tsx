@@ -1,5 +1,7 @@
-import LegalCenterPage from "../../../components/LegalCenterPage";
+import LegalPage from "../../../neu/LegalPage";
 
-export default function PrivacyRoute() {
-  return <LegalCenterPage page="privacy" />;
+export const metadata = { title: "Datenschutz" };
+
+export default function Page() {
+  return <LegalPage id="privacy" />;
 }

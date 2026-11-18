@@ -29,12 +29,12 @@ export default function MobileAppHeader({ pathname }: { pathname: string }) {
         </button>
         <h1 className={pathname === "/alt" ? "gg-header-wordmark" : ""}>{titles[pathname] ?? "GradeGlow"}</h1>
         {/* The old app lives under /alt now: this is the way back to the new one. */}
-        <a href="/" className="gg-header-action" aria-label="Zur neuen App" style={{ width: "auto", padding: "0 12px", fontSize: 14, fontWeight: 800 }}>Neue App</a>
+        <a href="/" className="gg-header-action" aria-label="Zur neuen App" onClick={(event) => { event.preventDefault(); window.location.replace("/"); }} style={{ width: "auto", padding: "0 12px", fontSize: 14, fontWeight: 800 }}>Neue App</a>
       </div>
     </header>
     {open && <AppDialog label="App-Menü" onClose={() => setOpen(false)} className="gg-menu-dialog">
       <div className="gg-dialog-heading"><h2>Deine Bereiche</h2><button type="button" aria-label="Menü schließen" onClick={() => setOpen(false)}>×</button></div>
-      <nav className="gg-app-menu" aria-label="Alle Bereiche">{links.map(([href, label]) => <Link key={href} href={href} aria-current={href === pathname ? "page" : undefined} onClick={() => setOpen(false)}>{label}<span aria-hidden="true">›</span></Link>)}</nav>
+      <nav className="gg-app-menu" aria-label="Alle Bereiche">{links.map(([href, label]) => href === "/" ? <a key={href} href="/" onClick={(event) => { event.preventDefault(); window.location.replace("/"); }}>{label}<span aria-hidden="true">›</span></a> : <Link key={href} href={href} aria-current={href === pathname ? "page" : undefined} onClick={() => setOpen(false)}>{label}<span aria-hidden="true">›</span></Link>)}</nav>
     </AppDialog>}
   </>;
 }

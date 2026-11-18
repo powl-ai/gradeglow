@@ -19,7 +19,8 @@
   /* Night sky for constellations: the same in light and dark mode. */
   --night: #15142a;
 
-  position: fixed; inset: 0 0 auto 0; height: var(--gg-app-height, 100dvh); overflow: hidden;
+  /* Fills the window. With an opaque status bar the home-screen app starts below it. */
+  position: fixed; inset: 0; overflow: hidden;
   display: flex; flex-direction: column;
   background: var(--ground);
   color: var(--ink); font-family: var(--gn-font, system-ui), system-ui, -apple-system, sans-serif;
@@ -41,18 +42,18 @@ html[data-color-mode="dark"] .gn {
 .gn :where(button) { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
 .gn :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.gn-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 16px calc(env(safe-area-inset-bottom, 0px) + 96px); }
+.gn-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 20px calc(env(safe-area-inset-bottom, 0px) + 104px); }
 .gn-top { display: flex; align-items: center; justify-content: space-between; min-height: 48px;
-  margin: calc(env(safe-area-inset-top, 0px) + 18px) 4px 14px 4px; }
+  margin: calc(env(safe-area-inset-top, 0px) + 20px) 0 20px; }
 .gn-top h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
 .gn-top small { display: block; font-size: 15px; font-weight: 600; color: var(--muted); }
 .gn-actions { display: flex; gap: 8px; }
 .gn-icon { width: 44px; height: 44px; border-radius: 999px; background: var(--btn); box-shadow: var(--lift); display: grid; place-items: center; }
 .gn-icon.text { width: auto; padding: 0 12px; font-size: 15px; font-weight: 700; }
-.gn-stack { display: flex; flex-direction: column; gap: 10px; }
-.gn-card { background: var(--card); border-radius: 20px; padding: 16px; box-shadow: var(--lift); }
+.gn-stack { display: flex; flex-direction: column; gap: 16px; }
+.gn-card { background: var(--card); border-radius: 22px; padding: 20px; box-shadow: var(--lift); }
 .gn-muted { color: var(--muted); }
-.gn-h2 { display: flex; align-items: baseline; justify-content: space-between; padding: 14px 4px 0; }
+.gn-h2 { display: flex; align-items: baseline; justify-content: space-between; padding: 22px 4px 2px; }
 .gn-h2 h2 { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; }
 .gn-link { font-size: 15px; font-weight: 700; color: var(--acc-ink); }
 .gn-h2 :is(a, .gn-link) { color: var(--muted); font-weight: 600; }
@@ -72,7 +73,7 @@ html[data-color-mode="dark"] .gn {
 .gn-empty p { color: var(--muted); font-size: 16px; line-height: 1.45; margin: 6px 0 14px; }
 
 /* Hero: the one glowing surface per screen. A slight tonal shift of the accent and a glow beneath it. */
-.gn-hero { border-radius: 20px; padding: 16px; color: var(--on-accent);
+.gn-hero { border-radius: 22px; padding: 20px; color: var(--on-accent);
   background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 92%, white) 0%, var(--accent) 45%, color-mix(in oklab, var(--accent) 88%, black) 100%);
   box-shadow: 0 18px 36px -18px color-mix(in oklab, var(--accent) 70%, transparent), 0 2px 0 color-mix(in oklab, var(--accent) 60%, black); }
 .gn-hero-meta { font-size: 15px; font-weight: 600; opacity: 0.8; font-variant-numeric: tabular-nums; }
@@ -164,12 +165,12 @@ html[data-color-mode="dark"] .gn-streak { --flame: #ff8a3d; }
 .gn-timer > div { display: flex; gap: 10px; width: 100%; }
 
 /* Klausuren */
-.gn-chips { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px 12px; padding: 0 16px; scrollbar-width: none; }
+.gn-chips { display: flex; gap: 8px; overflow-x: auto; margin: 0 -20px 16px; padding: 0 20px; scrollbar-width: none; }
 .gn-chips button { flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 999px; background: var(--btn); font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
 .gn-chips button i { width: 8px; height: 8px; border-radius: 99px; }
 .gn-chips button[aria-pressed="true"] { background: var(--ink); color: var(--card); }
 .gn-list { list-style: none; display: grid; }
-.gn-list li { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+.gn-list li { display: flex; align-items: center; gap: 14px; padding: 12px 0; }
 .gn-list li > div { flex: 1; min-width: 0; }
 .gn-list strong { display: block; font-size: 16px; font-weight: 600; }
 .gn-list small { font-size: 14px; color: var(--muted); }
@@ -278,7 +279,7 @@ html[data-color-mode="dark"] .gn-form :is(input, select, textarea) { color-schem
 
 /* Heute: further blocks of the day as one agenda list */
 .gn-agenda { list-style: none; display: grid; background: var(--card); border-radius: 20px; padding: 4px 16px; box-shadow: var(--lift); }
-.gn-agenda li { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px 0; }
+.gn-agenda li { display: flex; align-items: center; gap: 14px; min-height: 68px; padding: 12px 0; }
 .gn-agenda li > div { flex: 1; min-width: 0; }
 .gn-agenda strong { display: block; font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
 .gn-agenda small { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 500; color: var(--muted); margin-top: 1px; }
@@ -310,3 +311,12 @@ html[data-color-mode="dark"] .gn-form :is(input, select, textarea) { color-schem
 html:has(.gn), html:has(.gn) body { background: #eceef1; }
 html[data-color-mode="dark"]:has(.gn), html[data-color-mode="dark"]:has(.gn) body { background: #0e0f12; }
 .gn, .gn-scroll { overscroll-behavior-x: none; }
+
+/* Legal texts */
+.gn-legal .gn-h3 { font-size: 18px; }
+.gn-legal p, .gn-legal li { font-size: 16px; line-height: 1.5; color: var(--ink); margin-top: 8px; }
+.gn-legal ul { list-style: none; }
+.gn-legal li + li { margin-top: 4px; }
+.gn-legal-page { min-height: 100dvh; background: var(--ground); padding: 24px 20px 48px; }
+.gn-legal-page > div { max-width: 640px; margin: 0 auto; }
+.gn-legal-page h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 20px; }

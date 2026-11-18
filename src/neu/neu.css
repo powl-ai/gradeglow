@@ -289,8 +289,7 @@ html[data-color-mode="dark"] .gn-form :is(input, select, textarea) { color-schem
 .gn-topics { list-style: none; display: grid; gap: 4px; margin-top: 8px; }
 .gn-topics li { padding: 6px 0; }
 .gn-topics strong { font-size: 15px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
-.gn-topics .gn-num { font-size: 14px; font-weight: 700; color: var(--muted); }
-  background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25), 0 0 0 0.5px rgba(0, 0, 0, 0.08); }
+
 
 /* Quiz and quick check */
 .gn-quiz .gn-h3 { font-size: 17px; line-height: 1.35; font-weight: 600; }

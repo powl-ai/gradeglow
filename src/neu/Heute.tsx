@@ -84,7 +84,7 @@ export default function Heute({ ctx }: { ctx: AppCtx }) {
             ) : (
               <section className="gn-card">
                 <h3 className="gn-h3">{sessions.some((s) => s.dateKey === today && s.isDone) ? "Für heute erledigt" : "Heute ist frei"}</h3>
-                <p className="gn-muted" style={{ fontSize: 14, marginTop: 4 }}>
+                <p className="gn-muted" style={{ fontSize: 15, marginTop: 4 }}>
                   {upcoming ? `Nächster Block: ${upcoming.title || "Fokusblock"}, ${dayLabel(upcoming.dateKey, today)}${upcoming.time ? ` um ${upcoming.time}` : ""}.`
                     : nextExam ? "Kein Lernblock geplant." : "Alle eingetragenen Klausuren liegen hinter dir."}
                 </p>
@@ -126,7 +126,7 @@ export default function Heute({ ctx }: { ctx: AppCtx }) {
                     <div><span className="gn-muted">Blöcke</span><strong>{nextStatus.doneSessions}/{nextStatus.totalSessions}</strong></div>
                     <div><span className="gn-muted">Themen</span><strong>{nextStatus.topicsCovered}/{nextStatus.topicsTotal}</strong></div>
                   </div>
-                  {nextStatus.state === "behind" && <small style={{ color: "var(--warn)", fontSize: 13, fontWeight: 700 }}>{nextStatus.overdueSessions.length} {nextStatus.overdueSessions.length === 1 ? "Block" : "Blöcke"} hinterher</small>}
+                  {nextStatus.state === "behind" && <small style={{ color: "var(--warn)", fontSize: 14, fontWeight: 700 }}>{nextStatus.overdueSessions.length} {nextStatus.overdueSessions.length === 1 ? "Block" : "Blöcke"} hinterher</small>}
                 </button>
               </>
             )}

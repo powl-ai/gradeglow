@@ -4,30 +4,39 @@ import { useState } from "react";
 import { createTopic } from "../lib/examTopics";
 import type { ExamPlanItem, ExamTopic } from "../types";
 import type { AppCtx } from "./NeuApp";
-import { addDays, dateKey, examColor, fromKey } from "./model";
+import { addDays, dateKey, daysBetween, examColor, examSlots, fromKey } from "./model";
 import { PLAN_DEFAULTS, bookedMinutes, planSessions, replan } from "./plan";
 
-const COLORS = ["#6d3af0", "#f08a24", "#1f9d8a", "#e0457b", "#2f7cf6", "#b8860b"];
+const COLORS = ["#7b5cd6", "#f08a24", "#1f9d8a", "#e0457b", "#2f7cf6", "#b8860b"];
 const withValue = (list: number[], value: number) => (list.includes(value) ? list : [...list, value].sort((a, b) => a - b));
 
 export default function ExamSheet({ ctx, examId, onClose }: { ctx: AppCtx; examId: string | null; onClose: () => void }) {
   const { exams, setExams, today, limits } = ctx;
   const existing = exams.find((exam) => exam.id === examId) ?? null;
-  const activeCount = exams.filter((exam) => !exam.isHidden && exam.status !== "done" && exam.examDate >= today).length;
-  const blocked = !existing && activeCount >= limits.maxExams;
+  const slots = examSlots(exams, today, limits.maxExams);
+  const activeCount = slots.used;
+  const blocked = !existing && slots.full;
 
   const [subject, setSubject] = useState(existing?.moduleName || existing?.title || "");
   const [title, setTitle] = useState(existing && existing.title !== existing.moduleName ? existing.title : "");
   const [date, setDate] = useState(existing?.examDate || dateKey(addDays(fromKey(today), 28)));
   const [time, setTime] = useState(existing?.examTime || "");
   const [topicsText, setTopicsText] = useState((existing?.topics ?? []).map((topic) => topic.name).join("\n"));
-  const [startDays, setStartDays] = useState(existing?.studyStartDays || PLAN_DEFAULTS.startDays);
+  // Learning start as a date (native picker). It follows the exam date until the user sets it.
+  const [startDate, setStartDate] = useState(() => dateKey(addDays(fromKey(existing?.examDate || dateKey(addDays(fromKey(today), 28))), -(existing?.studyStartDays || PLAN_DEFAULTS.startDays))));
+  const [startTouched, setStartTouched] = useState(false);
+  const startDays = Math.max(1, Math.min(365, daysBetween(startDate, date)));
+  const startOk = /^\d{4}-\d{2}-\d{2}$/.test(startDate) && startDate < date;
+  const changeDate = (next: string) => {
+    if (!startTouched && startOk && /^\d{4}-\d{2}-\d{2}$/.test(next)) setStartDate(dateKey(addDays(fromKey(next), -startDays)));
+    setDate(next);
+  };
   const [blockMinutes, setBlockMinutes] = useState(existing?.sessionGoalMinutes || PLAN_DEFAULTS.blockMinutes);
   const [dailyLimit, setDailyLimit] = useState(existing?.dailyStudyLimitMinutes || PLAN_DEFAULTS.dailyLimit);
   const [perWeek, setPerWeek] = useState(existing?.studyDaysPerWeek ?? (existing ? 6 : PLAN_DEFAULTS.daysPerWeek));
   const [color, setColor] = useState<string>(existing ? examColor(existing, exams) : COLORS[activeCount % COLORS.length]);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const valid = subject.trim().length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const valid = subject.trim().length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(date) && startOk;
 
   const save = () => {
     if (!valid || blocked) return;
@@ -66,22 +75,24 @@ export default function ExamSheet({ ctx, examId, onClose }: { ctx: AppCtx; examI
   return (
     <div className="gn-sheet" role="dialog" aria-modal="true" aria-label={existing ? "Klausur bearbeiten" : "Klausur anlegen"}>
       <header className="gn-sheet-head">
-        <button type="button" className="gn-link" onClick={onClose}>Abbrechen</button>
+        <button type="button" className="gn-link" onClick={onClose}>{blocked ? "Schließen" : "Abbrechen"}</button>
         <strong>{existing ? "Klausur bearbeiten" : "Neue Klausur"}</strong>
-        <button type="button" className="gn-link" disabled={!valid || blocked} onClick={save}>Sichern</button>
+        {blocked ? <span /> : <button type="button" className="gn-link" disabled={!valid} onClick={save}>Sichern</button>}
       </header>
       <div className="gn-sheet-body gn-stack">
-        {blocked && (
+        {blocked ? (
           <section className="gn-card">
-            <strong className="gn-h3">Mehr Klausuren mit Premium</strong>
-            <p className="gn-muted" style={{ fontSize: 14, marginTop: 4 }}>Kostenlos planst du {limits.maxExams} Klausuren gleichzeitig. Mit Premium unbegrenzt, dazu eigene Farben und Themes.</p>
+            <strong className="gn-h3">{limits.maxExams} Klausuren sind geplant</strong>
+            <p className="gn-muted gn-note">Das ist die Grenze im kostenlosen Plan. Vergangene und abgeschlossene Klausuren zählen nicht mit, und bestehende kannst du weiter bearbeiten. Mit Premium gibt es keine Grenze.</p>
           </section>
-        )}
+        ) : (
+        <>
+        {!existing && slots.left === 1 && <p className="gn-muted gn-note" style={{ textAlign: "center" }}>Das ist deine letzte freie Klausur im kostenlosen Plan.</p>}
         <section className="gn-card gn-form">
           <label>Fach<input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="z. B. Analysis I und Lineare Algebra" autoComplete="off" /></label>
           <label><span>Bezeichnung <em className="gn-muted">(optional)</em></span><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z. B. Wiederholungsklausur" autoComplete="off" /></label>
           <div className="gn-form-row">
-            <label>Datum<input type="date" value={date} min={today} onChange={(e) => setDate(e.target.value)} /></label>
+            <label>Datum<input type="date" value={date} min={today} onChange={(e) => changeDate(e.target.value)} /></label>
             <label>Uhrzeit<input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></label>
           </div>
         </section>
@@ -97,8 +108,10 @@ export default function ExamSheet({ ctx, examId, onClose }: { ctx: AppCtx; examI
               {[2, 3, 4, 5, 6].map((value) => <button key={value} type="button" aria-pressed={perWeek === value} onClick={() => setPerWeek(value)}>{value}</button>)}
             </div>
           </label>
-          <div className="gn-form-row three">
-            <label>Lernstart<select value={startDays} onChange={(e) => setStartDays(Number(e.target.value))}>{withValue([7, 14, 21, 28, 42, 56], startDays).map((v) => <option key={v} value={v}>{v} Tage</option>)}</select></label>
+          <label><span>Lernstart <em className="gn-muted">{startOk ? `(${startDays} ${startDays === 1 ? "Tag" : "Tage"} vor der Prüfung)` : "(muss vor der Prüfung liegen)"}</em></span>
+            <input type="date" value={startDate} max={dateKey(addDays(fromKey(date), -1))} onChange={(e) => { setStartTouched(true); setStartDate(e.target.value); }} />
+          </label>
+          <div className="gn-form-row">
             <label>Block<select value={blockMinutes} onChange={(e) => setBlockMinutes(Number(e.target.value))}>{withValue([30, 45, 60, 90, 120], blockMinutes).map((v) => <option key={v} value={v}>{v} min</option>)}</select></label>
             <label>Max./Tag<select value={dailyLimit} onChange={(e) => setDailyLimit(Number(e.target.value))}>{withValue([60, 90, 120, 180, 240, 300], dailyLimit).map((v) => <option key={v} value={v}>{(v / 60).toLocaleString("de-DE")} h</option>)}</select></label>
           </div>
@@ -118,6 +131,8 @@ export default function ExamSheet({ ctx, examId, onClose }: { ctx: AppCtx; examI
         </section>
         {existing && (
           <button type="button" className="gn-danger" onClick={remove}>{confirmDelete ? "Wirklich löschen? Nochmal tippen" : "Klausur löschen"}</button>
+        )}
+        </>
         )}
       </div>
     </div>

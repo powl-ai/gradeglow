@@ -17,7 +17,7 @@ function loadTs(relativePath) {
   }).outputText, file);
   return compiled.exports;
 }
-const { planTopicBlocks, getExamPlanStatus, getTodayBlocks, normalizeTopics } = loadTs("src/lib/examTopics.ts");
+const { planTopicBlocks, getExamPlanStatus, getTodayBlocks, normalizeTopics, confidenceFromPct, topicPct } = loadTs("src/lib/examTopics.ts");
 
 const topics = [
   { id: "a", name: "Matrizen", confidence: 3 },
@@ -85,4 +85,29 @@ test("today blocks: today first, then the most recent missed ones, never done or
 test("normalizeTopics drops junk and clamps confidence", () => {
   assert.deepEqual(normalizeTopics([{ id: "x", name: "  Taylor ", confidence: 7 }, { name: "" }, null, "nope"]), [{ id: "x", name: "Taylor", confidence: 1 }]);
   assert.deepEqual(normalizeTopics(undefined), []);
+});
+
+test("topic percent maps to plan levels and survives storage", () => {
+  assert.equal(confidenceFromPct(0), 1);
+  assert.equal(confidenceFromPct(33), 1);
+  assert.equal(confidenceFromPct(34), 2);
+  assert.equal(confidenceFromPct(67), 3);
+  const [topic] = normalizeTopics([{ id: "t", name: "Eigenwerte", confidence: 1, confidencePct: 140 }]);
+  assert.equal(topic.confidencePct, 100);
+  assert.equal(topic.confidence, 3);
+  assert.equal(topicPct({ confidence: 2 }), 50);
+});
+
+test("extra focus time is learned time, not a block", () => {
+  const exam = {
+    id: "e", examDate: "2026-12-12", topics: [],
+    studySessions: [
+      { id: "s1", dateKey: "2026-11-18", isDone: false, isHidden: false },
+      { id: "focus-1", dateKey: "2026-11-18", isDone: true, isHidden: false },
+      { id: "x", dateKey: "2026-11-18", isDone: true, isHidden: false, extraTime: true },
+    ],
+  };
+  const status = getExamPlanStatus(exam, "2026-11-18");
+  assert.equal(status.totalSessions, 1);
+  assert.equal(status.doneSessions, 0);
 });

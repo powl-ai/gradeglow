@@ -5,7 +5,7 @@ import { initialTimelineMinute } from "../lib/calendarLayout";
 import { getSessionStudyMinutes } from "../lib/studyStats";
 import type { AppCtx } from "./NeuApp";
 import { Icon } from "./Icons";
-import { addDays, dateKey, dayLabel, examColor, examShort, fromKey, minutesLabel, mondayOf, timeOf } from "./model";
+import { addDays, addMonths, dateKey, dayLabel, examColor, examShort, fromKey, minutesLabel, mondayOf, monthCells, timeOf } from "./model";
 
 const HOUR = 44;
 const DAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
@@ -17,7 +17,7 @@ const toMinutes = (time: string) => {
 export default function Kalender({ ctx }: { ctx: AppCtx }) {
   const { exams, today } = ctx;
   const [selected, setSelected] = useState(today);
-  const [mode, setMode] = useState<"tag" | "woche">("tag");
+  const [mode, setMode] = useState<"tag" | "woche" | "monat">("tag");
   const [now, setNow] = useState(() => new Date());
   const timeline = useRef<HTMLDivElement>(null);
   useEffect(() => { const id = window.setInterval(() => setNow(new Date()), 60_000); return () => window.clearInterval(id); }, []);
@@ -27,6 +27,15 @@ export default function Kalender({ ctx }: { ctx: AppCtx }) {
     .map((s) => ({ ...s, exam, color: examColor(exam, visible) })));
   const monday = mondayOf(fromKey(selected));
   const week = DAYS.map((_, index) => dateKey(addDays(monday, index)));
+  const isMonth = mode === "monat";
+  const month = selected.slice(0, 7);
+  const cells = isMonth ? monthCells(selected) : [];
+  const monthSessions = sessions.filter((s) => s.dateKey.startsWith(month));
+  const monthExams = visible.filter((exam) => exam.examDate.startsWith(month)).sort((a, b) => a.examDate.localeCompare(b.examDate));
+  const examOn = (key: string) => visible.find((exam) => exam.examDate === key);
+  const ring = (key: string) => { const exam = examOn(key); return exam ? { boxShadow: `inset 0 0 0 2px ${examColor(exam, visible)}` } : undefined; };
+  const step = (direction: 1 | -1) => setSelected(isMonth ? addMonths(selected, direction) : dateKey(addDays(fromKey(selected), 7 * direction)));
+  const longDate = (key: string) => fromKey(key).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
   const daySessions = sessions.filter((s) => s.dateKey === selected).sort((a, b) => (a.time || "99").localeCompare(b.time || "99"));
   const timed = daySessions.filter((s) => toMinutes(s.time) !== null);
   const untimed = daySessions.filter((s) => toMinutes(s.time) === null);
@@ -54,32 +63,76 @@ export default function Kalender({ ctx }: { ctx: AppCtx }) {
         </div>
       </header>
 
-      <div className="gn-seg" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))", margin: "0 4px" }}>
+      <div className="gn-seg" style={{ margin: "0 4px" }}>
         <button type="button" aria-pressed={mode === "tag"} onClick={() => setMode("tag")}>Tag</button>
         <button type="button" aria-pressed={mode === "woche"} onClick={() => setMode("woche")}>Woche</button>
+        <button type="button" aria-pressed={isMonth} onClick={() => setMode("monat")}>Monat</button>
       </div>
 
       <section className="gn-cal" style={{ marginTop: 12 }} aria-label="Kalender">
         <div className="gn-row" style={{ justifyContent: "space-between", padding: "10px 12px 0" }}>
-          <button type="button" className="gn-icon" style={{ width: 36, height: 36, transform: "scaleX(-1)" }} aria-label="Vorherige Woche" onClick={() => setSelected(dateKey(addDays(fromKey(selected), -7)))}>{Icon.chevron()}</button>
-          <strong style={{ fontSize: 15, flex: "none" }}>{fromKey(week[0]).toLocaleDateString("de-DE", { day: "numeric", month: "short" })} – {fromKey(week[6]).toLocaleDateString("de-DE", { day: "numeric", month: "short" })}</strong>
-          <button type="button" className="gn-icon" style={{ width: 36, height: 36 }} aria-label="Nächste Woche" onClick={() => setSelected(dateKey(addDays(fromKey(selected), 7)))}>{Icon.chevron()}</button>
+          <button type="button" className="gn-icon" style={{ width: 36, height: 36, transform: "scaleX(-1)" }} aria-label={isMonth ? "Vorheriger Monat" : "Vorherige Woche"} onClick={() => step(-1)}>{Icon.chevron()}</button>
+          <strong style={{ fontSize: 15, flex: "none" }}>{isMonth ? fromKey(selected).toLocaleDateString("de-DE", { month: "long", year: "numeric" }) : <>{fromKey(week[0]).toLocaleDateString("de-DE", { day: "numeric", month: "short" })} – {fromKey(week[6]).toLocaleDateString("de-DE", { day: "numeric", month: "short" })}</>}</strong>
+          <button type="button" className="gn-icon" style={{ width: 36, height: 36 }} aria-label={isMonth ? "Nächster Monat" : "Nächste Woche"} onClick={() => step(1)}>{Icon.chevron()}</button>
         </div>
-        <div className="gn-days">
+        {!isMonth && <div className="gn-days">
           {week.map((key, index) => {
             const colors = [...new Set(sessions.filter((s) => s.dateKey === key).map((s) => s.color))].slice(0, 3);
             return (
               <button key={key} type="button" className={key === today ? "is-today" : undefined} aria-pressed={key === selected}
-                aria-label={fromKey(key).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}
+                aria-label={`${longDate(key)}${examOn(key) ? ", Prüfung" : ""}`}
                 onClick={() => { setSelected(key); setMode("tag"); }}>
-                <span>{DAYS[index]}</span><b>{fromKey(key).getDate()}</b>
+                <span>{DAYS[index]}</span><b style={ring(key)}>{fromKey(key).getDate()}</b>
                 <span style={{ display: "flex", gap: 2, minHeight: 5 }}>{colors.map((color) => <i key={color} style={{ background: color }} />)}</span>
               </button>
             );
           })}
-        </div>
+        </div>}
 
-        {mode === "tag" ? (
+        {isMonth ? (
+          <>
+            <div className="gn-month">
+              <div className="gn-month-head" aria-hidden="true">{DAYS.map((day) => <span key={day}>{day}</span>)}</div>
+              <div className="gn-month-grid">
+                {cells.map((cell) => {
+                  const colors = [...new Set(sessions.filter((s) => s.dateKey === cell.key).map((s) => s.color))].slice(0, 3);
+                  const count = sessions.filter((s) => s.dateKey === cell.key).length;
+                  const name = [cell.inMonth ? "" : "is-out", cell.key === today ? "is-today" : ""].filter(Boolean).join(" ");
+                  return (
+                    <button key={cell.key} type="button" className={name || undefined} aria-pressed={cell.key === selected}
+                      aria-label={`${longDate(cell.key)}${examOn(cell.key) ? ", Prüfung" : ""}${count > 0 ? `, ${count} ${count === 1 ? "Lernblock" : "Lernblöcke"}` : ""}`}
+                      onClick={() => { setSelected(cell.key); setMode("tag"); }}>
+                      <b style={ring(cell.key)}>{fromKey(cell.key).getDate()}</b>
+                      <span>{colors.map((color) => <i key={color} style={{ background: color }} />)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="gn-month-key">Ring: Prüfung · Punkte: Lernblöcke</p>
+            </div>
+            <div className="gn-month-foot">
+              <div className="gn-row" style={{ justifyContent: "space-between" }}>
+                <strong>Prüfungen im {fromKey(selected).toLocaleDateString("de-DE", { month: "long" })}</strong>
+                <span className="gn-muted" style={{ fontSize: 13, fontWeight: 600, flex: "none" }}>
+                  {monthSessions.length > 0 ? `${monthSessions.length} ${monthSessions.length === 1 ? "Block" : "Blöcke"} · ${minutesLabel(monthSessions.reduce((sum, s) => sum + getSessionStudyMinutes(s), 0))}` : "keine Blöcke"}
+                </span>
+              </div>
+              {monthExams.length === 0 ? <p className="gn-muted" style={{ fontSize: 14, marginTop: 6 }}>Keine Prüfung in diesem Monat.</p> : (
+                <ul className="gn-list">
+                  {monthExams.map((exam) => (
+                    <li key={exam.id}>
+                      <button type="button" className="gn-row gn-tap" onClick={() => ctx.go("klausuren", undefined, exam.id)}>
+                        <i style={{ width: 8, height: 8, borderRadius: 99, background: examColor(exam, visible), flex: "none" }} />
+                        <div><strong>{exam.title}</strong><small>{dayLabel(exam.examDate, today)}{exam.examTime ? ` · ${exam.examTime}` : ""}</small></div>
+                        <span className="gn-muted">{Icon.chevron()}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </>
+        ) : mode === "tag" ? (
           <>
             <div className="gn-dayhead">
               <strong>{fromKey(selected).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</strong>
@@ -126,7 +179,13 @@ export default function Kalender({ ctx }: { ctx: AppCtx }) {
                 <li key={key} style={{ alignItems: "flex-start" }}>
                   <div style={{ flex: "0 0 64px" }}><strong style={{ fontSize: 14, color: key === today ? "var(--now)" : undefined }}>{dayLabel(key, today)}</strong></div>
                   <div className="gn-stack" style={{ gap: 6 }}>
-                    {items.length === 0 ? <small>frei</small> : items.map((s) => (
+                    {visible.filter((exam) => exam.examDate === key).map((exam) => (
+                      <div key={exam.id} className="gn-row" style={{ gap: 8 }}>
+                        <i style={{ width: 8, height: 8, borderRadius: 99, boxShadow: `inset 0 0 0 2px ${examColor(exam, visible)}`, flex: "none" }} />
+                        <small style={{ color: "var(--ink)", fontWeight: 700 }}>Prüfung: {exam.title}{exam.examTime ? ` · ${exam.examTime}` : ""}</small>
+                      </div>
+                    ))}
+                    {items.length === 0 ? (examOn(key) ? null : <small>frei</small>) : items.map((s) => (
                       <div key={s.id} className="gn-row" style={{ gap: 8 }}>
                         <i style={{ width: 8, height: 8, borderRadius: 99, background: s.color, flex: "none" }} />
                         <small style={{ color: "var(--ink)", fontWeight: 600, textDecoration: s.isDone ? "line-through" : undefined }}>{s.time ? `${s.time} · ` : ""}{s.title || "Fokusblock"}</small>

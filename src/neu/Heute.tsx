@@ -28,7 +28,7 @@ export default function Heute({ ctx }: { ctx: AppCtx }) {
   return (
     <div className="gn-scroll">
       <header className="gn-top">
-        <h1>GradeGlow</h1>
+        <div><small>{fromKey(today).toLocaleDateString("de-DE", { weekday: "long" })}</small><h1>{fromKey(today).toLocaleDateString("de-DE", { day: "numeric", month: "long" })}</h1></div>
         <div className="gn-actions">
           <button type="button" className="gn-icon" aria-label="Klausur hinzufügen" onClick={() => ctx.openExam(null)}>{Icon.plus()}</button>
           <button type="button" className="gn-icon" aria-label="Profil" onClick={() => ctx.go("profil")}>{Icon.user()}</button>
@@ -36,8 +36,8 @@ export default function Heute({ ctx }: { ctx: AppCtx }) {
       </header>
 
       <div className="gn-stack">
-        <section className="gn-card gn-row" aria-label="Lernserie">
-          <div className="gn-streak">{Icon.flame()}<b>{ctx.streak}</b><small>{ctx.streak === 1 ? "Tag" : "Tage"}</small></div>
+        <section className="gn-weekline" aria-label="Lernserie">
+          <div className={`gn-streak ${ctx.streak > 0 ? "is-alive" : ""} ${sessions.some((s) => s.dateKey === today && s.isDone) ? "is-lit" : ""}`.trim()}>{Icon.flame()}<b>{ctx.streak}</b><small>{ctx.streak === 1 ? "Tag" : "Tage"}</small></div>
           <ol className="gn-week">
             {LETTERS.map((letter, index) => {
               const key = dateKey(addDays(monday, index));
@@ -66,20 +66,17 @@ export default function Heute({ ctx }: { ctx: AppCtx }) {
 
             {first ? (
               <article className="gn-hero gn-stack" style={{ gap: 14 }}>
-                <div className="gn-row" style={{ gap: 8 }}>
-                  <span className="gn-hero-pill">{firstExam ? examShort(firstExam) : first.subject}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, opacity: 0.85 }}>
-                    {first.isOverdue ? `verpasst ${dayLabel(first.dateKey, today).toLowerCase()}` : first.time || "heute"} · {minutesLabel(getSessionStudyMinutes(first))}
-                  </span>
-                </div>
                 <div>
-                  <h3>{first.title || "Fokusblock"}</h3>
+                  <span className="gn-hero-meta">
+                    {firstExam ? examShort(firstExam) : first.subject} · {first.isOverdue ? `verpasst ${dayLabel(first.dateKey, today).toLowerCase()}` : first.time || "heute"} · {minutesLabel(getSessionStudyMinutes(first))}
+                  </span>
+                  <h3 style={{ marginTop: 6 }}>{first.title || "Fokusblock"}</h3>
                   {first.focus && <p>{first.focus}</p>}
                 </div>
                 {firstStatus && firstStatus.totalSessions > 0 && (
                   <div className="gn-row" style={{ gap: 10 }}>
                     <div className="gn-bar"><i style={{ width: `${(firstStatus.doneSessions / firstStatus.totalSessions) * 100}%` }} /></div>
-                    <span style={{ fontSize: 12, fontWeight: 700, opacity: 0.9, flex: "none" }}>Block {Math.min(firstStatus.doneSessions + 1, firstStatus.totalSessions)} von {firstStatus.totalSessions}</span>
+                    <span className="gn-hero-meta" style={{ flex: "none" }}>Block {Math.min(firstStatus.doneSessions + 1, firstStatus.totalSessions)} von {firstStatus.totalSessions}</span>
                   </div>
                 )}
                 <button type="button" className="gn-white" onClick={() => ctx.go("fokus", first.id, first.examId)}>{Icon.play()}Fokus starten</button>
@@ -96,29 +93,31 @@ export default function Heute({ ctx }: { ctx: AppCtx }) {
               </section>
             )}
 
-            {rest.map((block) => {
-              const exam = visible.find((item) => item.id === block.examId);
-              const color = exam ? examColor(exam, visible) : "var(--accent)";
-              return (
-                <article key={block.id} className="gn-card gn-row" style={{ padding: "14px 16px" }}>
-                  <span className="gn-badge" style={{ background: `color-mix(in oklab, ${color} 16%, var(--card))`, color }}>{exam ? examShort(exam).slice(0, 3) : "—"}</span>
-                  <div>
-                    <strong>{block.title || "Fokusblock"}</strong>
-                    <small style={block.isOverdue ? { color: "var(--warn)" } : undefined}>
-                      {block.isOverdue ? `Verpasst ${dayLabel(block.dateKey, today)}` : block.time || "Heute"} · {minutesLabel(getSessionStudyMinutes(block))}
-                    </small>
-                  </div>
-                  <button type="button" className="gn-chip" onClick={() => ctx.go("fokus", block.id, block.examId)}>Start</button>
-                </article>
-              );
-            })}
+            {rest.length > 0 && (
+              <ul className="gn-agenda" aria-label="Weitere Blöcke heute">
+                {rest.map((block) => {
+                  const exam = visible.find((item) => item.id === block.examId);
+                  return (
+                    <li key={block.id}>
+                      <div>
+                        <strong>{block.title || "Fokusblock"}</strong>
+                        <small style={block.isOverdue ? { color: "var(--warn)" } : undefined}>
+                          <i style={{ background: exam ? examColor(exam, visible) : "var(--faint)" }} />
+                          {exam ? examShort(exam) : block.subject} · {block.isOverdue ? `verpasst ${dayLabel(block.dateKey, today).toLowerCase()}` : block.time || "heute"} · {minutesLabel(getSessionStudyMinutes(block))}
+                        </small>
+                      </div>
+                      <button type="button" className="gn-chip" onClick={() => ctx.go("fokus", block.id, block.examId)}>Start</button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
 
             {nextExam && nextStatus && (
               <>
                 <div className="gn-h2"><h2>Nächste Prüfung</h2></div>
                 <button type="button" className="gn-card gn-stack" style={{ gap: 14, textAlign: "left", width: "100%" }} onClick={() => ctx.go("klausuren", undefined, nextExam.id)}>
                   <div className="gn-row">
-                    <span className="gn-badge" style={{ background: `color-mix(in oklab, ${examColor(nextExam, visible)} 16%, var(--card))`, color: examColor(nextExam, visible) }}>{examShort(nextExam).slice(0, 3)}</span>
                     <div><strong>{nextExam.title}</strong><small>{fromKey(nextExam.examDate).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" })}{nextExam.examTime ? ` · ${nextExam.examTime}` : ""}</small></div>
                     <span className="gn-muted">{Icon.chevron()}</span>
                   </div>

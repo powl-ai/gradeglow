@@ -92,9 +92,15 @@ html[data-color-mode="dark"] .gn-go:not(.quiet) { background: var(--hero-btn); c
 .gn :is(.gn-go, .gn-chip, .gn-white):active { transform: scale(0.98); }
 
 /* Week strip (Heute) */
-.gn-streak { display: flex; flex-direction: column; align-items: center; color: var(--ink); }
+.gn-streak { display: flex; flex-direction: column; align-items: center; color: var(--ink); --flame: #f26b1d; }
+html[data-color-mode="dark"] .gn-streak { --flame: #ff8a3d; }
 .gn-row > .gn-streak { flex: 0 0 40px; }
-.gn-streak svg { width: 18px; height: 18px; color: var(--muted); }
+.gn-streak svg { width: 20px; height: 20px; color: var(--faint); }
+/* The flame burns while the streak is alive, and flickers once today is done. */
+.gn-streak.is-alive svg { color: var(--flame); }
+.gn-streak.is-lit svg { animation: gn-flicker 2.4s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes gn-flicker { 0%, 100% { transform: scale(1) rotate(0); } 30% { transform: scale(1.06, 1.1) rotate(-2deg); } 60% { transform: scale(0.97, 1.03) rotate(2deg); } }
+@media (prefers-reduced-motion: reduce) { .gn-streak.is-lit svg { animation: none; } }
 .gn-streak b { font-size: 19px; font-weight: 700; line-height: 1; margin-top: 2px; }
 .gn-streak small { font-size: 11px; font-weight: 700; }
 .gn-week { flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; text-align: center; list-style: none; }

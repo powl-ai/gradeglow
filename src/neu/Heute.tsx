@@ -37,7 +37,7 @@ export default function Heute({ ctx }: { ctx: AppCtx }) {
 
       <div className="gn-stack">
         <section className="gn-weekline" aria-label="Lernserie">
-          <div className="gn-streak">{Icon.flame()}<b>{ctx.streak}</b><small>{ctx.streak === 1 ? "Tag" : "Tage"}</small></div>
+          <div className={`gn-streak ${ctx.streak > 0 ? "is-alive" : ""} ${sessions.some((s) => s.dateKey === today && s.isDone) ? "is-lit" : ""}`.trim()}>{Icon.flame()}<b>{ctx.streak}</b><small>{ctx.streak === 1 ? "Tag" : "Tage"}</small></div>
           <ol className="gn-week">
             {LETTERS.map((letter, index) => {
               const key = dateKey(addDays(monday, index));

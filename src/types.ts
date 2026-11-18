@@ -155,6 +155,9 @@ export type StudySessionItem = {
   userEdited?: boolean;
   /** Topic of the exam this block covers (set by the topic-aware plan). */
   topicId?: string;
+  /** Focus time outside a plan block (free study, or a block ended too early): counts as learned
+   *  time, but not as a block, so it lights no star. */
+  extraTime?: boolean;
   startedAtIso?: string;
   completedAtIso?: string;
 };
@@ -166,6 +169,8 @@ export type ExamTopic = {
   id: string;
   name: string;
   confidence: TopicConfidence;
+  /** How sure the user is, 0–100. `confidence` is derived from it for the plan. */
+  confidencePct?: number;
 };
 
 export type ExamPlanItem = {
@@ -187,6 +192,10 @@ export type ExamPlanItem = {
   studySessions: StudySessionItem[];
   /** Exam content the plan is built from. Weak topics get more blocks. */
   topics?: ExamTopic[];
+  /** Optional colour (hex) chosen by premium users; otherwise the app picks one. */
+  color?: string;
+  /** Study days per week the plan uses for this exam (new app; old exams: 6). */
+  studyDaysPerWeek?: number;
 };
 
 

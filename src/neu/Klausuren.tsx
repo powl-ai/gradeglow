@@ -1,0 +1,159 @@
+"use client";
+
+import { useState } from "react";
+import { getExamPlanStatus, isExtraTime, topicPct } from "../lib/examTopics";
+import { getSessionStudyMinutes } from "../lib/studyStats";
+import type { ExamTopic } from "../types";
+import type { AppCtx } from "./NeuApp";
+import { Icon } from "./Icons";
+import { addDays, dateKey, dayLabel, examColor, examShort, examSlots, fromKey, minutesLabel } from "./model";
+import { replan } from "./plan";
+
+
+export default function Klausuren({ ctx }: { ctx: AppCtx }) {
+  const { exams, setExams, today } = ctx;
+  const [planNote, setPlanNote] = useState("");
+  const visible = exams.filter((exam) => !exam.isHidden)
+    .sort((a, b) => Number(a.examDate < today) - Number(b.examDate < today) || a.examDate.localeCompare(b.examDate));
+  const exam = visible.find((item) => item.id === ctx.examId) ?? visible[0];
+
+  if (!exam) {
+    return (
+      <div className="gn-scroll">
+        <header className="gn-top"><h1>Klausuren</h1><div className="gn-actions"><button type="button" className="gn-icon" aria-label="Klausur hinzufügen" onClick={() => ctx.openExam(null)}>{Icon.plus()}</button></div></header>
+        <section className="gn-card gn-empty">
+          <h2 className="gn-h3">Noch keine Klausur</h2>
+          <p>Trag Datum und Themen ein. GradeGlow verteilt die Lernblöcke rückwärts bis zur Prüfung.</p>
+          <button type="button" className="gn-go" style={{ width: "100%" }} onClick={() => ctx.openExam(null)}>Klausur anlegen</button>
+        </section>
+      </div>
+    );
+  }
+
+  const status = getExamPlanStatus(exam, today);
+  const sessions = exam.studySessions.filter((s) => !s.isHidden).sort((a, b) => `${a.dateKey} ${a.time}`.localeCompare(`${b.dateKey} ${b.time}`));
+  const learned = sessions.filter((s) => s.isDone).reduce((sum, s) => sum + getSessionStudyMinutes(s), 0);
+  const weekEnd = dateKey(addDays(fromKey(today), 7));
+  const soon = sessions.filter((s) => !isExtraTime(s)).filter((s) => (s.dateKey >= today && s.dateKey < weekEnd) || (!s.isDone && s.dateKey < today));
+  const topics = [...(exam.topics ?? [])].sort((a, b) => topicPct(a) - topicPct(b));
+
+  // Exams from before the new app, or ones that were too close, can have no blocks at all.
+  const canPlan = status.state === "no-plan" && status.daysUntil >= 1;
+  const createPlan = () => {
+    const planned = replan(exam, exams, today);
+    if (planned.every((s) => s.isHidden)) { setPlanNote("Bis zur Prüfung ist dein Tageslimit schon durch andere Klausuren belegt. Erhöh „Max./Tag“ unter Bearbeiten."); return; }
+    setPlanNote("");
+    setExams((previous) => previous.map((item) => (item.id === exam.id ? { ...item, studySessions: planned } : item)));
+  };
+  const slots = examSlots(exams, today, ctx.limits.maxExams);
+  const daysText = status.daysUntil < 0 ? "Vorbei" : status.daysUntil === 0 ? "Heute" : `${status.daysUntil} ${status.daysUntil === 1 ? "Tag" : "Tage"}`;
+
+  const stateLabel = status.state === "behind" ? `${status.overdueSessions.length} ${status.overdueSessions.length === 1 ? "Block" : "Blöcke"} hinterher`
+    : status.state === "no-plan" ? "Noch kein Lernplan" : status.state === "done" ? "Vorbei" : "Im Plan";
+
+  return (
+    <div className="gn-scroll">
+      <header className="gn-top">
+        <h1>Klausuren</h1>
+        <div className="gn-actions"><button type="button" className="gn-icon text" onClick={() => ctx.openExam(exam.id)}>Bearbeiten</button><button type="button" className="gn-icon" aria-label="Klausur hinzufügen" onClick={() => ctx.openExam(null)}>{Icon.plus()}</button></div>
+      </header>
+
+      <div className="gn-chips" aria-label="Klausur wählen">
+        {visible.map((item) => (
+          <button key={item.id} type="button" aria-pressed={item.id === exam.id} onClick={() => ctx.setExamId(item.id)}>
+            <i style={{ background: examColor(item, visible) }} />{examShort(item)}
+          </button>
+        ))}
+      </div>
+
+      <div className="gn-stack">
+        <section className="gn-hero gn-stack" style={{ gap: 14 }}>
+          <div>
+            <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }}>{exam.title}</h2>
+            <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2, opacity: 0.85 }}>
+              {fromKey(exam.examDate).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}{exam.examTime ? ` · ${exam.examTime}` : ""}
+            </div>
+          </div>
+          <div className="gn-stats">
+            <div><span>{status.daysUntil > 0 ? "Noch" : "Prüfung"}</span><strong>{daysText}</strong></div>
+            <div><span>Blöcke</span><strong>{status.doneSessions}/{status.totalSessions}</strong></div>
+            <div><span>Gelernt</span><strong>{minutesLabel(learned)}</strong></div>
+          </div>
+          <div className="gn-row" style={{ gap: 10 }}>
+            <div className="gn-bar"><i style={{ width: `${status.totalSessions ? (status.doneSessions / status.totalSessions) * 100 : 0}%` }} /></div>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, flex: "none" }}>
+              <span style={{ width: 7, height: 7, borderRadius: 99, background: status.state === "behind" ? "#ffb26b" : "#5ff0a0" }} />{stateLabel}
+            </span>
+          </div>
+          {canPlan && <button type="button" className="gn-white" onClick={createPlan}>Lernplan erstellen</button>}
+          {canPlan && planNote && <p>{planNote}</p>}
+        </section>
+
+        <section className="gn-card" aria-label="Themen">
+          <div className="gn-row" style={{ justifyContent: "space-between", marginBottom: 2 }}>
+            <h2 className="gn-h3">Themen</h2>
+            {topics.length > 0 && <span className="gn-muted" style={{ fontSize: 13, fontWeight: 600, flex: "none" }}>Schwächste zuerst</span>}
+          </div>
+          {topics.length === 0 ? (
+            <p className="gn-muted" style={{ fontSize: 14, marginTop: 6 }}>Noch keine Themen. <button type="button" className="gn-link" onClick={() => ctx.openExam(exam.id)}>Themen eintragen</button>, damit schwache Themen mehr Blöcke bekommen.</p>
+          ) : (
+            <ul className="gn-topics">
+              {topics.map((topic) => <TopicRow key={topic.id} topic={topic} onTest={() => ctx.openQuiz(exam.id, topic.id)} />)}
+            </ul>
+          )}
+        </section>
+
+        <section className="gn-card" aria-label="Nächste Lernblöcke">
+          <div className="gn-row" style={{ justifyContent: "space-between", marginBottom: 2 }}>
+            <h2 className="gn-h3">Nächste 7 Tage</h2>
+            <span className="gn-muted" style={{ fontSize: 13, fontWeight: 600, flex: "none" }}>{soon.filter((s) => s.isDone).length} von {soon.length}</span>
+          </div>
+          {soon.length === 0 ? <p className="gn-muted" style={{ fontSize: 14, marginTop: 6 }}>Keine Lernblöcke in den nächsten 7 Tagen.</p> : (
+            <ul className="gn-list">
+              {soon.map((s) => {
+                const isToday = s.dateKey === today && !s.isDone;
+                const late = !s.isDone && s.dateKey < today;
+                return (
+                  <li key={s.id}>
+                    <span className={`gn-check ${s.isDone ? "is-done" : ""} ${isToday ? "is-today" : ""}`}>{s.isDone && Icon.check(12)}</span>
+                    <div>
+                      <strong style={isToday ? { fontWeight: 700 } : undefined}>{s.title || "Fokusblock"}</strong>
+                      <small style={isToday ? { color: "var(--acc-ink)", fontWeight: 700 } : late ? { color: "var(--warn)", fontWeight: 600 } : undefined}>
+                        {late ? "Verpasst " : ""}{dayLabel(s.dateKey, today)}{s.time ? ` · ${s.time}` : ""} · {minutesLabel(getSessionStudyMinutes(s))}
+                      </small>
+                    </div>
+                    {!s.isDone && <button type="button" className="gn-chip" onClick={() => ctx.go("fokus", s.id, exam.id)}>Start</button>}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        {slots.limited && (
+          <p className="gn-muted gn-note" style={{ textAlign: "center" }}>
+            {slots.used} von {slots.max} Klausuren im kostenlosen Plan{slots.full ? ". Vergangene und abgeschlossene zählen nicht mit." : "."}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** One topic: how sure the user is (from the last quiz or quick check), and a button to check again. */
+function TopicRow({ topic, onTest }: { topic: ExamTopic; onTest: () => void }) {
+  const tested = topic.confidencePct !== undefined;
+  const pct = topicPct(topic);
+  return (
+    <li>
+      <div className="gn-row">
+        <div>
+          <strong>{topic.name}</strong>
+          <small className="gn-muted">{tested ? `${pct} % sicher` : "Noch nicht geprüft"}</small>
+        </div>
+        <button type="button" className="gn-chip" onClick={onTest}>Prüfen</button>
+      </div>
+      <div className="gn-bar" style={{ marginTop: 8, opacity: tested ? 1 : 0.5 }} role="img" aria-label={`${pct} Prozent sicher`}><i style={{ width: `${pct}%` }} /></div>
+    </li>
+  );
+}

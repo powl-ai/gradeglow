@@ -81,6 +81,7 @@ const migrateStudySessions = (rawSessions: unknown, examId: string): StudySessio
         startedAtIso: asString(record.startedAtIso).trim() || undefined,
         completedAtIso: asString(record.completedAtIso).trim() || undefined,
         ...(typeof record.topicId === "string" && record.topicId ? { topicId: record.topicId } : {}),
+        ...(record.extraTime === true ? { extraTime: true } : {}),
       } satisfies StudySessionItem;
     })
     .filter((session): session is StudySessionItem => Boolean(session));
@@ -121,6 +122,8 @@ export const migrateExams = (rawExams: unknown): ExamPlanItem[] => {
         isHidden: record.isHidden === true,
         studySessions: migrateStudySessions(record.studySessions, id),
         topics: normalizeTopics(record.topics),
+        ...(typeof record.color === "string" && /^#[0-9a-f]{6}$/i.test(record.color) ? { color: record.color } : {}),
+        ...(typeof record.studyDaysPerWeek === "number" && record.studyDaysPerWeek >= 1 && record.studyDaysPerWeek <= 6 ? { studyDaysPerWeek: Math.round(record.studyDaysPerWeek) } : {}),
       } satisfies ExamPlanItem;
     })
     .filter((exam): exam is ExamPlanItem => Boolean(exam));

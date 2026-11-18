@@ -2968,16 +2968,17 @@ body {
     background: linear-gradient(90deg, #94a3b8, #cbd5e1);
   }
 
-  input,
-  textarea,
-  select,
+  /* The new app (/neu, .gn) styles its own fields, also in dark mode. */
+  input:not(.gn *),
+  textarea:not(.gn *),
+  select:not(.gn *),
   .planner-detail-input {
     font-size: 16px !important;
     color: #0f172a !important;
   }
 
-  input::placeholder,
-  textarea::placeholder {
+  input:not(.gn *)::placeholder,
+  textarea:not(.gn *)::placeholder {
     color: #94a3b8 !important;
     opacity: 1;
   }

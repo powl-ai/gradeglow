@@ -44,17 +44,17 @@ html[data-color-mode="dark"] .gn {
 
 .gn-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 20px calc(env(safe-area-inset-bottom, 0px) + 104px); }
 .gn-top { display: flex; align-items: center; justify-content: space-between; min-height: 48px;
-  margin: calc(env(safe-area-inset-top, 0px) + 20px) 0 20px; }
-.gn-top h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  margin: calc(env(safe-area-inset-top, 0px) + 12px) 0 12px; }
+.gn-top h1 { font-size: 23px; font-weight: 700; letter-spacing: -0.02em; }
 .gn-top small { display: block; font-size: 14px; font-weight: 600; color: var(--muted); }
 .gn-actions { display: flex; gap: 8px; }
-.gn-icon { width: 44px; height: 44px; border-radius: 999px; background: var(--btn); box-shadow: var(--lift); display: grid; place-items: center; }
+.gn-icon { width: 40px; height: 40px; border-radius: 999px; background: var(--btn); box-shadow: var(--lift); display: grid; place-items: center; }
 .gn-icon.text { width: auto; padding: 0 12px; font-size: 14px; font-weight: 700; }
-.gn-stack { display: flex; flex-direction: column; gap: 16px; }
-.gn-card { background: var(--card); border-radius: 22px; padding: 20px; box-shadow: var(--lift); }
+.gn-stack { display: flex; flex-direction: column; gap: 12px; }
+.gn-card { background: var(--card); border-radius: 20px; padding: 16px; box-shadow: var(--lift); }
 .gn-muted { color: var(--muted); }
-.gn-h2 { display: flex; align-items: baseline; justify-content: space-between; padding: 22px 4px 2px; }
-.gn-h2 h2 { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+.gn-h2 { display: flex; align-items: baseline; justify-content: space-between; padding: 14px 4px 0; }
+.gn-h2 h2 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
 .gn-link { font-size: 14px; font-weight: 700; color: var(--acc-ink); }
 .gn-h2 :is(a, .gn-link) { color: var(--muted); font-weight: 600; }
 .gn-h3 { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
@@ -73,15 +73,15 @@ html[data-color-mode="dark"] .gn {
 .gn-empty p { color: var(--muted); font-size: 15px; line-height: 1.45; margin: 6px 0 14px; }
 
 /* Hero: the one glowing surface per screen. A slight tonal shift of the accent and a glow beneath it. */
-.gn-hero { border-radius: 22px; padding: 20px; color: var(--on-accent);
+.gn-hero { border-radius: 20px; padding: 16px; color: var(--on-accent);
   background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 92%, white) 0%, var(--accent) 45%, color-mix(in oklab, var(--accent) 88%, black) 100%);
   box-shadow: 0 18px 36px -18px color-mix(in oklab, var(--accent) 70%, transparent), 0 2px 0 color-mix(in oklab, var(--accent) 60%, black); }
 .gn-hero-meta { font-size: 14px; font-weight: 600; opacity: 0.8; font-variant-numeric: tabular-nums; }
-.gn-hero h3 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.gn-hero h3 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
 .gn-hero p { font-size: 15px; line-height: 1.4; opacity: 0.85; margin-top: 4px; }
 .gn-hero .gn-bar { background: color-mix(in oklab, var(--on-accent) 22%, transparent); }
 .gn-hero .gn-bar i { background: var(--on-accent); }
-.gn-white { display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px; border-radius: 999px;
+.gn-white { display: flex; align-items: center; justify-content: center; gap: 8px; height: 46px; border-radius: 999px;
   background: var(--hero-btn); color: var(--hero-btn-ink); font-size: 16px; font-weight: 700;
   box-shadow: 0 2px 0 color-mix(in oklab, var(--accent) 50%, black); }
 .gn-go { flex: 1; height: 48px; border-radius: 999px; color: var(--on-accent); font-size: 16px; font-weight: 700;
@@ -170,7 +170,7 @@ html[data-color-mode="dark"] .gn-streak { --flame: #ff8a3d; }
 .gn-chips button i { width: 8px; height: 8px; border-radius: 99px; }
 .gn-chips button[aria-pressed="true"] { background: var(--ink); color: var(--card); }
 .gn-list { list-style: none; display: grid; }
-.gn-list li { display: flex; align-items: center; gap: 14px; padding: 12px 0; }
+.gn-list li { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
 .gn-list li > div { flex: 1; min-width: 0; }
 .gn-list strong { display: block; font-size: 15px; font-weight: 600; }
 .gn-list small { font-size: 13px; color: var(--muted); }
@@ -279,7 +279,7 @@ html[data-color-mode="dark"] .gn-form :is(input, select, textarea) { color-schem
 
 /* Heute: further blocks of the day as one agenda list */
 .gn-agenda { list-style: none; display: grid; background: var(--card); border-radius: 20px; padding: 4px 16px; box-shadow: var(--lift); }
-.gn-agenda li { display: flex; align-items: center; gap: 14px; min-height: 68px; padding: 12px 0; }
+.gn-agenda li { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px 0; }
 .gn-agenda li > div { flex: 1; min-width: 0; }
 .gn-agenda strong { display: block; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
 .gn-agenda small { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; color: var(--muted); margin-top: 1px; }

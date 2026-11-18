@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { getExamPlanStatus } from "../lib/examTopics";
+import type { CSSProperties } from "react";
+import { confidenceFromPct, getExamPlanStatus, isExtraTime, topicPct } from "../lib/examTopics";
 import { getSessionStudyMinutes } from "../lib/studyStats";
-import type { TopicConfidence } from "../types";
+import type { ExamTopic } from "../types";
 import type { AppCtx } from "./NeuApp";
 import { Icon } from "./Icons";
 import { addDays, dateKey, dayLabel, examColor, examShort, examSlots, fromKey, minutesLabel } from "./model";
 import { replan } from "./plan";
 
-const CONFIDENCE: Record<number, string> = { 1: "unsicher", 2: "geht so", 3: "sicher" };
 
 export default function Klausuren({ ctx }: { ctx: AppCtx }) {
   const { exams, setExams, today } = ctx;
@@ -35,12 +35,12 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
   const sessions = exam.studySessions.filter((s) => !s.isHidden).sort((a, b) => `${a.dateKey} ${a.time}`.localeCompare(`${b.dateKey} ${b.time}`));
   const learned = sessions.filter((s) => s.isDone).reduce((sum, s) => sum + getSessionStudyMinutes(s), 0);
   const weekEnd = dateKey(addDays(fromKey(today), 7));
-  const soon = sessions.filter((s) => (s.dateKey >= today && s.dateKey < weekEnd) || (!s.isDone && s.dateKey < today));
-  const topics = [...(exam.topics ?? [])].sort((a, b) => a.confidence - b.confidence);
+  const soon = sessions.filter((s) => !isExtraTime(s)).filter((s) => (s.dateKey >= today && s.dateKey < weekEnd) || (!s.isDone && s.dateKey < today));
+  const topics = [...(exam.topics ?? [])].sort((a, b) => topicPct(a) - topicPct(b));
 
-  const cycleTopic = (topicId: string) => setExams((previous) => previous.map((item) => item.id !== exam.id ? item : {
+  const setTopicPct = (topicId: string, pct: number) => setExams((previous) => previous.map((item) => item.id !== exam.id ? item : {
     ...item, topics: (item.topics ?? []).map((topic) => topic.id !== topicId ? topic
-      : { ...topic, confidence: ((topic.confidence % 3) + 1) as TopicConfidence }),
+      : { ...topic, confidencePct: pct, confidence: confidenceFromPct(pct) }),
   }));
 
   // Exams from before the new app, or ones that were too close, can have no blocks at all.
@@ -98,22 +98,13 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
         <section className="gn-card" aria-label="Themen">
           <div className="gn-row" style={{ justifyContent: "space-between", marginBottom: 2 }}>
             <h2 className="gn-h3">Themen</h2>
-            {topics.length > 0 && <span className="gn-muted" style={{ fontSize: 13, fontWeight: 600, flex: "none" }}>Tippen zum Ändern</span>}
+            {topics.length > 0 && <span className="gn-muted" style={{ fontSize: 13, fontWeight: 600, flex: "none" }}>Wie sicher bist du?</span>}
           </div>
           {topics.length === 0 ? (
             <p className="gn-muted" style={{ fontSize: 14, marginTop: 6 }}>Noch keine Themen. <button type="button" className="gn-link" onClick={() => ctx.openExam(exam.id)}>Themen eintragen</button>, damit schwache Themen mehr Blöcke bekommen.</p>
           ) : (
-            <ul className="gn-list">
-              {topics.map((topic) => (
-                <li key={topic.id}>
-                  <div><strong>{topic.name}</strong></div>
-                  <button type="button" className="gn-row" style={{ gap: 8, flex: "none", minHeight: 36 }} onClick={() => cycleTopic(topic.id)}
-                    aria-label={`${topic.name}: ${CONFIDENCE[topic.confidence]}. Ändern`}>
-                    <small>{CONFIDENCE[topic.confidence]}</small>
-                    <span className="gn-lvl" aria-hidden="true">{[1, 2, 3].map((level) => <i key={level} className={level <= topic.confidence ? "on" : undefined} />)}</span>
-                  </button>
-                </li>
-              ))}
+            <ul className="gn-topics">
+              {topics.map((topic) => <TopicRow key={topic.id} topic={topic} onCommit={(pct) => setTopicPct(topic.id, pct)} />)}
             </ul>
           )}
         </section>
@@ -152,5 +143,26 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
         )}
       </div>
     </div>
+  );
+}
+
+/** One topic with a native slider. The value is kept locally while dragging and saved on release,
+ *  so the list (sorted weakest first) does not jump under the finger. */
+function TopicRow({ topic, onCommit }: { topic: ExamTopic; onCommit: (pct: number) => void }) {
+  const saved = topicPct(topic);
+  const [draft, setDraft] = useState<number | null>(null);
+  const value = draft ?? saved;
+  const commit = () => { if (draft !== null && draft !== saved) onCommit(draft); setDraft(null); };
+  return (
+    <li>
+      <div className="gn-row" style={{ justifyContent: "space-between" }}>
+        <strong>{topic.name}</strong>
+        <span className="gn-num">{value} %</span>
+      </div>
+      <input type="range" min={0} max={100} step={5} value={value} aria-label={`${topic.name}: wie sicher, in Prozent`}
+        style={{ "--pct": `${value}%` } as CSSProperties}
+        onChange={(event) => setDraft(Number(event.target.value))}
+        onPointerUp={commit} onTouchEnd={commit} onKeyUp={commit} onBlur={commit} />
+    </li>
   );
 }

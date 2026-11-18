@@ -81,6 +81,7 @@ const migrateStudySessions = (rawSessions: unknown, examId: string): StudySessio
         startedAtIso: asString(record.startedAtIso).trim() || undefined,
         completedAtIso: asString(record.completedAtIso).trim() || undefined,
         ...(typeof record.topicId === "string" && record.topicId ? { topicId: record.topicId } : {}),
+        ...(record.extraTime === true ? { extraTime: true } : {}),
       } satisfies StudySessionItem;
     })
     .filter((session): session is StudySessionItem => Boolean(session));

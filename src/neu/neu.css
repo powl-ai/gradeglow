@@ -278,3 +278,20 @@ html[data-color-mode="dark"] .gn-form :is(input, select, textarea) { color-schem
 .gn-agenda small { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--muted); margin-top: 1px; }
 .gn-agenda small i { width: 8px; height: 8px; border-radius: 99px; flex: none; }
 .gn-weekline { display: flex; align-items: center; gap: 12px; padding: 4px 0 6px; }
+
+/* Klausuren: topics with a slider, 0–100 % sure */
+.gn-topics { list-style: none; display: grid; gap: 4px; margin-top: 8px; }
+.gn-topics li { padding: 6px 0; }
+.gn-topics strong { font-size: 15px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.gn-topics .gn-num { font-size: 14px; font-weight: 700; color: var(--muted); }
+.gn-topics input[type="range"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 32px; margin: 2px 0 0; background: none; }
+.gn-topics input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 99px;
+  background: linear-gradient(to right, var(--accent) var(--pct), var(--soft) var(--pct)); }
+.gn-topics input[type="range"]::-moz-range-track { height: 6px; border-radius: 99px; background: var(--soft); }
+.gn-topics input[type="range"]::-moz-range-progress { height: 6px; border-radius: 99px; background: var(--accent); }
+.gn-topics input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; margin-top: -10px; border-radius: 99px;
+  background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25), 0 0 0 0.5px rgba(0, 0, 0, 0.08); }
+.gn-topics input[type="range"]::-moz-range-thumb { width: 26px; height: 26px; border: 0; border-radius: 99px; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); }
+html[data-color-mode="dark"] .gn-topics input[type="range"]::-webkit-slider-runnable-track {
+  background: linear-gradient(to right, var(--hero-btn) var(--pct), var(--soft) var(--pct)); }
+html[data-color-mode="dark"] .gn-topics input[type="range"]::-moz-range-progress { background: var(--hero-btn); }

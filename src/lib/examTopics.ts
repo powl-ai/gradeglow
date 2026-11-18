@@ -20,6 +20,12 @@ export const createTopic = (name: string, confidence: TopicConfidence = 1): Exam
 const asConfidence = (value: unknown): TopicConfidence =>
   value === 2 || value === 3 ? value : 1;
 
+/** Percent (0–100) to the three plan levels: under 34 unsicher, under 67 geht so, else sicher. */
+export const confidenceFromPct = (pct: number): TopicConfidence => (pct < 34 ? 1 : pct < 67 ? 2 : 3);
+/** Percent shown for a topic; older topics only have a level. */
+export const topicPct = (topic: Pick<ExamTopic, "confidence" | "confidencePct">) =>
+  topic.confidencePct ?? (topic.confidence === 1 ? 20 : topic.confidence === 2 ? 50 : 85);
+
 /** Accepts whatever came from storage and returns clean topics (never throws). */
 export const normalizeTopics = (raw: unknown): ExamTopic[] => {
   if (!Array.isArray(raw)) return [];
@@ -31,7 +37,9 @@ export const normalizeTopics = (raw: unknown): ExamTopic[] => {
     if (!name) return [];
     const id = typeof record.id === "string" && record.id && !seen.has(record.id) ? record.id : createTopicId();
     seen.add(id);
-    return [{ id, name, confidence: asConfidence(record.confidence) }];
+    const pct = typeof record.confidencePct === "number" && Number.isFinite(record.confidencePct)
+      ? Math.max(0, Math.min(100, Math.round(record.confidencePct))) : undefined;
+    return [{ id, name, confidence: pct === undefined ? asConfidence(record.confidence) : confidenceFromPct(pct), ...(pct === undefined ? {} : { confidencePct: pct }) }];
   });
 };
 
@@ -100,7 +108,11 @@ export const describePlannedBlock = (block: PlannedBlock, subject: string) => {
     : { title: `${block.topic.name} · Runde ${block.round}`, focus: "Aufgaben ohne Lösung rechnen, Lücken notieren" };
 };
 
-const isActive = (session: StudySessionItem) => !session.isHidden;
+/** Time logged outside a plan block (free focus time, or a block ended too early) is learned time,
+ *  but not a block. Free focus sessions from before the flag existed have a `focus-` id. */
+export const isExtraTime = (session: Pick<StudySessionItem, "id" | "extraTime">) =>
+  session.extraTime === true || session.id.startsWith("focus-");
+const isActive = (session: StudySessionItem) => !session.isHidden && !isExtraTime(session);
 
 export type ExamPlanStatus = {
   daysUntil: number;

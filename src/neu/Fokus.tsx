@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useFocusSession } from "../components/FocusSessionProvider";
-import { getExamPlanStatus, getTodayBlocks } from "../lib/examTopics";
+import { getExamPlanStatus, getTodayBlocks, isExtraTime } from "../lib/examTopics";
 import { getFocusElapsedMs } from "../lib/focusSession";
 import { getSessionStudyMinutes } from "../lib/studyStats";
 import type { StudySessionItem } from "../types";
@@ -11,6 +11,8 @@ import { Icon } from "./Icons";
 import { constellationFor, dateKey, dayLabel, examColor, examShort, litStars, minutesLabel, timeOf } from "./model";
 
 const DURATIONS = [25, 45, 60, 90];
+/** Share of the set time a block needs before it counts and lights a star. */
+const STAR_SHARE = 0.9;
 const VIEW_KEY = "gn-fokus-view";
 const pad = (n: number) => String(n).padStart(2, "0");
 const clock = (seconds: number) => {
@@ -71,7 +73,9 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
   const constellation = constellationFor(status?.totalSessions ?? 0);
   const lit = status ? litStars(constellation, status.doneSessions, status.totalSessions) : 0;
   const running = Boolean(active && ["running", "away", "paused"].includes(focus.status));
-  const shown = lit + (running && lit < constellation.stars.length ? 1 : 0);
+  // Only a session on a plan block grows a star; free study time does not.
+  const growing = running && Boolean(active?.sessionId);
+  const shown = lit + (growing && lit < constellation.stars.length ? 1 : 0);
   const elapsed = active ? getFocusElapsedMs(active, focus.now) / 1000 : 0;
   const remaining = active ? active.goalMinutes * 60 - elapsed : goal * 60;
   const endsAt = new Date(Date.now() + remaining * 1000);
@@ -96,12 +100,18 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
     const completedAt = new Date(finished.endedAt ?? Date.now());
     const focusedMs = getFocusElapsedMs(finished, completedAt.getTime());
     if (focusedMs < 60_000) { focus.store.abort(Date.now()); setMessage("Unter einer Minute, nichts gespeichert."); return; }
-    const planned = exams.find((item) => item.id === finished.examId)?.studySessions.find((s) => s.id === finished.sessionId);
+    const block = exams.find((item) => item.id === finished.examId)?.studySessions.find((s) => s.id === finished.sessionId);
+    // A block counts (and lights a star) only with at least 90 % of the set time. Shorter, or free
+    // study without a block, is saved as extra learned time and the block stays open.
+    const needMs = Math.ceil(finished.goalMinutes * STAR_SHARE) * 60_000;
+    const counts = Boolean(block) && focusedMs >= needMs;
+    const planned = counts ? block : undefined;
     const sessionId = planned?.id ?? `focus-${finished.id}`;
     const session: StudySessionItem = {
       ...(planned ?? {}),
+      ...(planned ? {} : { extraTime: true }),
       id: sessionId, examId: finished.examId,
-      title: planned?.title || `Fokus · ${finished.subjectTitle}`,
+      title: planned?.title || block?.title || `Fokus · ${finished.subjectTitle}`,
       dateKey: dateKey(startedAt), time: planned?.time || timeOf(startedAt),
       durationMinutes: focusedMs / 60_000, focusedMs, awayMs: finished.awayMs, awayCount: finished.awayCount,
       focus: planned?.focus || "Per Timer erfasste Lernzeit", notes: planned?.notes ?? "",
@@ -114,7 +124,8 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
     } : item));
     focus.store.markSaved(finished.id, sessionId);
     ctx.setFocusPick({ examId: finished.examId, sessionId: null });
-    setMessage(`${minutesLabel(focusedMs / 60_000)} gespeichert.${planned ? " Ein neuer Stern leuchtet." : ""}`);
+    setMessage(`${minutesLabel(focusedMs / 60_000)} gespeichert.${planned ? " Ein neuer Stern leuchtet."
+      : block ? ` Für den Stern brauchst du ${minutesLabel(needMs / 60_000)}, der Block bleibt offen.` : " Freie Lernzeit zählt nicht für Sterne."}`);
   };
 
   if (!exam) {
@@ -130,7 +141,7 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
     );
   }
 
-  const planned = exam.studySessions.filter((s) => !s.isHidden).sort((x, y) => `${x.dateKey} ${x.time}`.localeCompare(`${y.dateKey} ${y.time}`));
+  const planned = exam.studySessions.filter((s) => !s.isHidden && !isExtraTime(s)).sort((x, y) => `${x.dateKey} ${x.time}`.localeCompare(`${y.dateKey} ${y.time}`));
   // Centre each figure in the sky above the caption (drawing area 366 × 270).
   const xs = constellation.stars.map((star) => star.x), ys = constellation.stars.map((star) => star.y);
   const dx = (366 - Math.min(...xs) - Math.max(...xs)) / 2, dy = (262 - Math.min(...ys) - Math.max(...ys)) / 2;
@@ -155,7 +166,7 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
             <path d={line(edgeOff)} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="1" strokeDasharray="2 4" />
             <path d={line(edgeOn)} fill="none" stroke="rgba(214,200,255,0.75)" strokeWidth="1.4" strokeLinecap="round" />
             {stars.map((star, index) => {
-              const on = index < lit, next = index === lit && running;
+              const on = index < lit, next = index === lit && growing;
               return (
                 <g key={index} className={next ? "gn-next" : undefined}>
                   {(on || next) && <circle cx={star.x} cy={star.y} r={on ? 9 + star.m * 5 : 16} fill="url(#gn-halo)" />}
@@ -168,7 +179,7 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
           <div className="gn-sky-caption">
             <div>
               <strong>{constellation.name} <em>· {examShort(exam)}</em></strong>
-              <small>{running ? `Stern ${Math.min(lit + 1, stars.length)} von ${stars.length} entsteht gerade` : `${lit} von ${stars.length} Sternen`}</small>
+              <small>{growing ? `Stern ${Math.min(lit + 1, stars.length)} von ${stars.length} entsteht gerade` : running ? "Freie Lernzeit, ohne Stern" : `${lit} von ${stars.length} Sternen`}</small>
             </div>
             {status && status.daysUntil >= 0 && <span>noch {status.daysUntil} {status.daysUntil === 1 ? "Tag" : "Tage"}</span>}
           </div>

@@ -5,6 +5,9 @@ import { setDemoPlan } from "../lib/guestDemo";
 import type { AccentColor, ThemeMode } from "../types";
 import type { AppCtx } from "./NeuApp";
 import { ACCENTS } from "./model";
+import LegalSheet from "./LegalSheet";
+import DeleteAccount from "./DeleteAccount";
+import type { LegalId } from "./legal";
 
 const ACCENT_NAMES: Record<AccentColor, string> = {
   violet: "Violett", pink: "Pink", blue: "Blau", emerald: "Grün", amber: "Bernstein", cyan: "Türkis", rose: "Rosé",
@@ -17,6 +20,7 @@ export default function SettingsSheet({ ctx, onClose }: { ctx: AppCtx; onClose: 
   const { profile, saveProfile, limits, user } = ctx;
   const [name, setName] = useState(profile.displayName || "");
   const [error, setError] = useState("");
+  const [legal, setLegal] = useState<LegalId | null>(null);
   const premium = limits.premiumThemes;
 
   const update = (patch: Partial<typeof profile>) => {
@@ -32,11 +36,11 @@ export default function SettingsSheet({ ctx, onClose }: { ctx: AppCtx; onClose: 
         <button type="button" className="gn-link" onClick={() => { if (name.trim() && name.trim() !== profile.displayName) update({ displayName: name.trim() }); onClose(); }}>Fertig</button>
       </header>
       <div className="gn-sheet-body gn-stack">
-        {error && <p className="gn-card" style={{ color: "var(--warn)", fontSize: 16 }}>{error}</p>}
+        {error && <p className="gn-card" style={{ color: "var(--warn)", fontSize: 15 }}>{error}</p>}
 
         <section className="gn-card gn-form">
           <label>Name<input value={name} onChange={(e) => setName(e.target.value)} autoComplete="given-name" /></label>
-          <p className="gn-muted" style={{ fontSize: 15 }}>{user.email ?? "Ohne E-Mail angemeldet"} · {premium ? "Premium" : "Kostenlos"}</p>
+          <p className="gn-muted" style={{ fontSize: 14 }}>{user.email ?? "Ohne E-Mail angemeldet"} · {premium ? "Premium" : "Kostenlos"}</p>
         </section>
 
         {user.provider === "demo" && (
@@ -51,7 +55,7 @@ export default function SettingsSheet({ ctx, onClose }: { ctx: AppCtx; onClose: 
 
         <section className="gn-card">
           <div className="gn-row" style={{ justifyContent: "space-between" }}>
-            <strong style={{ fontSize: 17 }}>Akzentfarbe</strong>
+            <strong style={{ fontSize: 16 }}>Akzentfarbe</strong>
             {!premium && <span className="gn-tag">Premium</span>}
           </div>
           <div className="gn-swatches" style={{ marginTop: 12 }}>
@@ -61,11 +65,11 @@ export default function SettingsSheet({ ctx, onClose }: { ctx: AppCtx; onClose: 
                 onClick={() => update({ accentColor: key })} />
             ))}
           </div>
-          {!premium && <p className="gn-muted" style={{ fontSize: 15, marginTop: 10 }}>Mit Premium färbst du die ganze App in deiner Farbe, dazu eigene Farben pro Klausur.</p>}
+          {!premium && <p className="gn-muted" style={{ fontSize: 14, marginTop: 10 }}>Mit Premium färbst du die ganze App in deiner Farbe, dazu eigene Farben pro Klausur.</p>}
         </section>
 
         <section className="gn-card">
-          <strong style={{ fontSize: 17 }}>Darstellung</strong>
+          <strong style={{ fontSize: 16 }}>Darstellung</strong>
           <div className="gn-seg" style={{ marginTop: 12, background: "var(--soft)" }}>
             {MODES.map((mode) => (
               <button key={mode.value} type="button" aria-pressed={(profile.themeMode || "system") === mode.value} onClick={() => update({ themeMode: mode.value })}>{mode.label}</button>
@@ -74,17 +78,20 @@ export default function SettingsSheet({ ctx, onClose }: { ctx: AppCtx; onClose: 
         </section>
 
         <section className="gn-card">
-          <strong style={{ fontSize: 17 }}>Alte Version</strong>
+          <strong style={{ fontSize: 16 }}>Alte Version</strong>
           <p className="gn-muted gn-note">Study Circle, Bezahlung und Backup gibt es vorerst noch in der alten Version. Deine Daten sind in beiden dieselben.</p>
-          <a className="gn-link gn-hit" href="/alt">Alte Version öffnen</a>
+          <button type="button" className="gn-link gn-hit" onClick={() => window.location.replace("/alt")}>Alte Version öffnen</button>
         </section>
 
         <p className="gn-muted gn-note" style={{ textAlign: "center" }}>
-          <a className="gn-hit" href="/legal/impressum">Impressum</a> · <a className="gn-hit" href="/legal/privacy">Datenschutz</a> · <a className="gn-hit" href="/legal/terms">AGB</a>
+          <button type="button" className="gn-hit" onClick={() => setLegal("impressum")}>Impressum</button> · <button type="button" className="gn-hit" onClick={() => setLegal("privacy")}>Datenschutz</button> · <button type="button" className="gn-hit" onClick={() => setLegal("terms")}>Nutzungsbedingungen</button>
         </p>
 
         <button type="button" className="gn-danger" onClick={() => { void ctx.logout(); }}>Abmelden</button>
+
+        <DeleteAccount ctx={ctx} />
       </div>
+      {legal && <LegalSheet initial={legal} onClose={() => setLegal(null)} />}
     </div>
   );
 }

@@ -22,7 +22,9 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "GradeGlow",
-    statusBarStyle: "black-translucent",
+    // Opaque status bar in the app colour: the app starts below it. With "black-translucent",
+    // iOS blurred the top of the app and reported a wrong height (gap under the tab bar).
+    statusBarStyle: "default",
   },
   formatDetection: {
     telephone: false,
@@ -39,7 +41,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#ffffff" }, { media: "(prefers-color-scheme: dark)", color: "#161b2e" }],
+  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#eceef1" }, { media: "(prefers-color-scheme: dark)", color: "#0e0f12" }],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

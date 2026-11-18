@@ -96,16 +96,15 @@ function Shell({ user, logout, fontClass }: { user: AppUser; logout: () => Promi
   const [profilSeen, setProfilSeen] = useState(false);
   useEffect(() => { if (tab === "profil") setProfilSeen(true); }, [tab]);
 
-  // Home-screen app: a swipe from the left edge would go "back" to an older page. Block it there.
+  // Status bar colour = app ground (light/dark as chosen in the app, not only the system).
   useEffect(() => {
-    const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true
-      || window.matchMedia("(display-mode: standalone)").matches;
-    if (!standalone) return undefined;
-    const block = (event: TouchEvent) => { const x = event.touches[0]?.clientX ?? 99; if (x < 16) event.preventDefault(); };
-    document.addEventListener("touchstart", block, { passive: false });
-    return () => document.removeEventListener("touchstart", block);
-  }, []);
+    if (!isProfileLoaded) return;
+    const dark = document.documentElement.dataset.colorMode === "dark";
+    document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => meta.setAttribute("content", dark ? "#0e0f12" : "#eceef1"));
+  }, [isProfileLoaded, profile.themeMode]);
 
+  // Swipe-back cannot be blocked in iOS home-screen apps. Instead nothing adds browser history:
+  // tabs use replaceState, legal texts open as sheets, switching to /alt replaces the page.
   useEffect(() => {
     setTab(readTab());
     const onHash = () => setTab(readTab());

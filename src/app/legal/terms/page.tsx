@@ -1,5 +1,7 @@
-import LegalCenterPage from "../../../components/LegalCenterPage";
+import LegalPage from "../../../neu/LegalPage";
 
-export default function TermsRoute() {
-  return <LegalCenterPage page="terms" />;
+export const metadata = { title: "Nutzungsbedingungen" };
+
+export default function Page() {
+  return <LegalPage id="terms" />;
 }

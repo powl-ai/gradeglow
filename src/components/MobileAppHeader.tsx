@@ -12,7 +12,7 @@ const titles: Record<string, string> = {
   "/feedback": "Feedback", "/store": "Glow Shop",
 };
 const links = [
-  ["/", "Home"], ["/exams", "Kalender"], ["/timer", "Fokus"],
+  ["/", "Zur neuen App"], ["/alt", "Alte Startseite"], ["/exams", "Kalender"], ["/timer", "Fokus"],
   ["/profile", "Profil"], ["/modules", "Module"], ["/insights", "Insights"],
   ["/friends", "Study Circle"], ["/schedule", "Stundenplan"],
   ["/planning", "Studienplan"], ["/settings", "Einstellungen"], ["/feedback", "Feedback"],
@@ -28,9 +28,8 @@ export default function MobileAppHeader({ pathname }: { pathname: string }) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h16" strokeLinecap="round" /></svg>
         </button>
         <h1 className={pathname === "/alt" ? "gg-header-wordmark" : ""}>{titles[pathname] ?? "GradeGlow"}</h1>
-        <Link href="/settings" className="gg-header-action" aria-label="Einstellungen öffnen">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg>
-        </Link>
+        {/* The old app lives under /alt now: this is the way back to the new one. */}
+        <a href="/" className="gg-header-action" aria-label="Zur neuen App" style={{ width: "auto", padding: "0 12px", fontSize: 14, fontWeight: 800 }}>Neue App</a>
       </div>
     </header>
     {open && <AppDialog label="App-Menü" onClose={() => setOpen(false)} className="gg-menu-dialog">

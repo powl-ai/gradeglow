@@ -1,0 +1,65 @@
+/* Login and welcome screen (both app versions). Same look as the new app: see DESIGN.md. */
+.ga-page {
+  --ga-ground: #eceef1; --ga-card: #fff; --ga-ink: #16161a; --ga-muted: #686b74; --ga-soft: #e6e8ec;
+  --ga-accent: #3f1d62; --ga-flieder: #cdbcff; --ga-warn: #c2410c; --ga-ok: #1f7a4d;
+  --ga-lift: 0 1px 0 rgba(20, 24, 33, 0.04), 0 6px 18px -10px rgba(20, 24, 33, 0.18);
+  min-height: 100dvh; background: var(--ga-ground); color: var(--ga-ink);
+  font-family: var(--gn-font, system-ui), system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased;
+  padding: calc(env(safe-area-inset-top, 0px) + 20px) 20px calc(env(safe-area-inset-bottom, 0px) + 20px);
+}
+@media (prefers-color-scheme: dark) {
+  .ga-page { --ga-ground: #0e0f12; --ga-card: #1a1b20; --ga-ink: #f2f2f4; --ga-muted: #a2a4ad; --ga-soft: #25262c; --ga-warn: #fb923c; --ga-ok: #5fd394;
+    --ga-lift: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 10px 24px -14px rgba(0, 0, 0, 0.8); }
+}
+.ga-page *, .ga-page *::before, .ga-page *::after { box-sizing: border-box; }
+.ga-page :where(h1, p) { margin: 0; }
+.ga-page button { font: inherit; border: 0; padding: 0; background: none; color: inherit; cursor: pointer; }
+.ga-page button:disabled { opacity: 0.55; cursor: default; }
+.ga-center { display: grid; place-content: center; justify-items: center; gap: 14px; }
+.ga-spinner { width: 28px; height: 28px; border-radius: 99px; border: 3px solid var(--ga-soft); border-top-color: var(--ga-accent); animation: ga-spin 0.9s linear infinite; }
+@keyframes ga-spin { to { transform: rotate(360deg); } }
+.ga-muted { color: var(--ga-muted); font-size: 15px; font-weight: 600; }
+
+.ga-wrap { max-width: 420px; min-height: calc(100dvh - 40px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); margin: 0 auto; display: flex; flex-direction: column; }
+.ga-brand { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700; }
+.ga-dot { width: 10px; height: 10px; border-radius: 99px; background: var(--ga-flieder); box-shadow: 0 0 0 3px color-mix(in oklab, var(--ga-flieder) 35%, transparent); }
+
+.ga-welcome { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 16px; padding: 24px 0; }
+.ga-welcome h1 { font-size: 28px; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; }
+.ga-lead { font-size: 16px; line-height: 1.45; color: var(--ga-muted); }
+.ga-preview { display: grid; gap: 4px; margin: 8px 0; padding: 16px; border-radius: 20px; color: #fff;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--ga-accent) 92%, white) 0%, var(--ga-accent) 45%, color-mix(in oklab, var(--ga-accent) 88%, black) 100%);
+  box-shadow: 0 18px 36px -18px color-mix(in oklab, var(--ga-accent) 70%, transparent); }
+.ga-preview-meta, .ga-preview-foot { font-size: 13px; font-weight: 600; opacity: 0.8; }
+.ga-preview strong { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+.ga-preview-sub { font-size: 14px; opacity: 0.85; }
+.ga-preview-bar { height: 6px; border-radius: 99px; background: rgba(255, 255, 255, 0.22); margin: 10px 0 4px; overflow: hidden; }
+.ga-preview-bar i { display: block; width: 33%; height: 100%; border-radius: 99px; background: #fff; }
+
+.ga-actions { display: grid; gap: 10px; margin-top: 8px; }
+.ga-page .ga-primary, .ga-page .ga-secondary { width: 100%; min-height: 50px; border-radius: 999px; font-size: 16px; font-weight: 700; }
+.ga-page .ga-primary { background: var(--ga-accent); color: #fff; }
+.ga-page .ga-secondary { background: var(--ga-card); color: var(--ga-ink); box-shadow: var(--ga-lift); }
+@media (prefers-color-scheme: dark) { .ga-page .ga-primary { background: var(--ga-flieder); color: #2a123f; } }
+.ga-page .ga-text { font-size: 15px; font-weight: 700; color: var(--ga-muted); min-height: 44px; }
+
+.ga-card { margin: 24px 0; padding: 20px; border-radius: 22px; background: var(--ga-card); box-shadow: var(--ga-lift); display: grid; gap: 14px; }
+.ga-card h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+.ga-page .ga-back { justify-self: start; font-size: 15px; font-weight: 700; color: var(--ga-muted); min-height: 32px; }
+.ga-form { display: grid; gap: 12px; }
+.ga-form label { display: grid; gap: 6px; font-size: 14px; font-weight: 700; }
+.ga-form input { width: 100%; min-height: 48px; padding: 0 14px; border: 0; border-radius: 14px; background: var(--ga-soft); color: var(--ga-ink); font: inherit; font-size: 16px; font-weight: 500; outline: none; }
+.ga-form input:focus { box-shadow: inset 0 0 0 2px var(--ga-accent); }
+@media (prefers-color-scheme: dark) { .ga-form input:focus { box-shadow: inset 0 0 0 2px var(--ga-flieder); } }
+.ga-page .ga-forgot { justify-self: start; min-height: 32px; font-size: 14px; }
+.ga-info, .ga-error { font-size: 14px; line-height: 1.4; font-weight: 600; padding: 12px 14px; border-radius: 14px; }
+.ga-info { color: var(--ga-ok); background: color-mix(in oklab, var(--ga-ok) 12%, var(--ga-card)); }
+.ga-error { color: var(--ga-warn); background: color-mix(in oklab, var(--ga-warn) 12%, var(--ga-card)); }
+.ga-or { text-align: center; font-size: 13px; font-weight: 600; color: var(--ga-muted); }
+.ga-social { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ga-page .ga-social .ga-secondary { background: var(--ga-soft); box-shadow: none; font-size: 15px; }
+.ga-switch { text-align: center; font-size: 15px; color: var(--ga-muted); }
+.ga-switch .ga-text { color: var(--ga-ink); }
+
+.ga-footer { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 16px; padding-top: 12px; }
+.ga-footer a { font-size: 13px; font-weight: 600; color: var(--ga-muted); text-decoration: none; min-height: 32px; display: inline-flex; align-items: center; }

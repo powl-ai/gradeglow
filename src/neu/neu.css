@@ -321,3 +321,12 @@ html[data-color-mode="dark"]:has(.gn), html[data-color-mode="dark"]:has(.gn) bod
 .gn-legal-page > div { max-width: 640px; margin: 0 auto; }
 .gn-legal-page h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 20px; }
 .gn .gn-go.gn-go-danger, html[data-color-mode="dark"] .gn .gn-go.gn-go-danger { background: #c4362f; color: #fff; }
+
+/* First start: what happens after creating the first exam */
+.gn-steps { list-style: none; counter-reset: gn-step; display: grid; gap: 12px; margin: 14px 0 16px; }
+.gn-steps li { counter-increment: gn-step; display: grid; grid-template-columns: 28px 1fr; column-gap: 12px; }
+.gn-steps li::before { content: counter(gn-step); grid-row: span 2; width: 28px; height: 28px; border-radius: 99px; display: grid; place-items: center;
+  background: var(--soft); font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.gn-steps strong { font-size: 15px; font-weight: 700; }
+.gn-steps span { font-size: 14px; line-height: 1.4; color: var(--muted); }
+.gn-empty .gn-steps { text-align: left; }

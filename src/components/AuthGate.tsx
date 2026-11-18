@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { FormEvent, ReactNode, createContext, useContext, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, createContext, useContext, useEffect, useState } from "react";
 import {
   GithubAuthProvider,
   GoogleAuthProvider,
@@ -10,6 +9,7 @@ import {
   getRedirectResult,
   onAuthStateChanged,
   sendEmailVerification,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
@@ -18,7 +18,7 @@ import {
   type AuthProvider,
   type User,
 } from "firebase/auth";
-import GradeGlowLogo from "./GradeGlowLogo";
+import "./auth.css";
 import { auth, isFirebaseConfigured } from "../lib/firebase";
 import { demoUser, endDemo, isDemoActive, startDemo } from "../lib/guestDemo";
 import type { AppUser } from "../types";
@@ -254,10 +254,6 @@ function AuthGateSession({ children }: AuthGateProps) {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [infoMessage, setInfoMessage] = useState("");
-
-  const title = useMemo(() => {
-    return mode === "login" ? "Willkommen zurück" : "Kostenlos starten";
-  }, [mode]);
 
   useEffect(() => {
     if (!auth || !isFirebaseConfigured) {
@@ -537,13 +533,34 @@ function AuthGateSession({ children }: AuthGateProps) {
     setUser(null);
   };
 
+  // Sends a link to set a new password. Also lets Google/GitHub accounts add a password.
+  const handlePasswordReset = async () => {
+    clearMessages();
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!isValidEmail(normalizedEmail)) {
+      setErrorMessage("Trag oben deine E-Mail ein, dann schicken wir dir einen Link.");
+      return;
+    }
+    if (!auth || !isFirebaseConfigured) {
+      setErrorMessage("Das geht gerade nicht. Versuch es später nochmal.");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await sendPasswordResetEmail(auth, normalizedEmail);
+      setInfoMessage(`Wenn es ein Konto mit ${normalizedEmail} gibt, kommt gleich eine Mail mit einem Link für ein neues Passwort. Schau auch im Spam nach.`);
+    } catch (error) {
+      setErrorMessage(getAuthErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (isAuthLoading) {
     return (
-      <main className="gg-auth-page flex items-center justify-center text-white">
-        <div className="rounded-[2rem] bg-white/10 p-6 text-center ring-1 ring-white/10 backdrop-blur">
-          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-white" />
-          <p className="font-semibold">GradeGlow wird geladen…</p>
-        </div>
+      <main className="ga-page ga-center" aria-busy="true">
+        <span className="ga-spinner" aria-hidden="true" />
+        <p className="ga-muted">GradeGlow lädt …</p>
       </main>
     );
   }
@@ -553,148 +570,93 @@ function AuthGateSession({ children }: AuthGateProps) {
     return <AuthSessionContext.Provider value={session}>{children(session)}</AuthSessionContext.Provider>;
   }
 
+  const firebaseLogin = mode === "login" && !isFirebaseConfigured;
+
   return (
-    <main className="gg-auth-page">
-      <div className="gg-auth-content">
+    <main className="ga-page">
+      <div className="ga-wrap">
+        <p className="ga-brand"><span aria-hidden="true" className="ga-dot" />GradeGlow</p>
+
         {screen === "welcome" ? (
-          <section className="gg-welcome" aria-labelledby="welcome-title">
-            <GradeGlowLogo size="lg" tone="light" appearance="light" />
-            <p className="gg-auth-wordmark">GradeGlow</p>
-            <h1 id="welcome-title">Dein Studium,<br />aber schön.</h1>
-            <p className="gg-welcome-description">Plane Prüfungen, tracke Lernzeit und behalte deinen Fortschritt im Blick.</p>
-            <div className="gg-welcome-actions">
-              <button type="button" className="gg-auth-primary" onClick={() => switchMode("register")}>Kostenlos starten</button>
-              <button type="button" className="gg-auth-secondary" onClick={() => switchMode("login")}>Ich habe schon ein Konto</button>
-              <button type="button" className="gg-auth-demo" onClick={() => {
+          <section className="ga-welcome" aria-labelledby="welcome-title">
+            <h1 id="welcome-title">Klausur eintragen. Der Lernplan steht.</h1>
+            <p className="ga-lead">GradeGlow verteilt deine Lernblöcke rückwärts bis zum Prüfungstag und sagt dir jeden Tag, was dran ist.</p>
+
+            {/* A real piece of the app instead of a slogan: this is what "Heute" looks like. */}
+            <div className="ga-preview" aria-hidden="true">
+              <span className="ga-preview-meta">Analysis · 10:00 · 45 min</span>
+              <strong>Eigenwerte</strong>
+              <span className="ga-preview-sub">Probeklausur Aufgabe 4</span>
+              <span className="ga-preview-bar"><i /></span>
+              <span className="ga-preview-foot">Block 2 von 6 · noch 24 Tage</span>
+            </div>
+
+            <div className="ga-actions">
+              <button type="button" className="ga-primary" onClick={() => switchMode("register")}>Kostenlos starten</button>
+              <button type="button" className="ga-secondary" onClick={() => switchMode("login")}>Ich habe schon ein Konto</button>
+              <button type="button" className="ga-text" onClick={() => {
                 clearMessages();
                 try { setUser(startDemo()); }
                 catch { setErrorMessage("Bitte erlaube den lokalen Speicher, um die Demo zu öffnen."); }
-              }}>Erst ausprobieren <span aria-hidden="true">→</span></button>
+              }}>Ohne Konto ausprobieren</button>
             </div>
-            <p className="gg-welcome-note">Ohne Anmeldung ausprobieren.</p>
-            {errorMessage && <p role="alert" className="mt-4 text-sm text-rose-100">{errorMessage}</p>}
+            {errorMessage && <p role="alert" className="ga-error">{errorMessage}</p>}
           </section>
         ) : (
-          <section className="gg-auth-card" aria-labelledby="auth-title">
-            <button type="button" className="gg-auth-back" disabled={isSubmitting} onClick={() => {
+          <section className="ga-card" aria-labelledby="auth-title">
+            <button type="button" className="ga-back" disabled={isSubmitting} onClick={() => {
               setScreen("welcome"); clearMessages(); setPassword("");
-            }}>← Zurück</button>
-            <div className="mb-6 mt-5 flex items-center gap-3">
-              <GradeGlowLogo size="md" appearance="light" />
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-600">GradeGlow</p>
-                <h1 id="auth-title" className="mt-1 text-2xl font-black tracking-tight">{title}</h1>
-              </div>
-            </div>
-          <form className="space-y-2.5 sm:space-y-3" onSubmit={handleEmailAuth}>
-            {mode === "register" && (
-              <label className="block">
-                <span className="mb-1 block text-sm font-semibold text-slate-700">
-                  Benutzername
-                </span>
-                <input
-                  required
-                  autoComplete="name"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100 sm:py-3"
-                  placeholder="z. B. Max Mustermann"
-                  value={username}
-                  onChange={(event) => setUsername(event.target.value)}
-                />
+            }}>Zurück</button>
+            <h1 id="auth-title">{mode === "login" ? "Willkommen zurück" : "Konto erstellen"}</h1>
+
+            <form className="ga-form" onSubmit={handleEmailAuth}>
+              {mode === "register" && (
+                <label>Name
+                  <input required autoComplete="name" placeholder="Wie sollen wir dich nennen?" value={username} onChange={(event) => setUsername(event.target.value)} />
+                </label>
+              )}
+              <label>{firebaseLogin ? "E-Mail oder Benutzername" : "E-Mail"}
+                <input required autoComplete="email" inputMode={firebaseLogin ? "text" : "email"} type={firebaseLogin ? "text" : "email"}
+                  placeholder={firebaseLogin ? "E-Mail oder Benutzername" : "name@mail.de"} value={email} onChange={(event) => setEmail(event.target.value)} />
               </label>
-            )}
+              <label>Passwort
+                <input required type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "register" ? 6 : undefined}
+                  placeholder={mode === "register" ? "mindestens 6 Zeichen" : ""} value={password} onChange={(event) => setPassword(event.target.value)} />
+              </label>
+              {mode === "login" && isFirebaseConfigured && (
+                <button type="button" className="ga-text ga-forgot" disabled={isSubmitting} onClick={() => { void handlePasswordReset(); }}>Passwort vergessen?</button>
+              )}
 
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-slate-700">
-                {mode === "login" && !isFirebaseConfigured
-                  ? "E-Mail oder Benutzername"
-                  : "E-Mail"}
-              </span>
-              <input
-                required
-                autoComplete="email"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100 sm:py-3"
-                inputMode={
-                  mode === "login" && !isFirebaseConfigured ? "text" : "email"
-                }
-                placeholder={
-                  mode === "login" && !isFirebaseConfigured
-                    ? "deine E-Mail oder dein Benutzername"
-                    : "name@mail.de"
-                }
-                type={
-                  mode === "login" && !isFirebaseConfigured ? "text" : "email"
-                }
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </label>
+              {infoMessage && <p role="status" className="ga-info">{infoMessage}</p>}
+              {errorMessage && <p role="alert" className="ga-error">{errorMessage}</p>}
 
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-slate-700">
-                Passwort
-              </span>
-              <input
-                autoComplete={
-                  mode === "login" ? "current-password" : "new-password"
-                }
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100 sm:py-3"
-                placeholder="mindestens 6 Zeichen"
-                required
-                minLength={mode === "register" ? 6 : undefined}
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </label>
-
-            {infoMessage && (
-              <div role="status" className="rounded-2xl bg-emerald-50 p-3 text-sm font-medium text-emerald-700 ring-1 ring-emerald-100">
-                {infoMessage}
-              </div>
-            )}
-
-            {errorMessage && (
-              <div role="alert" className="rounded-2xl bg-rose-50 p-3 text-sm font-medium text-rose-700 ring-1 ring-rose-100">
-                {errorMessage}
-              </div>
-            )}
-
-            <button
-              className="w-full rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 px-4 py-3 font-black text-white shadow-lg shadow-violet-200 transition hover:scale-[1.01] disabled:opacity-60 sm:py-3.5"
-              disabled={isSubmitting}
-              type="submit"
-            >
-              {isSubmitting
-                ? "Bitte warten…"
-                : mode === "login"
-                  ? "Einloggen"
-                  : "Account erstellen"}
-            </button>
-          </form>
-
+              <button className="ga-primary" disabled={isSubmitting} type="submit">
+                {isSubmitting ? "Einen Moment …" : mode === "login" ? "Einloggen" : "Konto erstellen"}
+              </button>
+            </form>
 
             {isFirebaseConfigured && (
               <>
-                <div className="my-5 flex items-center gap-3 text-xs text-slate-500">
-                  <div className="h-px flex-1 bg-slate-200" />oder weiter mit<div className="h-px flex-1 bg-slate-200" />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
+                <p className="ga-or">oder</p>
+                <div className="ga-social">
                   {socialLoginOptions.filter((option) => !option.disabled).map((option) => (
-                    <button key={option.provider} type="button" className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white disabled:opacity-60" onClick={() => handleSocialLogin(option.provider)} disabled={isSubmitting}>{option.label}</button>
+                    <button key={option.provider} type="button" className="ga-secondary" onClick={() => handleSocialLogin(option.provider)} disabled={isSubmitting}>Mit {option.label}</button>
                   ))}
                 </div>
               </>
             )}
-            <p className="mt-5 text-center text-sm text-slate-500">
+
+            <p className="ga-switch">
               {mode === "login" ? "Noch kein Konto? " : "Schon ein Konto? "}
-              <button type="button" disabled={isSubmitting} className="font-bold text-violet-700" onClick={() => switchMode(mode === "login" ? "register" : "login")}>
+              <button type="button" className="ga-text" disabled={isSubmitting} onClick={() => switchMode(mode === "login" ? "register" : "login")}>
                 {mode === "login" ? "Kostenlos starten" : "Einloggen"}
               </button>
             </p>
           </section>
         )}
-        <footer className="gg-auth-footer">
-          <Link href="/legal">Datenschutz & Impressum</Link>
+
+        <footer className="ga-footer">
+          <a href="/legal/impressum">Impressum</a><a href="/legal/privacy">Datenschutz</a><a href="/legal/terms">Nutzungsbedingungen</a>
         </footer>
       </div>
     </main>

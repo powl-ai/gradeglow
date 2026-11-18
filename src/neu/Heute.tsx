@@ -57,7 +57,11 @@ export default function Heute({ ctx }: { ctx: AppCtx }) {
         {visible.length === 0 ? (
           <section className="gn-card gn-empty">
             <h2 className="gn-h3">Leg deine erste Klausur an</h2>
-            <p>Datum und Themen eintragen, GradeGlow plant die Lernblöcke rückwärts bis zur Prüfung.</p>
+            <ol className="gn-steps">
+              <li><strong>Klausur eintragen</strong><span>Datum, Themen und wie viel Zeit du pro Tag hast.</span></li>
+              <li><strong>Plan steht</strong><span>GradeGlow verteilt die Lernblöcke rückwärts bis zur Prüfung. Hier siehst du jeden Tag, was dran ist.</span></li>
+              <li><strong>Fokus starten</strong><span>Für jeden geschafften Block leuchtet ein Stern in deinem Sternbild.</span></li>
+            </ol>
             <button type="button" className="gn-go" style={{ width: "100%" }} onClick={() => ctx.openExam(null)}>Klausur anlegen</button>
           </section>
         ) : (

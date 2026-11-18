@@ -61,14 +61,17 @@ export type AppCtx = {
 };
 
 export default function NeuApp({ fontClass }: { fontClass: string }) {
+  // The wrapper only carries the font variable, so the login screen uses Figtree too.
   return (
-    <AuthGate>
-      {({ user, logout }) => (
-        <FocusSessionProvider key={user.uid} uid={user.uid}>
-          <Shell user={user} logout={logout} fontClass={fontClass} />
-        </FocusSessionProvider>
-      )}
-    </AuthGate>
+    <div className={fontClass} style={{ display: "contents" }}>
+      <AuthGate>
+        {({ user, logout }) => (
+          <FocusSessionProvider key={user.uid} uid={user.uid}>
+            <Shell user={user} logout={logout} fontClass={fontClass} />
+          </FocusSessionProvider>
+        )}
+      </AuthGate>
+    </div>
   );
 }
 

@@ -75,7 +75,7 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
       <div className="gn-stack">
         <section className="gn-hero gn-stack" style={{ gap: 14 }}>
           <div>
-            <h2 style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.02em" }}>{exam.title}</h2>
+            <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }}>{exam.title}</h2>
             <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2, opacity: 0.85 }}>
               {fromKey(exam.examDate).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}{exam.examTime ? ` · ${exam.examTime}` : ""}
             </div>

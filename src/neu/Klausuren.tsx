@@ -34,7 +34,9 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
   const sessions = exam.studySessions.filter((s) => !s.isHidden).sort((a, b) => `${a.dateKey} ${a.time}`.localeCompare(`${b.dateKey} ${b.time}`));
   const learned = sessions.filter((s) => s.isDone).reduce((sum, s) => sum + getSessionStudyMinutes(s), 0);
   const weekEnd = dateKey(addDays(fromKey(today), 7));
-  const soon = sessions.filter((s) => !isExtraTime(s)).filter((s) => (s.dateKey >= today && s.dateKey < weekEnd) || (!s.isDone && s.dateKey < today));
+  // After the exam, missed blocks no longer matter: the list stays empty.
+  const examOver = exam.examDate < today;
+  const soon = examOver ? [] : sessions.filter((s) => !isExtraTime(s)).filter((s) => (s.dateKey >= today && s.dateKey < weekEnd) || (!s.isDone && s.dateKey < today));
   const topics = [...(exam.topics ?? [])].sort((a, b) => topicPct(a) - topicPct(b));
 
   // Exams from before the new app, or ones that were too close, can have no blocks at all.
@@ -69,8 +71,8 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
       <div className="gn-stack">
         <section className="gn-hero gn-stack" style={{ gap: 14 }}>
           <div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }}>{exam.title}</h2>
-            <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2, opacity: 0.85 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em" }}>{exam.title}</h2>
+            <div style={{ fontSize: 14, fontWeight: 600, marginTop: 2, opacity: 0.85 }}>
               {fromKey(exam.examDate).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}{exam.examTime ? ` · ${exam.examTime}` : ""}
             </div>
           </div>
@@ -81,7 +83,7 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
           </div>
           <div className="gn-row" style={{ gap: 10 }}>
             <div className="gn-bar"><i style={{ width: `${status.totalSessions ? (status.doneSessions / status.totalSessions) * 100 : 0}%` }} /></div>
-            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, flex: "none" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, flex: "none" }}>
               <span style={{ width: 7, height: 7, borderRadius: 99, background: status.state === "behind" ? "#ffb26b" : "#5ff0a0" }} />{stateLabel}
             </span>
           </div>
@@ -92,10 +94,10 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
         <section className="gn-card" aria-label="Themen">
           <div className="gn-row" style={{ justifyContent: "space-between", marginBottom: 2 }}>
             <h2 className="gn-h3">Themen</h2>
-            {topics.length > 0 && <span className="gn-muted" style={{ fontSize: 13, fontWeight: 600, flex: "none" }}>Schwächste zuerst</span>}
+            {topics.length > 0 && <span className="gn-muted" style={{ fontSize: 14, fontWeight: 600, flex: "none" }}>Schwächste zuerst</span>}
           </div>
           {topics.length === 0 ? (
-            <p className="gn-muted" style={{ fontSize: 14, marginTop: 6 }}>Noch keine Themen. <button type="button" className="gn-link" onClick={() => ctx.openExam(exam.id)}>Themen eintragen</button>, damit schwache Themen mehr Blöcke bekommen.</p>
+            <p className="gn-muted" style={{ fontSize: 15, marginTop: 6 }}>Noch keine Themen. <button type="button" className="gn-link" onClick={() => ctx.openExam(exam.id)}>Themen eintragen</button>, damit schwache Themen mehr Blöcke bekommen.</p>
           ) : (
             <ul className="gn-topics">
               {topics.map((topic) => <TopicRow key={topic.id} topic={topic} onTest={() => ctx.openQuiz(exam.id, topic.id)} />)}
@@ -106,9 +108,9 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
         <section className="gn-card" aria-label="Nächste Lernblöcke">
           <div className="gn-row" style={{ justifyContent: "space-between", marginBottom: 2 }}>
             <h2 className="gn-h3">Nächste 7 Tage</h2>
-            <span className="gn-muted" style={{ fontSize: 13, fontWeight: 600, flex: "none" }}>{soon.filter((s) => s.isDone).length} von {soon.length}</span>
+            {soon.length > 0 && <span className="gn-muted" style={{ fontSize: 14, fontWeight: 600, flex: "none" }}>{soon.filter((s) => s.isDone).length} von {soon.length}</span>}
           </div>
-          {soon.length === 0 ? <p className="gn-muted" style={{ fontSize: 14, marginTop: 6 }}>Keine Lernblöcke in den nächsten 7 Tagen.</p> : (
+          {soon.length === 0 ? <p className="gn-muted" style={{ fontSize: 15, marginTop: 6 }}>{examOver ? "Die Prüfung ist vorbei. Offene Blöcke zählen nicht mehr." : "Keine Lernblöcke in den nächsten 7 Tagen."}</p> : (
             <ul className="gn-list">
               {soon.map((s) => {
                 const isToday = s.dateKey === today && !s.isDone;

@@ -112,7 +112,7 @@ type DashboardNavItem = {
 const dashboardNavItems: DashboardNavItem[] = [
   {
     id: "overview",
-    href: "/",
+    href: "/alt",
     label: "Überblick",
     description: "Schnitt, ECTS und Fortschritt",
     emoji: "✨",
@@ -260,7 +260,7 @@ const WELCOME_QUERY_PARAM = "welcome";
 type MobileTabIconName = "home" | "plan" | "timer" | "circle" | "profile";
 
 const mobileTabItems: Array<{ href: string; label: string; icon: MobileTabIconName; match: DashboardPage[]; featureId?: GradeGlowFeatureId; tone?: "default" | "primary" }> = [
-  { href: "/", label: "Home", icon: "home", match: ["overview"] },
+  { href: "/alt", label: "Home", icon: "home", match: ["overview"] },
   { href: "/exams", label: "Plan", icon: "plan", match: ["exams"] },
   { href: "/timer", label: "Timer", icon: "timer", match: ["timer"], tone: "primary" },
   { href: "/friends", label: "Circle", icon: "circle", match: ["friends"], featureId: "friends" },

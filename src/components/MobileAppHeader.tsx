@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import AppDialog from "./AppDialog";
 
 const titles: Record<string, string> = {
-  "/": "GradeGlow", "/exams": "Kalender", "/timer": "Fokus",
+  "/alt": "GradeGlow", "/exams": "Kalender", "/timer": "Fokus",
   "/friends": "Study Circle", "/profile": "Profil", "/settings": "Einstellungen",
   "/modules": "Module", "/insights": "Insights", "/planning": "Studienplan",
   "/schedule": "Stundenplan", "/backup": "Backup", "/premium": "GradeGlow Pro",
@@ -27,7 +27,7 @@ export default function MobileAppHeader({ pathname }: { pathname: string }) {
         <button type="button" className="gg-header-action" aria-label="App-Menü öffnen" aria-haspopup="dialog" onClick={() => setOpen(true)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h16" strokeLinecap="round" /></svg>
         </button>
-        <h1 className={pathname === "/" ? "gg-header-wordmark" : ""}>{titles[pathname] ?? "GradeGlow"}</h1>
+        <h1 className={pathname === "/alt" ? "gg-header-wordmark" : ""}>{titles[pathname] ?? "GradeGlow"}</h1>
         <Link href="/settings" className="gg-header-action" aria-label="Einstellungen öffnen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg>
         </Link>

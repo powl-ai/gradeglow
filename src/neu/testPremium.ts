@@ -5,7 +5,9 @@ const KEY = "gradeglow-neu-test-premium";
 const EVENT = "gradeglow-neu-test-premium";
 
 export const testPremiumAllowed = () =>
-  process.env.NEXT_PUBLIC_VERCEL_ENV === "preview" || process.env.NODE_ENV === "development";
+  process.env.NEXT_PUBLIC_VERCEL_ENV === "preview" || process.env.NODE_ENV === "development"
+  // Fallback if Vercel does not expose its env to the browser: preview links carry the team suffix.
+  || (typeof window !== "undefined" && window.location.hostname.endsWith("-powl-ais-projects.vercel.app"));
 
 export const getTestPremium = () => {
   if (!testPremiumAllowed() || typeof window === "undefined") return false;

@@ -5,6 +5,7 @@ import { confidenceFromPct, topicPct } from "../lib/examTopics";
 import { auth } from "../lib/firebase";
 import { QUICK_CHECK, QUIZ_LENGTH, blendPct, type QuizQuestion } from "../lib/quiz";
 import type { AppCtx } from "./NeuApp";
+import { testPremiumAllowed } from "./testPremium";
 
 /** After a block, or from the topic list: a short quiz (premium) or a quick check (free).
  *  The result sets how sure the user is on this topic, in percent. */
@@ -12,7 +13,9 @@ export default function QuizSheet({ ctx, examId, topicId, onClose }: { ctx: AppC
   const { exams, setExams, limits, user } = ctx;
   const exam = exams.find((item) => item.id === examId);
   const topic = exam?.topics?.find((item) => item.id === topicId);
-  const premium = limits.premiumThemes && user.provider === "firebase";
+  // On preview links the quiz also runs for the demo and the premium test switch, without a login.
+  const previewTest = testPremiumAllowed() && (ctx.testPremium || user.provider !== "firebase");
+  const premium = limits.premiumThemes && (user.provider === "firebase" || previewTest);
 
   const [questions, setQuestions] = useState<QuizQuestion[] | null>(null);
   const [error, setError] = useState("");
@@ -26,10 +29,10 @@ export default function QuizSheet({ ctx, examId, topicId, onClose }: { ctx: AppC
     let cancelled = false;
     (async () => {
       try {
-        const token = await auth?.currentUser?.getIdToken();
-        if (!token) throw new Error("Bitte melde dich an.");
+        const token = user.provider === "firebase" ? await auth?.currentUser?.getIdToken() : undefined;
+        if (!token && !previewTest) throw new Error("Bitte melde dich an.");
         const res = await fetch("/api/quiz", {
-          method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}`, ...(ctx.testPremium ? { "x-gradeglow-test-premium": "1" } : {}) },
+          method: "POST", headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}), ...(previewTest ? { "x-gradeglow-test-premium": "1" } : {}) },
           body: JSON.stringify({ subject: exam.moduleName || exam.title, topic: topic.name }),
         });
         const body = (await res.json().catch(() => ({}))) as { questions?: QuizQuestion[]; error?: string };

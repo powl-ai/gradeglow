@@ -53,27 +53,31 @@ export async function POST(request: Request) {
   if (!process.env.ANTHROPIC_API_KEY || !PROJECT_ID) {
     return NextResponse.json({ error: "Das Quiz ist noch nicht eingerichtet." }, { status: 503 });
   }
+  // Preview deployments sit behind the Vercel login; there the test switch (and the demo) counts as
+  // premium and needs no Firebase login. The live app always checks the account.
+  const testPremium = (process.env.VERCEL_ENV === "preview" || process.env.NODE_ENV === "development")
+    && request.headers.get("x-gradeglow-test-premium") === "1";
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
   const uid = token ? uidFromToken(token) : null;
-  if (!uid) return NextResponse.json({ error: "Bitte melde dich an." }, { status: 401 });
+  if (!uid && !testPremium) return NextResponse.json({ error: "Bitte melde dich an." }, { status: 401 });
 
-  try {
-    // Unverified uid only picks the documents; Firestore rejects the read if the token is not this user's.
-    const [userDoc, entitlementDoc] = await Promise.all([readDoc(`users/${uid}`, token), readDoc(`entitlements/${uid}`, token)]);
-    // Preview deployments sit behind the Vercel login; there the test switch counts as premium.
-    const testPremium = (process.env.VERCEL_ENV === "preview" || process.env.NODE_ENV === "development")
-      && request.headers.get("x-gradeglow-test-premium") === "1";
-    if (!testPremium && !isPremiumPlan(mergeEntitlementSources(userDoc, entitlementDoc).plan)) {
-      return NextResponse.json({ error: "Das Quiz gibt es mit Premium." }, { status: 403 });
+  if (uid && !testPremium) {
+    try {
+      // Unverified uid only picks the documents; Firestore rejects the read if the token is not this user's.
+      const [userDoc, entitlementDoc] = await Promise.all([readDoc(`users/${uid}`, token), readDoc(`entitlements/${uid}`, token)]);
+      if (!isPremiumPlan(mergeEntitlementSources(userDoc, entitlementDoc).plan)) {
+        return NextResponse.json({ error: "Das Quiz gibt es mit Premium." }, { status: 403 });
+      }
+    } catch {
+      return NextResponse.json({ error: "Anmeldung abgelaufen. Lad die App neu." }, { status: 401 });
     }
-  } catch {
-    return NextResponse.json({ error: "Anmeldung abgelaufen. Lad die App neu." }, { status: 401 });
   }
 
+  const who = uid ?? "preview";
   const now = Date.now();
-  const times = (recent.get(uid) ?? []).filter((time) => now - time < 3_600_000);
+  const times = (recent.get(who) ?? []).filter((time) => now - time < 3_600_000);
   if (times.length >= PER_HOUR) return NextResponse.json({ error: "Genug Quiz für diese Stunde. Später weiter." }, { status: 429 });
-  recent.set(uid, [...times, now]);
+  recent.set(who, [...times, now]);
 
   const input = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const subject = clean(input.subject, 120);

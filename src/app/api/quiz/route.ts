@@ -60,7 +60,10 @@ export async function POST(request: Request) {
   try {
     // Unverified uid only picks the documents; Firestore rejects the read if the token is not this user's.
     const [userDoc, entitlementDoc] = await Promise.all([readDoc(`users/${uid}`, token), readDoc(`entitlements/${uid}`, token)]);
-    if (!isPremiumPlan(mergeEntitlementSources(userDoc, entitlementDoc).plan)) {
+    // Preview deployments sit behind the Vercel login; there the test switch counts as premium.
+    const testPremium = (process.env.VERCEL_ENV === "preview" || process.env.NODE_ENV === "development")
+      && request.headers.get("x-gradeglow-test-premium") === "1";
+    if (!testPremium && !isPremiumPlan(mergeEntitlementSources(userDoc, entitlementDoc).plan)) {
       return NextResponse.json({ error: "Das Quiz gibt es mit Premium." }, { status: 403 });
     }
   } catch {

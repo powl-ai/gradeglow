@@ -29,9 +29,11 @@ export const parseQuiz = (raw: string): QuizQuestion[] | null => {
 export const blendPct = (previous: number | undefined, result: number) =>
   Math.round(previous === undefined ? result : previous * 0.4 + result * 0.6);
 
-/** Free alternative: three honest taps, no AI. Each answer is worth 0, 50 or 100. */
+/** Free alternative: five honest taps, no AI. Each answer is worth 0, 50 or 100. */
 export const QUICK_CHECK: { q: string; options: [string, string, string] }[] = [
   { q: "Könntest du eine typische Klausuraufgabe dazu jetzt allein lösen?", options: ["Nein", "Mit Hilfe", "Ja"] },
   { q: "Kannst du die Kernidee in zwei Sätzen erklären?", options: ["Nein", "Ungefähr", "Ja"] },
   { q: "Wie viele Aufgaben dazu hast du schon selbst gerechnet?", options: ["Keine", "Ein paar", "Viele"] },
+  { q: "Wie oft musstest du heute ins Skript oder in die Lösung schauen?", options: ["Ständig", "Ab und zu", "Kaum"] },
+  { q: "Erkennst du bei einer neuen Aufgabe, welcher Ansatz passt?", options: ["Nein", "Manchmal", "Meistens"] },
 ];

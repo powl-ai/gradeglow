@@ -29,7 +29,7 @@ export default function QuizSheet({ ctx, examId, topicId, onClose }: { ctx: AppC
         const token = await auth?.currentUser?.getIdToken();
         if (!token) throw new Error("Bitte melde dich an.");
         const res = await fetch("/api/quiz", {
-          method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+          method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}`, ...(ctx.testPremium ? { "x-gradeglow-test-premium": "1" } : {}) },
           body: JSON.stringify({ subject: exam.moduleName || exam.title, topic: topic.name }),
         });
         const body = (await res.json().catch(() => ({}))) as { questions?: QuizQuestion[]; error?: string };

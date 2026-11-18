@@ -6,6 +6,8 @@ import AuthGate from "../components/AuthGate";
 import FocusSessionProvider from "../components/FocusSessionProvider";
 import { useDocumentAppearance } from "../hooks/useDocumentAppearance";
 import { useGradeGlowAccess } from "../hooks/useGradeGlowAccess";
+import { getPlanLimits } from "../lib/gradeglowAccess";
+import { getTestPremium, onTestPremiumChange } from "./testPremium";
 import { useGradeGlowExams } from "../hooks/useGradeGlowExams";
 import { useGradeGlowProfile } from "../hooks/useGradeGlowProfile";
 import type { AppUser, ExamPlanItem, GradeGlowProfile, PlanLimits } from "../types";
@@ -44,6 +46,8 @@ export type AppCtx = {
   profile: GradeGlowProfile;
   saveProfile: (profile: GradeGlowProfile) => Promise<unknown>;
   limits: PlanLimits;
+  /** Premium only through the preview test switch, not the account. */
+  testPremium: boolean;
   logout: () => Promise<void>;
   go: (tab: Tab, focusSessionId?: string, examId?: string) => void;
   openSettings: () => void;
@@ -76,7 +80,11 @@ const readTab = (): Tab => {
 function Shell({ user, logout, fontClass }: { user: AppUser; logout: () => Promise<void>; fontClass: string }) {
   const { exams, setExams, isLoaded } = useGradeGlowExams(user);
   const { profile, saveProfile, isProfileLoaded } = useGradeGlowProfile(user);
-  const { limits } = useGradeGlowAccess(user);
+  const access = useGradeGlowAccess(user);
+  // Preview links only: premium test access (5 taps on the plan tag in Profil).
+  const [testPremium, setTestPremiumState] = useState(false);
+  useEffect(() => { setTestPremiumState(getTestPremium()); return onTestPremiumChange(() => setTestPremiumState(getTestPremium())); }, []);
+  const limits = useMemo(() => (testPremium && !access.limits.premiumThemes ? getPlanLimits("premium") : access.limits), [testPremium, access.limits]);
   useDocumentAppearance(profile.themeMode, profile.activePageThemeId, isProfileLoaded);
   const [tab, setTab] = useState<Tab>("heute");
   const [sheet, setSheet] = useState<Sheet>(null);
@@ -97,7 +105,7 @@ function Shell({ user, logout, fontClass }: { user: AppUser; logout: () => Promi
   }, []);
 
   const ctx: AppCtx = useMemo(() => ({
-    user, exams, setExams, loaded: isLoaded, today, profile, saveProfile, limits, logout,
+    user, exams, setExams, loaded: isLoaded, today, profile, saveProfile, limits, testPremium, logout,
     name: (profile.displayName || user.displayName || "").split(" ")[0],
     streak: streakDays(exams, today),
     go: (next, sessionId, nextExamId) => {
@@ -110,7 +118,7 @@ function Shell({ user, logout, fontClass }: { user: AppUser; logout: () => Promi
     openExam: (id) => setSheet({ kind: "exam", examId: id }),
     openQuiz: (id, topicId) => setSheet({ kind: "quiz", examId: id, topicId }),
     focusPick, setFocusPick, examId, setExamId,
-  }), [user, exams, setExams, isLoaded, today, profile, saveProfile, limits, logout, focusPick, examId]);
+  }), [user, exams, setExams, isLoaded, today, profile, saveProfile, limits, testPremium, logout, focusPick, examId]);
 
   const accent = ACCENTS[profile.accentColor] ?? ACCENTS.violet;
   const [heroBtn, heroBtnInk] = HERO_BUTTON[profile.accentColor] ?? ["#fff", accent];

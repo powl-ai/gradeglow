@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { setTestPremium, testPremiumAllowed } from "./testPremium";
 import { useGradeGlowModules } from "../hooks/useGradeGlowModules";
 import { useGradeGlowSchedule } from "../hooks/useGradeGlowSchedule";
 import type { UniModule, UniScheduleItem } from "../types";
@@ -54,7 +55,7 @@ export default function Profil({ ctx, hidden }: { ctx: AppCtx; hidden: boolean }
               <strong>{ctx.name || "Dein Profil"}</strong>
               <small>{studies || user.email || (user.provider === "demo" ? "Demo ohne Konto" : "Ohne E-Mail angemeldet")}</small>
             </div>
-            <span className="gn-tag">{limits.premiumThemes ? "Premium" : "Kostenlos"}</span>
+            <PlanTag premium={limits.premiumThemes} test={ctx.testPremium} />
           </section>
 
           <div className="gn-h2"><h2>Noten und ECTS</h2>{modules.length > 0 && <button type="button" className="gn-link gn-hit" onClick={() => setOpen({ kind: "module", id: null })}>Modul eintragen</button>}</div>
@@ -185,4 +186,17 @@ function MiniSky({ sky }: { sky: CollectedSky }) {
       })}
     </svg>
   );
+}
+
+/** Plan tag. On preview links, five quick taps switch premium test access on or off. */
+function PlanTag({ premium, test }: { premium: boolean; test: boolean }) {
+  const taps = useRef<number[]>([]);
+  const label = test ? "Premium (Test)" : premium ? "Premium" : "Kostenlos";
+  if (!testPremiumAllowed()) return <span className="gn-tag">{label}</span>;
+  const tap = () => {
+    const now = Date.now();
+    taps.current = [...taps.current.filter((time) => now - time < 2500), now];
+    if (taps.current.length >= 5) { taps.current = []; setTestPremium(!test); }
+  };
+  return <button type="button" className="gn-tag" onClick={tap} aria-label={`${label}. Fünfmal tippen schaltet den Premium-Test um`}>{label}</button>;
 }

@@ -18,6 +18,7 @@ import Klausuren from "./Klausuren";
 import Profil from "./Profil";
 import ExamSheet from "./ExamSheet";
 import SettingsSheet from "./SettingsSheet";
+import QuizSheet from "./QuizSheet";
 import "./neu.css";
 
 /** Screens. "profil" is reached from the Heute header and has no slot in the tab bar. */
@@ -29,7 +30,7 @@ const TABS: { id: Tab; label: string; icon: (on: boolean) => ReactNode }[] = [
   { id: "klausuren", label: "Klausuren", icon: Icon.book },
 ];
 
-type Sheet = { kind: "settings" } | { kind: "exam"; examId: string | null } | null;
+type Sheet = { kind: "settings" } | { kind: "exam"; examId: string | null } | { kind: "quiz"; examId: string; topicId: string } | null;
 
 /** Shared by every screen. */
 export type AppCtx = {
@@ -47,6 +48,8 @@ export type AppCtx = {
   go: (tab: Tab, focusSessionId?: string, examId?: string) => void;
   openSettings: () => void;
   openExam: (examId: string | null) => void;
+  /** Quiz (premium) or quick check (free) on one topic; sets its percent. */
+  openQuiz: (examId: string, topicId: string) => void;
   focusPick: { examId: string | null; sessionId: string | null };
   setFocusPick: (pick: { examId: string | null; sessionId: string | null }) => void;
   examId: string | null;
@@ -105,6 +108,7 @@ function Shell({ user, logout, fontClass }: { user: AppUser; logout: () => Promi
     },
     openSettings: () => setSheet({ kind: "settings" }),
     openExam: (id) => setSheet({ kind: "exam", examId: id }),
+    openQuiz: (id, topicId) => setSheet({ kind: "quiz", examId: id, topicId }),
     focusPick, setFocusPick, examId, setExamId,
   }), [user, exams, setExams, isLoaded, today, profile, saveProfile, limits, logout, focusPick, examId]);
 
@@ -138,6 +142,7 @@ function Shell({ user, logout, fontClass }: { user: AppUser; logout: () => Promi
       </nav>
       {sheet?.kind === "settings" && <SettingsSheet ctx={ctx} onClose={() => setSheet(null)} />}
       {sheet?.kind === "exam" && <ExamSheet ctx={ctx} examId={sheet.examId} onClose={() => setSheet(null)} />}
+      {sheet?.kind === "quiz" && <QuizSheet ctx={ctx} examId={sheet.examId} topicId={sheet.topicId} onClose={() => setSheet(null)} />}
     </div>
   );
 }

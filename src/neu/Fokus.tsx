@@ -61,6 +61,8 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
   const [minutes, setMinutes] = useState<number | null>(null);
   const goal = active?.goalMinutes ?? minutes ?? (block?.durationMinutes && block.durationMinutes <= 180 ? Math.round(block.durationMinutes) : 45);
   const [message, setMessage] = useState("");
+  // After a block that counted: offer to check the topic it covered.
+  const [checkTopic, setCheckTopic] = useState<{ examId: string; topicId: string; name: string } | null>(null);
   // Sky or plain list: a per-device preference, remembered between visits.
   const [asList, setAsList] = useState(false);
   useEffect(() => { try { setAsList(window.localStorage.getItem(VIEW_KEY) === "list"); } catch { /* optional */ } }, []);
@@ -123,6 +125,8 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
         .sort((a, b) => `${a.dateKey} ${a.time}`.localeCompare(`${b.dateKey} ${b.time}`)),
     } : item));
     focus.store.markSaved(finished.id, sessionId);
+    const coveredTopic = planned?.topicId ? exams.find((item) => item.id === finished.examId)?.topics?.find((t) => t.id === planned.topicId) : undefined;
+    setCheckTopic(coveredTopic ? { examId: finished.examId, topicId: coveredTopic.id, name: coveredTopic.name } : null);
     ctx.setFocusPick({ examId: finished.examId, sessionId: null });
     setMessage(`${minutesLabel(focusedMs / 60_000)} gespeichert.${planned ? " Ein neuer Stern leuchtet."
       : block ? ` Für den Stern brauchst du ${minutesLabel(needMs / 60_000)}, der Block bleibt offen.` : " Freie Lernzeit zählt nicht für Sterne."}`);
@@ -242,7 +246,8 @@ export default function Fokus({ ctx }: { ctx: AppCtx }) {
         {!active && message && <p>{message}</p>}
         {!active && !message && <p>Fertig um {timeOf(endsAt)}</p>}
         <div>
-          {!active && <button type="button" className="gn-go" onClick={start}>{Icon.play()}Fokus starten</button>}
+          {!active && checkTopic && <button type="button" className="gn-go quiet" style={{ flex: 1 }} onClick={() => { ctx.openQuiz(checkTopic.examId, checkTopic.topicId); setCheckTopic(null); }}>{checkTopic.name} prüfen</button>}
+          {!active && <button type="button" className="gn-go" onClick={() => { setCheckTopic(null); start(); }}>{Icon.play()}Fokus starten</button>}
           {active && (
             <>
               <button type="button" className="gn-go quiet" onClick={focus.status === "finished" ? () => focus.store.abort(Date.now()) : save}>{focus.status === "finished" ? "Verwerfen" : "Beenden"}</button>

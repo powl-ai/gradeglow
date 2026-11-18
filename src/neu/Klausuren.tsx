@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { CSSProperties } from "react";
-import { confidenceFromPct, getExamPlanStatus, isExtraTime, topicPct } from "../lib/examTopics";
+import { getExamPlanStatus, isExtraTime, topicPct } from "../lib/examTopics";
 import { getSessionStudyMinutes } from "../lib/studyStats";
 import type { ExamTopic } from "../types";
 import type { AppCtx } from "./NeuApp";
@@ -37,11 +36,6 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
   const weekEnd = dateKey(addDays(fromKey(today), 7));
   const soon = sessions.filter((s) => !isExtraTime(s)).filter((s) => (s.dateKey >= today && s.dateKey < weekEnd) || (!s.isDone && s.dateKey < today));
   const topics = [...(exam.topics ?? [])].sort((a, b) => topicPct(a) - topicPct(b));
-
-  const setTopicPct = (topicId: string, pct: number) => setExams((previous) => previous.map((item) => item.id !== exam.id ? item : {
-    ...item, topics: (item.topics ?? []).map((topic) => topic.id !== topicId ? topic
-      : { ...topic, confidencePct: pct, confidence: confidenceFromPct(pct) }),
-  }));
 
   // Exams from before the new app, or ones that were too close, can have no blocks at all.
   const canPlan = status.state === "no-plan" && status.daysUntil >= 1;
@@ -98,13 +92,13 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
         <section className="gn-card" aria-label="Themen">
           <div className="gn-row" style={{ justifyContent: "space-between", marginBottom: 2 }}>
             <h2 className="gn-h3">Themen</h2>
-            {topics.length > 0 && <span className="gn-muted" style={{ fontSize: 13, fontWeight: 600, flex: "none" }}>Wie sicher bist du?</span>}
+            {topics.length > 0 && <span className="gn-muted" style={{ fontSize: 13, fontWeight: 600, flex: "none" }}>Schwächste zuerst</span>}
           </div>
           {topics.length === 0 ? (
             <p className="gn-muted" style={{ fontSize: 14, marginTop: 6 }}>Noch keine Themen. <button type="button" className="gn-link" onClick={() => ctx.openExam(exam.id)}>Themen eintragen</button>, damit schwache Themen mehr Blöcke bekommen.</p>
           ) : (
             <ul className="gn-topics">
-              {topics.map((topic) => <TopicRow key={topic.id} topic={topic} onCommit={(pct) => setTopicPct(topic.id, pct)} />)}
+              {topics.map((topic) => <TopicRow key={topic.id} topic={topic} onTest={() => ctx.openQuiz(exam.id, topic.id)} />)}
             </ul>
           )}
         </section>
@@ -146,23 +140,20 @@ export default function Klausuren({ ctx }: { ctx: AppCtx }) {
   );
 }
 
-/** One topic with a native slider. The value is kept locally while dragging and saved on release,
- *  so the list (sorted weakest first) does not jump under the finger. */
-function TopicRow({ topic, onCommit }: { topic: ExamTopic; onCommit: (pct: number) => void }) {
-  const saved = topicPct(topic);
-  const [draft, setDraft] = useState<number | null>(null);
-  const value = draft ?? saved;
-  const commit = () => { if (draft !== null && draft !== saved) onCommit(draft); setDraft(null); };
+/** One topic: how sure the user is (from the last quiz or quick check), and a button to check again. */
+function TopicRow({ topic, onTest }: { topic: ExamTopic; onTest: () => void }) {
+  const tested = topic.confidencePct !== undefined;
+  const pct = topicPct(topic);
   return (
     <li>
-      <div className="gn-row" style={{ justifyContent: "space-between" }}>
-        <strong>{topic.name}</strong>
-        <span className="gn-num">{value} %</span>
+      <div className="gn-row">
+        <div>
+          <strong>{topic.name}</strong>
+          <small className="gn-muted">{tested ? `${pct} % sicher` : "Noch nicht geprüft"}</small>
+        </div>
+        <button type="button" className="gn-chip" onClick={onTest}>Prüfen</button>
       </div>
-      <input type="range" min={0} max={100} step={5} value={value} aria-label={`${topic.name}: wie sicher, in Prozent`}
-        style={{ "--pct": `${value}%` } as CSSProperties}
-        onChange={(event) => setDraft(Number(event.target.value))}
-        onPointerUp={commit} onTouchEnd={commit} onKeyUp={commit} onBlur={commit} />
+      <div className="gn-bar" style={{ marginTop: 8, opacity: tested ? 1 : 0.5 }} role="img" aria-label={`${pct} Prozent sicher`}><i style={{ width: `${pct}%` }} /></div>
     </li>
   );
 }
